@@ -122,3 +122,9 @@ def is_traveo_t2g(target):
     """Gets a value indicating whether the target belongs
     to Traveo T2G platform"""
     return target_data(target)['platform'] == 'traveo_t2g'
+
+
+def is_cyw559xx(target):
+    """Gets a value indicating whether the target belongs
+    to cyw559xx platform"""
+    return target_data(target)['platform'] == 'cyw559xx'

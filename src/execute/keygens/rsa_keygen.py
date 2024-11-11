@@ -75,21 +75,24 @@ def create_pubkey_hash(pubkey_path, hash_path):
     logger.info("Saved public key hash to '%s'", hash_path)
 
 
-def save_key(key, output, fmt, kid=None):
+def save_key(key, output, fmt, kid=None, password=None):
     """Saves the key to the file
     @param key: Private or public key object
     @param output: Key output path
     @param fmt: Defines key format PEM, DER, or JWK
     @param kid: Customer key ID
+    @param password: Password for the private key encryption
     """
     dirname = os.path.dirname(output)
     if dirname:
         os.makedirs(dirname, exist_ok=True)
 
     if fmt.upper() == 'PEM':
-        _save_encoded(key, output, serialization.Encoding.PEM)
+        _save_encoded(key, output, serialization.Encoding.PEM,
+                      password=password)
     elif fmt.upper() == 'DER':
-        _save_encoded(key, output, serialization.Encoding.DER)
+        _save_encoded(key, output, serialization.Encoding.DER,
+                      password=password)
     elif fmt.upper() == 'JWK':
         _save_jwk(key, output, kid=kid)
     else:
@@ -112,12 +115,17 @@ def _save_jwk(key, output, kid=None):
         fp.write(json.dumps(jwk, indent=4))
 
 
-def _save_encoded(key, output, encoding):
+def _save_encoded(key, output, encoding, password=None):
     if isinstance(key, rsa.RSAPrivateKey):
+        if password:
+            enc_alg = serialization.BestAvailableEncryption(password.encode())
+        else:
+            enc_alg = serialization.NoEncryption()
+
         serialized = key.private_bytes(
             encoding=encoding,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=serialization.NoEncryption())
+            encryption_algorithm=enc_alg)
     elif isinstance(key, rsa.RSAPublicKey):
         serialized = key.public_bytes(
             encoding=encoding,

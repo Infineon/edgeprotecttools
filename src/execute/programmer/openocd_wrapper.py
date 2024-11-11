@@ -604,7 +604,7 @@ class Openocd(ProgrammerBase):
             raise NotImplementedError
         return voltage
 
-    def dump_image(self, filename, addr, size):
+    def dump_image(self, filename, addr, size, **kwargs):
         """Dumps memory region to the file
         @param filename: Filename where to save the dump
         @param addr: Region address

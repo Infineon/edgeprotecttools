@@ -15,13 +15,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from .base import ProgrammerBase
+from .chipload_wrapper import ChipLoad
 from .openocd_wrapper import Openocd
 from .dfuht_wrapper import Dfuht
 from ...core import OcdSettings
 
 tools = {
     'openocd': Openocd,
-    'serial': Dfuht
+    'serial': Dfuht,
+    'chipload': ChipLoad
 }
 
 

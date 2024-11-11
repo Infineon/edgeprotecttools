@@ -28,23 +28,24 @@ from cryptography.hazmat.primitives.serialization import (
 from .pem_key import PemKey
 
 
-def load_private_key(key_path):
+def load_private_key(key_path, password=None):
     """Loads private key any of the following formats: JWK, PEM, DER"""
+    password = password.encode() if password else None
     try:
         with open(key_path, 'r', encoding='utf-8') as f:
             data = f.read()
     except UnicodeDecodeError:
         with open(key_path, 'rb') as f:
             der_data = f.read()
-        key = load_der_private_key(der_data, password=None)
+        key = load_der_private_key(der_data, password=password)
     else:
         try:
             json.loads(data)
         except json.decoder.JSONDecodeError:
-            key = load_pem_private_key(data.encode(), password=None)
+            key = load_pem_private_key(data.encode(), password=password)
         else:
             pem_data = jwk_to_pem(key_path, private_key=True)
-            key = load_pem_private_key(pem_data, password=None)
+            key = load_pem_private_key(pem_data, password=password)
     return key
 
 
@@ -68,12 +69,12 @@ def load_public_key(key_path):
     return key
 
 
-def load_key(key_path):
+def load_key(key_path, password=None):
     """Loads either private or public key of the one of
     the following formats: JWK, PEM, DER
     """
     try:
-        key = load_private_key(key_path)
+        key = load_private_key(key_path, password=password)
     except ValueError:
         try:
             key = load_public_key(key_path)

@@ -21,6 +21,9 @@ from collections import namedtuple
 
 from .base import ProgrammerBase
 from .dfuht_runner import DfuhtRunner
+from ..dfuht_commands.dfuht_packet import (
+    DfuhtReadSeriesCommand, DfuhtReadCommand, DfuhtMeta
+)
 from ..dfuht_commands.dfuht_packet_creator import DfuhtCommandsCreator
 
 logger = logging.getLogger(__name__)
@@ -167,14 +170,15 @@ class Dfuht(ProgrammerBase):
         """N/A for DFU Host Tool"""
         raise NotImplementedError
 
-    def dump_image(self, filename, addr, size):
+    def dump_image(self, filename, addr, size, **kwargs):
         """Dumps memory region to the file
         @param filename: Filename where to save the dump
         @param addr: Region address
         @param size: Region size
         @return: True if programmed successfully, otherwise False
         """
-        dump_value = self._read_cmd(addr, size, array=True)
+        chunk_size = kwargs.get('chunk_size', 256)
+        dump_value = self._read_cmd(addr, size, array=True, chunk_size=chunk_size)
         dir_name = os.path.dirname(filename)
         if dir_name:
             os.makedirs(dir_name, exist_ok=True)
@@ -192,7 +196,7 @@ class Dfuht(ProgrammerBase):
         stdout, _ = self.runner.run(cmd)
         return self._result_check(stdout)
 
-    def _read_cmd(self, addr, length, array=False):
+    def _read_cmd(self, addr, length, array=False, chunk_size=256):
         """Creates custom command and reads data via DFU Host Tool
         @addr: Start address to read data
         @length: Number of bytes to read
@@ -200,20 +204,31 @@ class Dfuht(ProgrammerBase):
         @return: Returns integer value or bytes based on array parameter value
         """
         value = b''
+        if isinstance(addr, int) and isinstance(length, int):
+            addr = [addr]
+            length = [length]
+
+        if len(addr) != len(length):
+            raise ValueError('Address and length lists '
+                             'must have the same length')
+
+        cmd_info_list = [self._read_cmd_series(a, l, chunk_size=chunk_size)
+                         for a, l in zip(addr, length)]
+        chunks = [chunk for row in cmd_info_list for chunk in row]
+
         with tempfile.TemporaryDirectory() as dfu_command_dir:
-            for read in self._read_cmd_series(addr, length):
-                cmd_name = os.path.join(
-                    dfu_command_dir, hex(read.addr) + '.mtbdfu')
-                dfu_command = DfuhtCommandsCreator(None, None, cmd_name)
-                cmd = dfu_command.read_cmd_packet(
-                    read.addr, read.size, cmd_name)
-                stdout, _ = self.runner.run(['--custom-command', cmd.filename])
-                if self._result_check(stdout):
-                    value += bytes.fromhex(stdout[1])
-                else:
-                    raise RuntimeError(
-                        f'Failed to read data (address {hex(read.addr)},'
-                        f'length {read.size})')
+            cmd_name = os.path.join(dfu_command_dir, 'read_series_cmd.mtbdfu')
+            dfu_command = DfuhtCommandsCreator(None, None, cmd_name)
+            read_cmd = DfuhtReadSeriesCommand(*[DfuhtReadCommand(address, size)
+                                                for (address, size) in chunks])
+            logger.debug('Command path: %s', cmd_name)
+            logger.debug('Command value: %s', repr(read_cmd))
+            cmd = dfu_command.create_packet(DfuhtMeta(), read_cmd, cmd_name)
+            stdout, _ = self.runner.run(['--custom-command', cmd.filename])
+            if self._result_check(stdout):
+                value += bytes.fromhex(''.join(stdout[1:-1]))
+            else:
+                raise RuntimeError('Failed to read data')
         if not array:
             int_value = int.from_bytes(value, byteorder="little")
             return int_value
@@ -234,17 +249,16 @@ class Dfuht(ProgrammerBase):
         return bool('Operation succeeded.' in stdout)
 
     @staticmethod
-    def _read_cmd_series(addr, length):
+    def _read_cmd_series(addr, length, chunk_size=256):
         """Creates a collection of DFU custom commands if
         the amount of data exceeds 256 bytes
         """
         CmdInfo = namedtuple('CmdInfo', 'addr size')
         commands = []
-        max_size = 256
         read_address = addr
-        while length > max_size:
-            commands.append(CmdInfo(read_address, max_size))
-            read_address += max_size
-            length -= max_size
+        while length > chunk_size:
+            commands.append(CmdInfo(read_address, chunk_size))
+            read_address += chunk_size
+            length -= chunk_size
         commands.append(CmdInfo(read_address, length))
         return commands

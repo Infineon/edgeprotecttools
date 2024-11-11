@@ -19,17 +19,18 @@ from .....execute.imgtool.custom_encryptor import CustomEncryptor
 
 
 class XipEncryptor(CustomEncryptor):
+    """Custom encryption for XIP"""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.header_size = kwargs.get('header_size')
-        self.image_addr = kwargs.get('image_addr')
+        self.initial_counter = kwargs.get('initial_counter')
+        self.nonce = kwargs.get('nonce')
+        self.plainkey = kwargs.get('plainkey')
+        self.nonce_output = None
 
     def encrypt(self, image, **kwargs) -> bytes:
-        nonce = kwargs.get('nonce')
-        plainkey = kwargs.get('plainkey')
-
-        encryptor = EncryptorMXS40Sv2(plainkey)
+        encryptor = EncryptorMXS40Sv2(self.plainkey)
         ciphertext, _ = encryptor.encrypt(
-            image, self.image_addr + self.header_size, nonce=nonce)
+            image, self.initial_counter, nonce=self.nonce
+        )
         return ciphertext

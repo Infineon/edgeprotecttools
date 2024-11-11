@@ -56,6 +56,8 @@ class CliCreator:
                 module_name = 'cli_mxs22'
         elif platform == 'traveo_t2g':
             module_name = 'cli_traveo_t2g'
+        elif platform == 'cyw559xx':
+            module_name = 'cli_cyw559xx'
         else:
             module_name = None if target else 'cli'
 

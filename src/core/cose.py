@@ -22,6 +22,7 @@ from cbor import cbor
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from cwt.utils import to_cose_header
 
+from .bitops import number_size
 from .key_handlers import load_private_key, load_public_key
 from .key_handlers.ec_handler import ECHandler
 from .key_handlers.rsa_handler import RSAHandler
@@ -38,16 +39,28 @@ class Cose:
         @param kid: Key ID
         @return: Encoded and signed COSE single signer data
         """
-        if not isinstance(kid, (int, type(None))):
+        if not isinstance(kid, (int, str, type(None))):
             raise TypeError(
-                f"'kid' is of type '{type(kid).__name__}', 'int' is expected")
-        key = Cose._cose_key(key_path, kid=kid)
+                f"'kid' is of type '{type(kid).__name__}', "
+                f"'int', 'str' is expected")
+
+        kid = str(kid) if kid else None
+
+        if kid and kid.startswith('0x'):
+            kid_raw = int(kid, 16)
+            kid_encoded = kid_raw.to_bytes(number_size(kid_raw),
+                                           byteorder='little')
+        else:
+            kid_raw = kid
+            kid_encoded = kid
+
+        key = Cose._cose_key(key_path, kid=kid_raw)
         ctx = cwt.COSE.new()
         encoded = ctx.encode_and_sign(
             payload,
             key=key,
             protected={1: key.alg},
-            unprotected={'kid': str(kid)} if kid is not None else {})
+            unprotected={'kid': kid_encoded} if kid is not None else {})
         return encoded
 
     @staticmethod
@@ -63,14 +76,29 @@ class Cose:
         if not kids:
             kids = (None, None)
         for key, kid in zip(keys, kids):
-            if not isinstance(kid, (int, type(None))):
+            if not isinstance(kid, (int, str, type(None))):
                 raise TypeError(
                     f"'kid' is of type '{type(kid).__name__}', "
-                    f"'int' is expected")
-            sign_key = Cose._cose_key(key, kid=kid)
+                    f"'int', 'str' is expected")
+
+            kid = str(kid) if kid else None
+
+            if kid and kid.startswith('0x'):
+                kid_raw = int(kid, 16)
+                kid_encoded = kid_raw.to_bytes(number_size(kid_raw),
+                                               byteorder='little')
+            else:
+                kid_raw = kid
+                kid_encoded = kid
+
+            sign_key = Cose._cose_key(key, kid=kid_raw)
             protected = {1: sign_key.alg}
+            unprotected = {'kid': kid_encoded} if kid is not None else {}
             signers.append(cwt.Signer.new(
-                sign_key, protected=protected))
+                sign_key,
+                protected=protected,
+                unprotected=unprotected
+            ))
         encoded = ctx.encode_and_sign(
             payload=payload,
             signers=signers
@@ -86,7 +114,21 @@ class Cose:
         @param algorithm: Signature algorithm
         @return: COSE Single Signer Data Object
         """
-        kid = {'kid': str(kid)} if kid is not None else {}
+        if not isinstance(kid, (int, str, type(None))):
+            raise TypeError(
+                f"'kid' is of type '{type(kid).__name__}', "
+                f"'int', 'str' is expected")
+
+        kid = str(kid) if kid else None
+
+        if kid and kid.startswith('0x'):
+            kid_raw = int(kid, 16)
+            kid_encoded = kid_raw.to_bytes(number_size(kid_raw),
+                                           byteorder='little')
+        else:
+            kid_encoded = kid.encode('utf-8') if kid else None
+
+        kid = {4: kid_encoded} if kid is not None else {}
         protected = cbor.dumps(to_cose_header({'alg': algorithm.upper()}))
         payload = cbor.loads(payload)
         res = cbor.Tag(18, [protected, kid, payload[3], signature])
@@ -109,7 +151,20 @@ class Cose:
         else:
             kids = kid
         for sig, alg, kid in zip(signature, algorithm, kids):
-            kid = {'kid': str(kid)} if kid is not None else {}
+            if not isinstance(kid, (int, str, type(None))):
+                raise TypeError(
+                    f"'kid' is of type '{type(kid).__name__}', "
+                    f"'int', 'str' is expected")
+
+            kid = str(kid) if kid else None
+
+            if kid and kid.startswith('0x'):
+                kid_raw = int(kid, 16)
+                kid_encoded = kid_raw.to_bytes(number_size(kid_raw),
+                                               byteorder='little')
+            else:
+                kid_encoded = kid.encode('utf-8') if kid else None
+            kid = {4: kid_encoded} if kid is not None else {}
             protected = cbor.dumps(to_cose_header({'alg': alg.upper()}))
             signers.append([protected, kid, sig])
         payload = cbor.loads(payload)

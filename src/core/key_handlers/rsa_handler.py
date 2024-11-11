@@ -450,6 +450,27 @@ class RSAHandler:
         return header + content + footer
 
     @staticmethod
+    def rsa_np(key):
+        """Calculates Np from RSA key"""
+        if isinstance(key, rsa.RSAPublicKey):
+            pubkey = key
+        elif isinstance(key, rsa.RSAPrivateKey):
+            pubkey = key.public_key()
+        elif isinstance(key, str):
+            pubkey = load_public_key(key)
+        else:
+            raise ValueError('Unsupported key type')
+
+        new_pka_word_size = 64
+        new_pka_additional = 8
+        snp = pubkey.key_size + new_pka_word_size + new_pka_additional - 1
+        modulus = pubkey.public_numbers().n
+        r = pow(2, snp)
+        np = r // modulus
+
+        return np
+
+    @staticmethod
     def _jwk_alg(priv_key):
         if priv_key.key_size == 2048:
             alg = 'RS256'

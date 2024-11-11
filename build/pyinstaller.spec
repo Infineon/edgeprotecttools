@@ -34,6 +34,7 @@ exe = EXE(
     target_arch="x86_64",
     codesign_identity=None,
     entitlements_file=None,
+    icon='NONE',
 )
 coll = COLLECT(
     exe,

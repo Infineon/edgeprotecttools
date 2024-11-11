@@ -22,9 +22,10 @@ from typing import Union
 
 from cryptography.hazmat.primitives.asymmetric import ec
 
+from ..encryption import XipEncryptor
 from ...core.signtool_base import SignToolBase
 from ...core.key_handlers.ec_handler import ECHandler
-from ...execute.imgtool.image import TLV_VALUES
+from ...execute.imgtool.image import TLV_VALUES, TLV_INFO_SIZE
 from ...execute.image_signing.image import Image, TLV
 from ...execute.image_signing.image_config_parser import ImageConfigParser
 from ...pkg_globals import PkgData
@@ -69,6 +70,10 @@ class SignTool(SignToolBase):
         self.tlv = []
         self.prot_tlv = []
         self.remove_tlv = []
+        self.enckey = None
+        self.encrypt_addr = None
+        self.nonce = None
+        self.nonce_output = None
 
     def initialize(self, kwargs):
         """Initializes class attributes with the keyword arguments"""
@@ -136,6 +141,11 @@ class SignTool(SignToolBase):
             self.prot_tlv.extend(kwargs.get('prot_tlv'))
         if kwargs.get('remove_tlv'):
             self.remove_tlv.extend(kwargs.get('remove_tlv'))
+        self.enckey = kwargs.get('enckey')
+        if kwargs.get('encrypt_addr'):
+            self.encrypt_addr = int(str(kwargs.get('encrypt_addr')), 0)
+        if kwargs.get('nonce_output'):
+            self.nonce_output = kwargs.get('nonce_output')
 
     def sign_image(self, image: str, **kwargs) -> Union[str, Image]:
         """Signs image. Optionally encrypts the image
@@ -169,6 +179,9 @@ class SignTool(SignToolBase):
             :tlv: Non-Protected TLVs
             :remove_tlv: TLV ID list to remove
             :allow_signed: Allows signing already signed image
+            :enckey: Encryption key
+            :encrypt_addr: Starting address for data encryption
+            :nonce_output: The path where to save the nonce
         @return: Either path to the signed file if 'output' argument is
         specified, otherwise the image object
         """
@@ -186,7 +199,10 @@ class SignTool(SignToolBase):
         img = self._sign(image, self.key_path)
 
         if isinstance(img, str):
-            logger.info('Image signed successfully (%s)', img)
+            if self.encrypt or self.enckey:
+                logger.info('Image signed and encrypted successfully (%s)', img)
+            else:
+                logger.info('Image signed successfully (%s)', img)
 
         return img
 
@@ -222,6 +238,9 @@ class SignTool(SignToolBase):
             :prot_tlv: Protected TLVs
             :tlv: Non-Protected TLVs
             :remove_tlv: TLV ID list to remove
+            :enckey: Encryption key
+            :encrypt_addr: Starting address for data encryption
+            :nonce_output: The path where to save the nonce
         @return: Different results based on input parameters:
                   - (output, None) - if the 'output' argument is provided
                   - (output, decrypted) - if the 'output' argument is provided
@@ -247,7 +266,8 @@ class SignTool(SignToolBase):
                 with open(image, 'rb') as rf:
                     repl = rf.read()
                 decrypted = self.replace_image_body(img.data, repl,
-                                                    self.header_size)
+                                                    self.header_size,
+                                                    erased_val=self.erased_val)
                 decrypted = Image(decrypted)
             else:
                 if image.endswith('.hex'):
@@ -257,11 +277,14 @@ class SignTool(SignToolBase):
                         temp_bin = tf.name
                     self.hex2bin(image, temp_bin)
                     self.replace_image_body(img, temp_bin, self.header_size,
+                                            erased_val=self.erased_val,
                                             output=self.decrypted)
                     os.unlink(temp_bin)
                 else:
                     self.replace_image_body(
-                        img, image, self.header_size, output=self.decrypted)
+                        img, image, self.header_size,
+                        erased_val=self.erased_val,
+                        output=self.decrypted)
                 decrypted = self.decrypted
                 logger.info(
                     "Saved decrypted image to '%s'", os.path.abspath(decrypted))
@@ -316,7 +339,11 @@ class SignTool(SignToolBase):
             raise ValueError('Unsupported signature algorithm')
 
         img.remove_tlv(tag)
-        img.add_tlv(TLV(tag, sig_bytes))
+        tlv_signature = TLV(tag, sig_bytes)
+        img.add_tlv(tlv_signature)
+
+        if img.is_upgrade():
+            img.trailer = img.trailer[TLV_INFO_SIZE + tlv_signature.length:]
 
         if output:
             with open(output, 'wb') as f:
@@ -356,6 +383,16 @@ class SignTool(SignToolBase):
             self.output = temp_out.name
             logger.debug("Created temporary file '%s'", self.output)
 
+        if self.encrypt_addr:
+            encryptor = XipEncryptor(
+                initial_counter=self.encrypt_addr + self.header_size,
+                nonce=None,
+                plainkey=self.enckey,
+                nonce_output=self.nonce_output
+            )
+        else:
+            encryptor = None
+
         args = {
             'key': self.load_key(key) if key else None,
             'public_key_format': self.public_key_format,
@@ -382,9 +419,10 @@ class SignTool(SignToolBase):
             'custom_tlv': self.prot_tlv,
             'custom_tlv_unprotected': self.tlv,
             'rom_fixed': self.rom_fixed,
-            'use_random_iv': self.encrypt is not None,
+            'use_random_iv': self.encrypt is not None or encryptor is not None,
             'encrypt': self.load_key(self.encrypt) if self.encrypt else None,
-            'image_addr': 0
+            'image_addr': self.encrypt_addr or 0,
+            'encryptor': encryptor
         }
 
         try:

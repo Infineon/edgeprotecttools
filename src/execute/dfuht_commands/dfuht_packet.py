@@ -111,6 +111,29 @@ class DfuhtReadCommand(DfuhtCommandBase):
             'outCli': 'True'
         }
 
+    def __repr__(self):
+        return f'{type(self).__name__}(addr={hex(self.hex_addr)}, size={self.size})'
+
+
+class DfuhtReadSeriesCommand(DfuhtCommandBase):
+    """Representation of the DFU Host Tool command for read command"""
+    def __init__(self, *read_commands):
+        self.cmd_id = None
+        self.commands = [read_command for read_command in read_commands]
+
+    def dict(self):
+        """Dictionary representation of the command"""
+        return {"commandSet": [cmd.dict() for cmd in self.commands]}
+
+    def __add__(self, other):
+        return DfuhtReadSeriesCommand(*(self.commands + other.commands))
+
+    def __repr__(self):
+        return (
+            f'{type(self).__name__}'
+            f'(commands=[{", ".join(list(map(repr, self.commands)))}])'
+        )
+
 
 class DfuhtCustomCommand(DfuhtCommandBase):
     """Representation of DFU Host Tool custom command"""

@@ -38,15 +38,16 @@ setup(
     package_dir={package_name: 'src'},
     install_requires=[
         'setuptools==69.5.1',
-        'cryptography==36.0.1',
+        'cryptography==42.0.8',
         'click==8.0.4',
         'intelhex==2.3.0',
         'python-jose==3.3.0',
         'jsonschema==4.21.1',
         'cbor==1.0.0',
-        'cwt==1.5.3',
+        'cwt==2.7.5',
         'packaging==24.1',
-        'lief==0.14.1'
+        'lief==0.14.1',
+        'pyserial==3.5'
         ],
     description='Python tools for provisioning Cypress/Infineon MCUs',
     long_description=readme + '\n\n' + changelog,

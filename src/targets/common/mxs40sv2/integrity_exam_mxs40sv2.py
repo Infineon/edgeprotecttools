@@ -111,6 +111,26 @@ class IntegrityExamMXS40Sv2(EntranceExam):
 
         return self.collect_integrity_assets(nonce, regions)
 
+    def collect_custom_regions(self, custom_regions):
+        """Collects custom regions"""
+        if not custom_regions:
+            return None
+
+        custom_regions_data = self._load_template(custom_regions)
+        regions = custom_regions_data.get('regions')
+
+        if not regions:
+            return None
+
+        result = []
+
+        for region in regions:
+            if region.get('enabled'):
+                region['operation'] = 'hash'
+                result.append(region)
+
+        return self.collect_regions(result)
+
     @staticmethod
     def collect_regions(regions):
         """Parses and collects regions """
@@ -152,6 +172,73 @@ class IntegrityExamMXS40Sv2(EntranceExam):
 
         return result
 
+    @staticmethod
+    def patch_custom_regions(cert_assets: IntegrityAssets,
+                             in_assets: IntegrityAssets,
+                             custom_regions: list):
+        """Patches custom regions"""
+        cert_regions = []
+        in_regions = []
+
+        if len(in_assets.regions) != len(cert_assets.regions):
+            raise ValueError('Corrupt regions format')
+
+        for i_region, c_region in zip(in_assets.regions, cert_assets.regions):
+            for custom_region in custom_regions:
+                if i_region == c_region == custom_region:
+                    if i_region.owner != 'OEM' or c_region.owner != 'OEM':
+                        logger.error('Only OEM region can be altered '
+                                     'using custom region')
+                        logger.error('certificate region: %s', c_region)
+                        logger.error('in_params region: %s', i_region)
+                        raise ValueError('Unable to alter region')
+                    cert_regions.append(
+                        EntranceExamRegion(
+                            address=c_region.address,
+                            size=c_region.size,
+                            description=c_region.description,
+                            label=c_region.label,
+                            operation=c_region.operation,
+                            owner=c_region.owner,
+                            content=custom_region.content
+                        )
+                    )
+                    in_regions.append(
+                        EntranceExamRegion(
+                            address=i_region.address,
+                            size=i_region.size,
+                            description=i_region.description,
+                            label=i_region.label,
+                            operation=i_region.operation,
+                            owner=i_region.owner,
+                            content=custom_region.content
+                        )
+                    )
+                    break
+            else:
+                cert_regions.append(c_region)
+                in_regions.append(i_region)
+
+        cert_result = IntegrityAssets(
+            cert_assets.silicon_id,
+            cert_assets.family_id,
+            cert_assets.si_rev_id,
+            cert_assets.die_id,
+            cert_assets.nonce,
+            cert_regions
+        )
+
+        in_result = IntegrityAssets(
+            in_assets.silicon_id,
+            in_assets.family_id,
+            in_assets.si_rev_id,
+            in_assets.die_id,
+            in_assets.nonce,
+            in_regions
+        )
+
+        return cert_result, in_result
+
     def read_silicon_data(self, tool):
         """Reads silicon data"""
         info = self.target.silicon_data_reader.read_device_info(tool)
@@ -186,6 +273,9 @@ class IntegrityExamMXS40Sv2(EntranceExam):
         """
         self.framed_text('DEVICE INTEGRITY CHECK')
         cert_assets = self.collect_cert(kwargs.get('integrity_cert'))
+        custom_regions = self.collect_custom_regions(
+            kwargs.get('custom_regions')
+        )
         if tool:
             self.log_silicon_data(tool)
             flow, app = self.application_data(**kwargs)
@@ -198,6 +288,11 @@ class IntegrityExamMXS40Sv2(EntranceExam):
         else:
             in_assets = self.collect_in_params(kwargs.get('in_params'))
             out_assets = self.collect_out_results(kwargs.get('out_results'))
+
+        if custom_regions:
+            cert_assets, in_assets = self.patch_custom_regions(cert_assets,
+                                                               in_assets,
+                                                               custom_regions)
 
         status = self.verify(in_assets, out_assets, cert_assets)
 

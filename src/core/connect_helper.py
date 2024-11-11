@@ -45,10 +45,10 @@ class ConnectHelper:
 
         if tool.name not in target.ocds:
             logger.error("Target '%s' is not supported by the selected "
-                         "on-chip debugger '%s'", target.name, tool.name)
+                         "programming tool '%s'", target.name, tool.name)
             ConnectHelper._print_ocd_info(tool, target)
             ConnectHelper._print_example()
-            raise ValueError('Incompatible target and on-chip debugger')
+            raise ValueError('Incompatible target and programming tool')
 
         if tool.require_path:
             if not tool.tool_path:
@@ -57,16 +57,18 @@ class ConnectHelper:
                 if not tool.tool_path:
                     logger.error("Path to '%s' not specified", tool.name)
                     ConnectHelper._print_example()
-                    raise ValueError('Invalid on-chip debugger path')
+                    raise ValueError('Invalid programming tool path')
+
             if not os.path.exists(tool.tool_path):
                 logger.error(
                     "Path to '%s' not found (%s)", tool.name, tool.tool_path)
                 ConnectHelper._print_example()
-                raise ValueError('Invalid on-chip debugger path')
+                raise ValueError('Invalid programming tool path')
 
         if not ConnectHelper.connected:
             if tool.require_path and tool.tool_path:
-                logger.info("On-Chip debugger path is '%s'", tool.tool_path)
+                logger.info("Programming tool path is '%s'", tool.tool_path)
+
             ConnectHelper.connected = tool.connect(
                 target.name, probe_id=probe_id, ap=ap, acquire=acquire,
                 power=power, voltage=voltage, ignore_errors=ignore_errors)
@@ -79,7 +81,7 @@ class ConnectHelper:
     @staticmethod
     def power_on(tool: ProgrammerBase, target: Target, voltage, probe_id=None):
         if tool.name != 'openocd':
-            logger.error("Incompatible command and on-chip debugger")
+            logger.error("Incompatible command and programming tool")
             return False
         logger.warning('ATTENTION! To avoid device destruction, make sure the '
                        'external power is not connected. Continue? (y/n): ')
@@ -100,7 +102,7 @@ class ConnectHelper:
     @staticmethod
     def power_off(tool: ProgrammerBase, target: Target, probe_id=None):
         if tool.name != 'openocd':
-            logger.error("Incompatible command and on-chip debugger")
+            logger.error("Incompatible command and programming tool")
             return False
         if ConnectHelper.connect(tool, target, power='off', probe_id=probe_id):
             logger.info('Power off command sent')
@@ -123,6 +125,8 @@ class ConnectHelper:
                 path = mtb_tool_dir('openocd')
             elif tool_name == 'serial':
                 path = mtb_tool_dir('dfuh-tool')
+            elif tool_name == 'chipload':
+                path = mtb_tool_dir('chipload')
         except FileNotFoundError as e:
             logger.warning(e)
 
@@ -133,14 +137,14 @@ class ConnectHelper:
 
     @staticmethod
     def _print_ocd_info(tool, target):
-        print(f'The currently selected on-chip debugger: {tool.name}.')
-        print(f"The supported on-chip debugger(s) for the '{target.name}' "
+        print(f'The currently selected programming tool: {tool.name}.')
+        print(f"The supported programming tool(s) for the '{target.name}' "
               f'target: {",".join(target.ocds)}.')
 
     @staticmethod
     def _print_example():
         app_name = os.path.basename(sys.argv[0])
-        print("Use the 'set-ocd' command to configure the On-Chip debugger.")
+        print("Use the 'set-ocd' command to configure the programming tool.")
         print('Example:')
         print(f'{app_name} set-ocd --name openocd --path /Users/username/'
-              f'tools/openocd')
+              f'tools/programming_tool')

@@ -38,7 +38,8 @@ class CommandMerge(Command):
         'output_format': 'format',
         'output': 'file',
         'offset': 'address',
-        'description': 'description'
+        'description': 'description',
+        'overlap': 'overlap'
     }
 
     schema = 'merge_schema.json'
@@ -53,6 +54,9 @@ class CommandMerge(Command):
         self._output = self.get_arg(outputs, 'output')
         offset = self.get_arg(outputs, 'offset')
         self._offset = int(str(offset), 0) if offset else None
+        self._overlap = self.get_arg(outputs, 'overlap')
+        if not self._overlap:
+            self._overlap = 'error'
 
     @property
     def inputs(self):
@@ -65,6 +69,10 @@ class CommandMerge(Command):
     @property
     def offset(self):
         return self._offset
+
+    @property
+    def overlap(self):
+        return self._overlap
 
     @staticmethod
     def _get_inputs_format(image_lst: List) -> list:
@@ -127,6 +135,10 @@ class CommandMerge(Command):
                          'and saving to HEX')
             return False
 
+        if self.overlap not in ('error', 'ignore', 'replace'):
+            logger.error('Overlap must be "replace", "ignore" or "error"')
+            return False
+
         return True
 
     def execute(self) -> bool:
@@ -166,7 +178,7 @@ class CommandMerge(Command):
         fmt = 'bin' if self._output_format == Format.BIN else 'hex'
 
         try:
-            ih_res = MergeTool.merge_hex(self.inputs)
+            ih_res = MergeTool.merge_hex(self.inputs, overlap=self.overlap)
         except ValueError as e:
             logger.error('Failed to merge "%s" into "%s"',
                          ", ".join(self.inputs), self.output)

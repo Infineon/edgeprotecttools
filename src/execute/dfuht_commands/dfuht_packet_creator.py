@@ -19,8 +19,7 @@ import logging
 
 from intelhex import IntelHex
 
-from .dfuht_packet import (
-    DfuhtPacket, DfuhtMeta, DfuhtProvisionCommand, DfuhtReadCommand)
+from .dfuht_packet import DfuhtPacket, DfuhtMeta, DfuhtProvisionCommand
 from ...core.signtool_base import SignToolBase
 
 logger = logging.getLogger(__name__)
@@ -59,13 +58,6 @@ class DfuhtCommandsCreator:
             packets.append(app_packets)
         return packets
 
-    def read_cmd_packet(self, address, size, path):
-        """Creates command packet to read data from device"""
-        meta = DfuhtMeta()
-        cmd = DfuhtReadCommand(address, size)
-        cmd_packet = self.create_packet(meta, cmd, path)
-        return cmd_packet
-
     @staticmethod
     def create_packet(meta, cmd, filename, **kwargs):
         """Creates single DFU Host Tool command
@@ -74,7 +66,8 @@ class DfuhtCommandsCreator:
         @param filename: A file where to save the command
         """
         file_without_ext, ext = os.path.splitext(filename)
-        filename = file_without_ext + '_' + hex(cmd.cmd_id) + ext
+        cmd_id = ('_' + hex(cmd.cmd_id)) if cmd.cmd_id else ''
+        filename = file_without_ext + cmd_id + ext
         packet = DfuhtPacket(meta, [cmd], filename, **kwargs)
         packet.dump()
         return packet

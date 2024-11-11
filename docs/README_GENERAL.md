@@ -10,6 +10,7 @@
 - [Create bin](#create-bin)
 - [Convert bin to hex](#convert-bin-to-hex)
 - [Convert hex to bin](#convert-hex-to-bin)
+- [Convert hex to hcd](#convert-hex-to-hcd)
 - [Image verification](#image-verification)
 - [Merging hex images](#Merging-hex-images)
 - [Merging bin images](#Merging-bin-images)
@@ -146,6 +147,9 @@ Signs a user application with a key. Optionally encrypts the signed application.
 | --protected-tlv        | optional           | The custom TLV to be placed into a protected area (the signed part). Add the "0x" prefix for the value to be interpreted as an integer, otherwise it will be interpreted as a string. Specify the option multiple times to add multiple TLVs. The format is `[tag] [value]`. |
 | --tlv                  | optional           | The custom TLV to be placed into a non-protected area. Add the "0x" prefix for the value to be interpreted as an integer, otherwise it will be interpreted as a string. Specify the option multiple times to add multiple TLVs. The format is `[tag] [value]`. |
 | --remove-tlv           | optional           | Removes TLV with the specified ID. |
+| --enckey               | optional           | Encryption key. |
+| --encrypt_addr         | optional           | Starting address for data encryption. |
+| --nonce_output         | optional           | The path where to save the nonce. |
 ### Usage example
 ```bash
 # Sign binary and save to a binary
@@ -192,6 +196,9 @@ Adds MCUboot metadata to a firmware image ([mcuboot header](https://github.com/m
 | --protected-tlv        | optional           | The custom TLV to be placed into a protected area (the signed part). Add the "0x" prefix for the value to be interpreted as an integer, otherwise it will be interpreted as a string. Specify the option multiple times to add multiple TLVs. The format is `[tag] [value]`. |
 | --tlv                  | optional           | The custom TLV to be placed into a non-protected area. Add the "0x" prefix for the value to be interpreted as an integer, otherwise it will be interpreted as a string. Specify the option multiple times to add multiple TLVs. The format is `[tag] [value]`. |
 | --remove-tlv           | optional           | Removes TLV with the specified ID. |
+| --enckey               | optional           | Encryption key. |
+| --encrypt_addr         | optional           | Starting address for data encryption. |
+| --nonce_output         | optional           | The path where to save the nonce. |
 ### Usage example
 ```bash
 # Add MCUboot metadata with custom TLVs
@@ -294,6 +301,21 @@ $ edgeprotecttools hex2bin --image image.hex --output image.bin
 
 # Convert 1024 bytes starting from address 0x20000000
 $ edgeprotecttools hex2bin --image image.hex --output image.bin --start 0x20000000 --size 1024
+```
+
+
+## Convert hex to hcd
+Converts Intel HEX to Infineon HCD format. Hardware configuration data (HCD) format is required by the Chipload tool to program the device. 
+### Command: `hex2hcd`
+### Parameters
+| Name         | Optional/Required | Description           |
+|--------------|:-----------------:|-----------------------|
+| --input      |     required      | Input Intel HEX file. |
+| -o, --output |     required      | Output HCD file.      |
+### Usage example
+```bash
+# Convert Intel HEX to Infineon HCD format
+$ edgeprotecttools hex2hcd --input image.hex --output image.hcd
 ```
 
 
@@ -511,6 +533,7 @@ Supports AES-128, AES-256 according to the key size.
 | --iv              |     optional      | Initialization vector as a path to a binary file or as a hex string starting from `0x`. Use `auto` for auto-generation. Default: 'auto'. |
 | --add-iv          |     optional      | Flag that indicates whether to add IV at the beginning of the output file.                                                               |
 | --iv-output       |     optional      | Path to the output file for the generated IV.                                                                                            |
+| --nonce           |     optional      | A hex string or a file containing nonce used for encryption.                                                                             |
 
 ### Usage example
 ```bash

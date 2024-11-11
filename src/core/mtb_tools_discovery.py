@@ -161,3 +161,18 @@ def ptp_tool_dir(tool_name):
             return path
 
     return None
+
+
+def mtb_tool_exe(tool_name):
+    """Gets the path to the tool bundled with MTB"""
+    tools = mtb_tools()
+    if tools:
+        mtb_latest_ver = mtb_version()
+        if version.parse(mtb_latest_ver) >= version.parse('3.0'):
+            tool_exe = tools.get(f'CY_TOOL_{tool_name}_EXE_ABS')
+        else:
+            tool_exe = tools.get(f'CY_TOOL_{tool_name}_EXE')
+        if tool_exe:
+            tool_exe = tool_exe.strip()
+        return tool_exe
+    return None

@@ -38,6 +38,7 @@ class MultiImage:
         self._output = output
         self._algorithm = kwargs.get('algorithm')
         self._key = kwargs.get('key')
+        self._kid = kwargs.get('kid')
         self._signature = kwargs.get('signature')
         self._segments = kwargs.get('segments')
         self._padding = kwargs.get('erased_val', 0)
@@ -65,6 +66,11 @@ class MultiImage:
     def key(self):
         """Private key path"""
         return self._key
+
+    @property
+    def kid(self):
+        """Key ID"""
+        return self._kid
 
     @property
     def signature(self):
@@ -126,8 +132,7 @@ class MultiImage:
 
         return data
 
-    @staticmethod
-    def add_signature(input_path, algorithm, signature) -> bytes:
+    def add_signature(self, input_path, algorithm, signature) -> bytes:
         """
         Adds signature to the unsigned packet
         @param input_path: Path to the unsigned packet
@@ -142,7 +147,7 @@ class MultiImage:
             cbor_data = f.read()
         with open(signature, 'rb') as f:
             sig = f.read()
-        signed = Cose.add_signature1(cbor_data, sig, algorithm)
+        signed = Cose.add_signature1(cbor_data, sig, algorithm, kid=self.kid)
         packet = len(signed).to_bytes(4, byteorder='little') + signed
 
         return packet
@@ -172,15 +177,14 @@ class MultiImage:
         """
         return Cose.prepare_hsm_sign1(cbor_data, algorithm)
 
-    @staticmethod
-    def create_signed(cbor_data: bytes, key) -> bytes:
+    def create_signed(self, cbor_data: bytes, key) -> bytes:
         """
         Creates signed packet
         @param cbor_data: Binary payload
         @param key: Private key
         @return: Signed COSE multi-image packet
         """
-        cose_signed = Cose.cose_sign1(cbor_data, key)
+        cose_signed = Cose.cose_sign1(cbor_data, key, kid=self.kid)
         packet = len(cose_signed).to_bytes(
             4, byteorder='little') + cose_signed
 

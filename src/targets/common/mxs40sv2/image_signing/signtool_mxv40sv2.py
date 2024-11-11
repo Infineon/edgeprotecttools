@@ -158,7 +158,9 @@ class SignToolMXS40Sv2(SignToolBase):
             if not isinstance(enckey_obj, ecdsa.ECDSA256P1Public):
                 raise ValueError('ECDSA key must be specified')
             encryptor = XipEncryptor(
-                image_addr=app_addr, header_size=header_size)
+                initial_counter=app_addr + header_size,
+                nonce=None
+            )
         else:
             encryptor = None
 

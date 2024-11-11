@@ -1,0 +1,29 @@
+{
+  "version": 3,
+  "serial_number": "123456789",
+  "issuer": {
+    "country": "DE",
+    "organization": "Infineon Technologies AG",
+    "organizational_unit": "R&D",
+    "state_or_province_name": "Neubiberg",
+    "common_name": "Infineon",
+    "serial_number": ""
+  },
+  "validity": {
+    "not_before": "",
+    "not_after": ""
+  },
+  "subject": "",
+  "subject_public_key": "",
+  "issuer_unique_identifier": "",
+  "subject_unique_identifier": "",
+  "extensions": [
+    {
+      "name": "",
+      "oid": "2.20.2.1",
+      "critical": true,
+      "data_source": "hex, binary_file, base64",
+      "value": ""
+    }
+  ]
+}

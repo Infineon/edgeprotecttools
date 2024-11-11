@@ -16,9 +16,10 @@ limitations under the License.
 """
 import logging
 import os
-import struct
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+from .....execute.encryption.encryptor_aes import EncryptorAES
 
 NONCE_SIZE = 12
 logger = logging.getLogger(__name__)
@@ -55,16 +56,9 @@ class EncryptorMXS40Sv2:
         """
         if nonce is None:
             nonce = os.urandom(NONCE_SIZE)
-        chunk_size = 16
-        counter = 0
-        ciphertext = bytes()
-        for i in range(0, len(image), chunk_size):
-            indata = struct.pack('<I', initial_counter + counter) + nonce[:12]
-            counter += chunk_size
-            cipher_block = self.encryptor.update(indata)
-            chunk = image[i:i + chunk_size]
-            ciphertext += bytes(a ^ b for a, b in zip(chunk, cipher_block))
-        self.encryptor.finalize()
+        ciphertext = EncryptorAES.encrypt_ecb(
+            image, self.key, initial_counter, nonce
+        )
         return ciphertext, nonce
 
     def encrypt_image(self, input_file, initial_counter=None, output=None,

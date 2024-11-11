@@ -14,7 +14,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from .targets import is_mxs40v1, is_mxs40sv2, is_mxs22, is_traveo_t2g
+from .targets import (
+    is_mxs40v1, is_mxs40sv2, is_mxs22, is_traveo_t2g, is_cyw559xx)
 from .api_common import CommonAPI
 
 
@@ -55,6 +56,9 @@ class ProvisioningPackage:
                 elif is_traveo_t2g(target):
                     from .api_traveo_t2g import TraveoT2GAPI
                     api_class = TraveoT2GAPI
+                elif is_cyw559xx(target):
+                    from .api_cyw559xx import CYW559xxAPI
+                    api_class = CYW559xxAPI
             except KeyError as e:
                 raise ValueError(f'Unknown target "{target}"') from e
 

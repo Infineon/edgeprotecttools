@@ -79,24 +79,27 @@ def generate_key(curve: CurveTypes, template=None, byteorder="big"):
     return private_key, public_key
 
 
-def save_key(key, output, fmt, kid=None):
+def save_key(key, output, fmt, kid=None, password=None):
     """Saves the key to the file
     @param key: Private or public key object
     @param output: Key output path
     @param fmt: Defines key format PEM, DER, or JWK
     @param kid: Customer key ID
+    @param password: Password for the private key encryption
     """
     dirname = os.path.dirname(output)
     if dirname:
         os.makedirs(dirname, exist_ok=True)
 
     if fmt.upper() == 'PEM':
-        _save_encoded(key, output, serialization.Encoding.PEM, fmt)
+        _save_encoded(key, output, serialization.Encoding.PEM, fmt,
+                      password=password)
     elif fmt.upper() in ('DER', 'DER-PKCS8'):
         if fmt.upper() == 'DER-PKCS8' and \
                 not isinstance(key, ec.EllipticCurvePrivateKey):
             raise ValueError('The expected key type is ECDSA private')
-        _save_encoded(key, output, serialization.Encoding.DER, fmt)
+        _save_encoded(key, output, serialization.Encoding.DER, fmt,
+                      password=password)
     elif fmt.upper() == 'JWK':
         _save_jwk(key, output, kid=kid)
     else:
@@ -119,17 +122,23 @@ def _save_jwk(key, output, kid=None):
         fp.write(json.dumps(jwk, indent=4))
 
 
-def _save_encoded(key, output, encoding, fmt):
+def _save_encoded(key, output, encoding, fmt, password=None):
     if isinstance(key, ec.EllipticCurvePrivateKey):
         fmts = {
             'PEM': serialization.PrivateFormat.TraditionalOpenSSL,
             'DER': serialization.PrivateFormat.TraditionalOpenSSL,
             'DER-PKCS8': serialization.PrivateFormat.PKCS8,
         }
+
+        if password:
+            enc_alg = serialization.BestAvailableEncryption(password.encode())
+        else:
+            enc_alg = serialization.NoEncryption()
+
         serialized = key.private_bytes(
             encoding=encoding,
             format=fmts[fmt.upper()],
-            encryption_algorithm=serialization.NoEncryption()
+            encryption_algorithm=enc_alg
         )
     elif isinstance(key, ec.EllipticCurvePublicKey):
         serialized = key.public_bytes(

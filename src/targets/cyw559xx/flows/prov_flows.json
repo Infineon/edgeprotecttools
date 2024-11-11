@@ -1,0 +1,13 @@
+{
+  "flows": {
+    "oem_provisioning": {
+      "desc": "Mini driver loading",
+      "apps": [
+        "minidriver"
+      ]
+    }
+  },
+  "paths": {
+    "minidriver": "../packets/apps/minidriver/config.json"
+  }
+}

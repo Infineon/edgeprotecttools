@@ -144,10 +144,8 @@ def process_pipeline(processors, **_):
               help='Application input parameters')
 @click.option('--key', '--key-path', 'key', type=click.Path(),
               help='Private key to sign the package')
-@click.option('--hex-addr', default='0x34003000',
-              help='Adjust address in hex output file (default 0x34003000)')
-@click.option('-S', '--slot-size', default='0xA000',
-              help='Sets the maximum slot size. Default: 0xA000')
+@click.option('--hex-addr', help='Adjust address in hex output file')
+@click.option('-S', '--slot-size', help='Sets the maximum slot size')
 @click.pass_context
 def cmd_build_ramapp_package(ctx, app, output, inparams, key, hex_addr,
                              slot_size):
@@ -241,7 +239,7 @@ def cmd_probe_list(_ctx):
 
 @main.command('set-ocd', help='Sets on-chip debugger')
 @click.option('-n', '--name', required=True, help='Tool name',
-              type=click.Choice(['openocd', 'serial']))
+              type=click.Choice(['openocd', 'serial', 'chipload']))
 @click.option('-p', '--path', default='',
               help='Path to the tool root directory')
 @click.option('-c', '--config', default='', help='Path to the target config')
@@ -470,25 +468,25 @@ def cmd_hash(_ctx, alg, binary, output):
 
 @main.command('bin2hex', help='Converts binary image to hex',
               short_help='Converts binary image to hex')
-@click.option('--image', type=click.Path(), required=True,
-              help='Input bin file')
+@click.option('-i', '--input', '--image', 'infile', type=click.Path(),
+              required=True, help='Input bin file')
 @click.option('-o', '--output', type=click.Path(), required=True,
               help='Output hex file')
 @click.option('--offset', default='0',
               help='Starting address offset for loading bin')
 @click.pass_context
-def cmd_bin2hex(_ctx, image, output, offset):
+def cmd_bin2hex(_ctx, infile, output, offset):
     @process_handler()
     def process():
-        return CommonAPI.bin2hex(image, output, int(offset, 0))
+        return CommonAPI.bin2hex(infile, output, int(offset, 0))
 
     return process
 
 
 @main.command('hex2bin', help='Converts hex image to binary',
               short_help='Converts hex image to binary')
-@click.option('--image', type=click.Path(), required=True,
-              help='Input hex file')
+@click.option('-i', '--input', '--image', 'infile', type=click.Path(),
+              required=True, help='Input hex file')
 @click.option('-o', '--output', type=click.Path(), required=True,
               help='Output bin file')
 @click.option('--start', help='Start of address range')
@@ -496,11 +494,28 @@ def cmd_bin2hex(_ctx, image, output, offset):
 @click.option('--size', help='Size of resulting file (in bytes)')
 @click.option('--pad', help='Padding byte')
 @click.pass_context
-def cmd_hex2bin(_ctx, image, output, start, end, size, pad):
+def cmd_hex2bin(_ctx, infile, output, start, end, size, pad):
     @process_handler()
     def process():
-        return CommonAPI.hex2bin(image, output, start=start, end=end, size=size,
+        return CommonAPI.hex2bin(infile, output, start=start, end=end, size=size,
                                  pad=pad)
+
+    return process
+
+
+@main.command('hex2hcd', help='Converts Intel HEX to Infineon HCD format')
+@click.option('-i', '--input', 'infile', type=click.Path(), required=True,
+              help='Input Intel HEX file')
+@click.option('-o', '--output', 'outfile', type=click.Path(), required=True,
+              help='Output HCD file')
+@click.pass_context
+def cmd_hex2hcd(ctx, infile, outfile):
+    """Converts Intel HEX to Infineon HCD format"""
+    @process_handler()
+    def process():
+        if 'TOOL' not in ctx.obj:
+            return False
+        return ctx.obj['TOOL'].hex2hcd(infile, outfile)
 
     return process
 
@@ -527,8 +542,8 @@ def cmd_cbor2json(_ctx, image, output, offset):
               help='Primary private key path to sign message')
 @click.option('--key-1', type=click.Path(),
               help='Secondary private key path to sign message')
-@click.option('--kid-0', type=click.INT, help='Key ID')
-@click.option('--kid-1', type=click.INT, help='Key ID')
+@click.option('--kid-0', help='Key ID')
+@click.option('--kid-1', help='Key ID')
 @click.option('--signature-0', type=click.Path(),
               help='Primary signature path to add to the message')
 @click.option('--signature-1', type=click.Path(),
@@ -571,7 +586,7 @@ def cose_sign(ctx, input_path, output, key_0, key_1, kid_0,
               help='Path to the data to be signed')
 @click.option('--key', '--key-path', 'key', type=click.Path(),
               help='Private key path to sign message')
-@click.option('--kid', type=click.INT, help='Key ID')
+@click.option('--kid', help='Key ID')
 @click.option('--signature', type=click.Path(),
               help='Signature path to add to the message')
 @click.option('--algorithm', type=click.Choice(
@@ -633,8 +648,10 @@ def cose_verify(ctx, input_path, key):
 @click.option('--byteorder', 'byteorder',
               type=click.Choice(['big', 'little'], case_sensitive=False),
               default='big', help='Byte order for private value')
+@click.option('--password', help='Password for private key encryption')
 @click.pass_context
-def cmd_create_key(ctx, key_type, output, template, fmt, kid, byteorder):
+def cmd_create_key(ctx, key_type, output, template, fmt, kid, byteorder,
+                   password):
     """Creates key pair"""
     @process_handler()
     def process():
@@ -642,7 +659,7 @@ def cmd_create_key(ctx, key_type, output, template, fmt, kid, byteorder):
             return False
         return ctx.obj['TOOL'].create_keys(
             key_type, output, fmt, template=template, kid=kid,
-            byteorder=byteorder
+            byteorder=byteorder, password=password
         )
 
     return process
@@ -815,6 +832,7 @@ def cmd_hex_segment(_ctx, image, addr, output):
               help='The custom segments to specify segmentation of the file')
 @click.option('--key', '--key-path', 'key', type=click.Path(),
               help='Private key path to sign message')
+@click.option('--kid', help='Key ID')
 @click.option('--algorithm', type=click.Choice(
               ['ES256', 'ES384', 'RS256', 'RS384'], case_sensitive=False),
               help='Signature algorithm')
@@ -823,13 +841,14 @@ def cmd_hex_segment(_ctx, image, addr, output):
 @click.option('--erased-val', type=click.IntRange(0, 0xff), default=0,
               help='Value to fill the spaces between the segments')
 @click.pass_context
-def cmd_multi_image_cbor(ctx, input_path, output, segment, key,
+def cmd_multi_image_cbor(ctx, input_path, output, segment, key, kid,
                          algorithm, signature, erased_val):
     """Creates a multiple images COSE packet"""
     @process_handler()
     def process():
         validate_args()
         return ctx.obj['TOOL'].multi_image_cbor(input_path, output, key,
+                                                kid=kid,
                                                 segments=segment,
                                                 algorithm=algorithm,
                                                 signature=signature,
@@ -867,21 +886,24 @@ def cmd_multi_image_cbor(ctx, input_path, output, segment, key,
 @click.option('--iv', default='auto', show_default=True,
               help='Initialization vector as a binary file or a hex '
                    'string starting from "0x". Use "auto" for autogeneration')
+@click.option('--nonce',
+              help='A hex string or a file containing nonce used for '
+                   'encryption')
 @click.option('--add-iv', is_flag=True, help='Indicates whether to add IV at '
                                              'the beginning of the output file')
 @click.option('--iv-output', help='The output file for the generated IV',
               type=click.Path())
 @click.option('--cipher-mode', required=True,
-              type=click.Choice(['CBC', 'CTR'], case_sensitive=False),
+              type=click.Choice(['CBC', 'CTR', 'ECB'], case_sensitive=False),
               help='Cipher mode for AES encryption')
 @click.pass_context
-def cmd_encrypt_aes(_ctx, cbor_input, output, key, iv, add_iv, iv_output,
+def cmd_encrypt_aes(_ctx, cbor_input, output, key, iv, nonce, add_iv, iv_output,
                     cipher_mode):
     """Encrypts file with AES cipher"""
     @process_handler()
     def process():
-        CommonAPI.encrypt_aes(cbor_input, output, key, iv, add_iv, iv_output,
-                              cipher_mode)
+        CommonAPI.encrypt_aes(cbor_input, output, key, iv, add_iv,
+                              iv_output, cipher_mode, nonce=nonce)
         return True
 
     return process
@@ -964,6 +986,10 @@ def cmd_encrypt_aes(_ctx, cbor_input, output, key, iv, add_iv, iv_output,
                    'Specify the option multiple times to add multiple TLVs')
 @click.option('--remove-tlv', required=False, multiple=True,
               help='Removes TLV with the specified ID')
+@click.option('--enckey', type=click.Path(), help='Encryption key')
+@click.option('--encrypt-addr', help='Starting address for data encryption')
+@click.option('--nonce-output', type=click.Path(),
+              help='The path to a file where to save the nonce')
 @click.pass_context
 def cmd_sign_image(ctx, image, output, key, image_config, erased_val,
                    header_size, slot_size, min_erase_size, image_version,
@@ -971,7 +997,8 @@ def cmd_sign_image(ctx, image, output, key, image_config, erased_val,
                    signature_encoding, pad, confirm, overwrite_only,
                    boot_record, hex_addr, load_addr, rom_fixed, max_sectors,
                    save_enctlv, dependencies, encrypt,
-                   protected_tlv, tlv, remove_tlv):
+                   protected_tlv, tlv, remove_tlv, enckey, encrypt_addr,
+                   nonce_output):
     """Signs application image"""
     @process_handler()
     def process():
@@ -1005,7 +1032,10 @@ def cmd_sign_image(ctx, image, output, key, image_config, erased_val,
             encrypt=encrypt,
             prot_tlv=protected_tlv,
             tlv=tlv,
-            remove_tlv=remove_tlv
+            remove_tlv=remove_tlv,
+            enckey=enckey,
+            encrypt_addr=encrypt_addr,
+            nonce_output=nonce_output
         )
         return result is not None
 
@@ -1087,6 +1117,10 @@ def cmd_sign_image(ctx, image, output, key, image_config, erased_val,
                    'Specify the option multiple times to add multiple TLVs')
 @click.option('--remove-tlv', required=False, multiple=True,
               help='Removes TLV with the specified ID')
+@click.option('--enckey', type=click.Path(), help='Encryption key')
+@click.option('--encrypt-addr', help='Starting address for data encryption')
+@click.option('--nonce-output', type=click.Path(),
+              help='The path to a file where to save the nonce')
 @click.pass_context
 def cmd_image_metadata(ctx, image, output, decrypted, pubkey, image_config,
                        erased_val, header_size, slot_size, min_erase_size,
@@ -1094,7 +1128,8 @@ def cmd_image_metadata(ctx, image, output, decrypted, pubkey, image_config,
                        public_key_format, pubkey_encoding,
                        pad, confirm, overwrite_only, boot_record, hex_addr,
                        load_addr, rom_fixed, max_sectors, save_enctlv,
-                       dependencies, encrypt, protected_tlv, tlv, remove_tlv):
+                       dependencies, encrypt, protected_tlv, tlv, remove_tlv,
+                       enckey, encrypt_addr, nonce_output):
     """Adds MCUboot metadata to a firmware image"""
     @process_handler()
     def process():
@@ -1129,7 +1164,10 @@ def cmd_image_metadata(ctx, image, output, decrypted, pubkey, image_config,
             encrypt=encrypt,
             prot_tlv=protected_tlv,
             tlv=tlv,
-            remove_tlv=remove_tlv
+            remove_tlv=remove_tlv,
+            enckey=enckey,
+            encrypt_addr=encrypt_addr,
+            nonce_output=nonce_output
         )
         return result is not None
 
@@ -1199,6 +1237,30 @@ def cmd_verify_image(ctx, image, key):
         if 'TOOL' not in ctx.obj:
             return False
         return ctx.obj['TOOL'].verify_image(image, key=key)
+
+    return process
+
+
+@main.command('x509-cert', help='Creates X.509 certificate')
+@click.option('-c', '--config', type=click.Path(), required=True,
+              help='The path to the certificate configuration file')
+@click.option('--key', '--key-path', 'key', type=click.Path(), required=True,
+              help='The path to the certificate signing key')
+@click.option('--password', help='Signing key password')
+@click.option('-e', '--encoding', type=click.Choice(['PEM', 'DER']),
+              default='PEM', help='The encoding of the certificate')
+@click.option('-o', '--output', type=click.Path(), required=True,
+              help='The path to the output certificate file')
+@click.pass_context
+def cmd_x509_cert(ctx, config, key, password, encoding, output):
+    """Creates X.509 certificate"""
+    @process_handler()
+    def process():
+        if 'TOOL' not in ctx.obj:
+            return False
+        return ctx.obj['TOOL'].x509_certificate(
+            config=config, signing_key=key, password=password,
+            encoding=encoding, output=output)
 
     return process
 

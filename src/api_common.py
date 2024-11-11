@@ -20,6 +20,7 @@ import re
 import logging
 import hashlib
 import shutil
+import sys
 
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from intelhex import IntelHex, HexRecordError
@@ -42,12 +43,14 @@ from .core.key_handlers import emit_c_public
 from .execute.combine_sign_tool import (CommandJsonValidator,
                                         CommandProcessor,
                                         CommandGroupParser)
+from .execute.ihex2hcd import hex2hcd
 from .execute.image_signing import MergeTool, SplitTool, SignTool, MultiImage
 from .execute.keygens import ec_keygen, rsa_keygen, aes_keygen
 from .execute.programmer.programmer import ProgrammingTool
-from .execute.encryptor_aes import EncryptorAES
+from .execute.encryption import EncryptorAES, XipEncryptor
 from .execute.cbor_parser import CborParser
 from .execute import dump
+from .execute.x509 import X509CertificateGenerator
 from .pkg_globals import PkgData
 from .targets import get_target_builder, print_targets, is_mxs40v1, is_mxs40sv2
 
@@ -73,6 +76,7 @@ class CommonAPI:
 
         if log_file:
             LoggingConfigurator.initialize_file_logger()
+            logger.debug(sys.argv)
 
         self.inited = True
         if not target:
@@ -118,21 +122,31 @@ class CommonAPI:
         self.target.policy = policy
         self.target.policy_parser.initialize(policy)
 
-    def build_ramapp_package(self, app, output, key=None, **kwargs):
+    def build_ramapp_package(self, app, output, key=None,
+                             hex_addr=None, slot_size=None, **kwargs):
         """Builds RAM application package
         @param app: Path to a RAM application
         @param output: Output file where to save the package
         @param key: Key to sign the package
+        @param hex_addr: Address in hex format
+        @param slot_size: Slot size
         """
         if not self.target or not self.target.provisioning_packet_strategy:
             logger.error('Building RAM application packages is not supported '
                          'for the selected target')
             return False
 
+        if not hex_addr:
+            hex_addr = self.target.memory_map.DLM_BASE_ADDR
+
+        if not slot_size:
+            slot_size = self.target.memory_map.DLM_SLOT_SIZE
+
         ctx = ProvisioningPacketCtx(self.target.provisioning_packet_strategy)
         try:
             return ctx.create_package(self.target, app=app, output=output,
-                                      key=key, **kwargs)
+                                      key=key, hex_addr=hex_addr,
+                                      slot_size=slot_size, **kwargs)
         except NotImplementedError:
             logger.error('Building RAM application packages is not supported '
                          'for the selected target')
@@ -253,6 +267,21 @@ class CommonAPI:
         if result:
             logger.info("Saved converted file to '%s'", output)
         return result
+
+    @staticmethod
+    def hex2hcd(infile, outfile):
+        """Converts Intel HEX to Infineon HCD format
+        @param infile: Input Intel HEX file
+        @param outfile: Output HCD file
+        @return: True if success, otherwise False
+        """
+        try:
+            hex2hcd(infile, outfile)
+        except (FileNotFoundError, RuntimeError) as e:
+            logger.error(e)
+            return False
+        logger.info("Saved converted file to '%s'", os.path.abspath(outfile))
+        return True
 
     @staticmethod
     def cbor2json(image, output=None, indent=2, **kwargs):
@@ -405,8 +434,10 @@ class CommonAPI:
                 byteorder=kwargs.get('byteorder', 'big')
             )
             if keys.private and private_key:
-                ec_keygen.save_key(private_key, keys.private, fmt,
-                                   kid=kwargs.get('kid'))
+                ec_keygen.save_key(
+                    private_key, keys.private, fmt, kid=kwargs.get('kid'),
+                    password=kwargs.get('password')
+                )
                 logger.info("Created a key '%s'", os.path.abspath(keys.private))
             if keys.public and public_key:
                 ec_keygen.save_key(public_key, keys.public, fmt,
@@ -418,8 +449,10 @@ class CommonAPI:
             private_key, public_key = rsa_keygen.generate_key(
                 key_param, template=kwargs.get('template'))
             if keys.private and private_key:
-                rsa_keygen.save_key(private_key, keys.private, fmt,
-                                    kid=kwargs.get('kid'))
+                rsa_keygen.save_key(
+                    private_key, keys.private, fmt, kid=kwargs.get('kid'),
+                    password=kwargs.get('password')
+                )
                 logger.info("Created a key '%s'", os.path.abspath(keys.private))
             if keys.public and public_key:
                 rsa_keygen.save_key(public_key, keys.public, fmt,
@@ -530,7 +563,8 @@ class CommonAPI:
             raise ValueError('Unknown conversion format')
 
     @staticmethod
-    def encrypt_aes(image, output, key, iv, add_iv, iv_output, cipher_mode):
+    def encrypt_aes(image, output, key, iv, add_iv, iv_output,
+                    cipher_mode, nonce=None):
         """Encrypts file with AES
         @param image: User file
         @param output: Output file
@@ -538,14 +572,18 @@ class CommonAPI:
         @param iv: Input vector or nonce (auto, path or hex)
         @param add_iv: Adds IV to the start of the encrypted file
         @param iv_output: Saves IV to bin file
-        @param cipher_mode: Cipher mode (CBC or CTR)
+        @param cipher_mode: Cipher mode (ECB, CBC or CTR)
+        @param nonce: Nonce value (for ECB mode only)
         @return: None
         """
 
         if iv.lower() == 'auto':
             iv = os.urandom(16)
         elif iv.lower().startswith('0x'):
-            iv = bytes.fromhex(iv[2:])
+            if cipher_mode == 'ECB':
+                iv = int(str(iv), 0)
+            else:
+                iv = bytes.fromhex(iv[2:])
         else:
             with open(iv, 'rb') as f:
                 iv = f.read()
@@ -556,7 +594,13 @@ class CommonAPI:
         with open(key, 'rb') as f:
             key = f.read()
 
-        encrypted = EncryptorAES.encrypt(payload, key, iv, cipher_mode)
+        if cipher_mode == 'ECB':
+            encryptor = XipEncryptor(
+                initial_counter=iv, nonce=nonce, plainkey=key
+            )
+            encrypted = encryptor.encrypt(payload)
+        else:
+            encrypted = EncryptorAES.encrypt(payload, key, iv, cipher_mode)
         del key
 
         with open(output, 'wb') as f:
@@ -827,15 +871,16 @@ class CommonAPI:
                 self.target.version_provider.print_fw_version(self.tool)
             ConnectHelper.disconnect(self.tool)
 
-    def read_die_id(self, probe_id=None, ap='sysap'):
+    def read_die_id(self, probe_id=None, ap='sysap', acquire=True):
         """Reads die ID
         @param probe_id: Probe serial number
         @param ap: The access port used to read the data
+        @param acquire: Enable acquire device
         @return: Die ID if success, otherwise None
         """
         die_id = None
         if ConnectHelper.connect(self.tool, self.target, probe_id=probe_id,
-                                 ap=ap):
+                                 ap=ap, acquire=acquire):
             if self.target.version_provider.check_compatibility(
                     self.tool, check_si_rev=False):
                 self.target.version_provider.log_version(self.tool)
@@ -843,10 +888,16 @@ class CommonAPI:
             ConnectHelper.disconnect(self.tool)
         return die_id
 
-    def get_device_info(self, probe_id=None, ap='sysap'):
-        """Gets silicon ID, silicon revision, family ID"""
+    def get_device_info(self, probe_id=None, ap='sysap', acquire=True):
+        """Gets silicon ID, silicon revision, family ID
+        @param probe_id: Probe serial number
+        @param ap: The access port used to read the data
+        @param acquire: Enable acquiring device
+        @return: Device info if success, otherwise None
+        """
         connected = ConnectHelper.connect(self.tool, self.target,
-                                          probe_id=probe_id, ap=ap)
+                                          probe_id=probe_id, ap=ap,
+                                          acquire=acquire)
         info = None
         if connected:
             info = self.target.silicon_data_reader.read_device_info(self.tool)
@@ -964,6 +1015,27 @@ class CommonAPI:
             status = context.open_rma(self.tool, self.target, cert)
             ConnectHelper.disconnect(self.tool)
         return status == ProvisioningStatus.OK
+
+    @staticmethod
+    def x509_certificate(**kwargs):
+        """Creates X.509 certificate
+        @param kwargs:
+            :config: The path to the certificate configuration file
+            :key_path: The path to the certificate signing key
+            :output: Path to the output certificate
+            :encoding: Certificate encoding format (PEM, DER)
+            :output: Path to the output certificate file
+        @return: Certificate object
+        """
+        generator = X509CertificateGenerator(kwargs.get('config'))
+        certificate = generator.generate(kwargs.get('signing_key'),
+                                         password=kwargs.get('password'))
+        output = kwargs.get('output')
+        if output:
+            output = os.path.abspath(output)
+            generator.save_certificate(output, encoding=kwargs.get('encoding'))
+            logger.info("Key certificate saved to '%s'", output)
+        return certificate
 
     def _init_ocd(self):
         settings = OcdSettings()

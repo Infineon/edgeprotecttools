@@ -53,6 +53,32 @@ class MergeTool:
         return ih_orig
 
     @staticmethod
+    def append_hex(first, second, first_end_addr=None, output=None):
+        """Appends the second hex file to the first one starting from the
+        end address of the first file
+        @param first: The hex file to which to append the data
+        @param second: The hex file to append
+        @param first_end_addr: The end address of the first file
+        @param output: The path where to save the appended file
+        @return IntelHex object containing appended image
+        """
+        ih_first = IntelHex(first)
+        ih_second = IntelHex(second)
+
+        if not first_end_addr:
+            first_end_addr = ih_first.maxaddr() + 1
+
+        j = 0
+        for i in range(first_end_addr,
+                       first_end_addr + ih_second.maxaddr() + 1):
+            ih_first[i] = ih_second[j]
+            j += 1
+
+        if output:
+            ih_first.write_hex_file(output)
+        return ih_first
+
+    @staticmethod
     def merge_bin(images, output=None) -> bytes:
         """Merges two or more different bin files into one
         @param images: A tuple containing file paths. The files are

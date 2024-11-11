@@ -318,12 +318,13 @@ Command requires 2 or more inputs of the same format.
 
 Outputs:
 
-| Name        |  Type  | Optional/Required | Description                                                   |
-|-------------|:------:|:-----------------:|---------------------------------------------------------------|
-| file        | string |     required      | Path to the merged file.                                      |
-| format      | string |     optional      | Format of the output file. Available values: `ihex` or `bin`. |
-| address     | string |     optional      | Start address of the output hex file.                         |
-| description | string |     optional      | Description for this field.                                   |
+| Name        |  Type  | Optional/Required | Description                                                                                                                                                       |
+|-------------|:------:|:-----------------:|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file        | string |     required      | Path to the merged file.                                                                                                                                          |
+| format      | string |     optional      | Format of the output file. Available values: `ihex` or `bin`.                                                                                                     |
+| address     | string |     optional      | Start address of the output hex file.                                                                                                                             |
+| description | string |     optional      | Description for this field.                                                                                                                                       |
+| overlap     | string |     optional      | Action on overlap of data or starting addresses. Applicable only for merging HEX files. Available values: `error`, `replace` or `ignore`. Default value: `error`. |
 
 Example:
 

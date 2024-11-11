@@ -310,6 +310,7 @@ class Image():
             self.enc_nonce = derived_key[64:76] + bytes([0] * 4)
         else:
             key_nonce = bytes([0] * 16)
+
         encryptor = Cipher(algorithms.AES(derived_key[:16]),
                            modes.CTR(key_nonce),
                            backend=default_backend()).encryptor()
@@ -486,8 +487,13 @@ class Image():
         if protected_tlv_off is not None:
             self.payload = self.payload[:protected_tlv_off]
 
-        if enckey is not None:
-            plainkey = os.urandom(16)
+        if enckey is not None or encryptor:
+            if encryptor:
+                if not encryptor.plainkey:
+                    encryptor.plainkey = os.urandom(16)
+                plainkey = encryptor.plainkey
+            else:
+                plainkey = os.urandom(16)
 
             if isinstance(enckey, rsa.RSAPublic):
                 cipherkey = enckey._get_public().encrypt(
@@ -517,8 +523,8 @@ class Image():
                 encryptor = cipher.encryptor()
                 encdata = encryptor.update(img) + encryptor.finalize()
             else:
-                encdata = encryptor.encrypt(
-                    img, nonce=nonce, plainkey=plainkey)
+                encryptor.nonce = nonce
+                encdata = encryptor.encrypt(img)
             self.payload[self.header_size:] = encdata
 
         self.payload += prot_tlv.get()

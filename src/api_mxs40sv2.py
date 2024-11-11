@@ -223,7 +223,7 @@ class Mxs40sv2API(CommonAPI):
 
         return result == EntranceExamStatus.OK
 
-    def integrity_verify_response(self, cert, in_params, out_results):
+    def integrity_verify_response(self, cert, in_params, out_results, **kwargs):
         """Integrity exam app response verification"""
 
         if not all((cert, in_params, out_results)):
@@ -234,7 +234,8 @@ class Mxs40sv2API(CommonAPI):
         result = self.target.entrance_exam.execute(None,
                                                    in_params=in_params,
                                                    out_results=out_results,
-                                                   integrity_cert=cert)
+                                                   integrity_cert=cert,
+                                                   **kwargs)
         return result == EntranceExamStatus.OK
     
     @staticmethod

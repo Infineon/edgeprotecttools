@@ -60,6 +60,15 @@
                             "ihex",
                             "bin"
                         ]
+                    },
+                    "overlap": {
+                        "title": "Action on overlap of data or starting addresses",
+                        "type": "string",
+                        "enum": [
+                            "error",
+                            "replace",
+                            "ignore"
+                        ]
                     }
                 },
                 "required": [
