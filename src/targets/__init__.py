@@ -17,7 +17,6 @@ limitations under the License.
 import os
 from importlib import import_module
 
-from .cyw20829 import CYW20829Builder
 from ..core import package_name
 
 

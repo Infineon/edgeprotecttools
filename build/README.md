@@ -16,6 +16,7 @@ Build the package on the same version or a newer version of the operating system
 
 For example, binaries generated on Ubuntu 22.04 can be executed on Ubuntu 22.04 or 24.04, but not on Ubuntu 20.04.
 
+Use the current Edge Protect Security Suite version in the `ModusToolbox-Edge-Protect-Security-Suite-1.X` directory while following this README.
 
 # Usage examples
 ## Using PyInstaller on macOS
@@ -59,19 +60,19 @@ source ./venv/bin/activate
 7. Grant the write permission to all users if the Edge Protect Security Suite has been installed with root privileges:
 
 ```bash
-sudo chmod o+w /Applications/ModusToolbox-Edge-Protect-Security-Suite-1.0/tools/edgeprotecttools/src
+sudo chmod o+w /Applications/ModusToolbox-Edge-Protect-Security-Suite-1.X/tools/edgeprotecttools/src
 ```
 
 8. Install Edge Protect Tools from the sources directory:
 
 ```bash
-pip3 install --upgrade --force-reinstall /Applications/ModusToolbox-Edge-Protect-Security-Suite-1.0/tools/edgeprotecttools/src
+pip3 install --upgrade --force-reinstall /Applications/ModusToolbox-Edge-Protect-Security-Suite-1.X/tools/edgeprotecttools/src
 ```
 
 Note: If the Edge Protect Security Suite was installed for the current user only, use `~` before the `/Applications/...` path
 
 ```bash
-pip3 install --upgrade --force-reinstall ~/Applications/ModusToolbox-Edge-Protect-Security-Suite-1.0/tools/edgeprotecttools/src
+pip3 install --upgrade --force-reinstall ~/Applications/ModusToolbox-Edge-Protect-Security-Suite-1.X/tools/edgeprotecttools/src
 ```
 
 9. Install PyInstaller package version 6.9.0:
@@ -83,13 +84,13 @@ pip3 install pyinstaller==6.9.0
 10. Generate the Edge Protect Tools standalone application:
 
 ```bash
-pyinstaller /Applications/ModusToolbox-Edge-Protect-Security-Suite-1.0/tools/edgeprotecttools/build/pyinstaller.spec --distpath . --log-level DEBUG
+pyinstaller /Applications/ModusToolbox-Edge-Protect-Security-Suite-1.X/tools/edgeprotecttools/build/pyinstaller.spec --distpath . --log-level DEBUG
 ```
 
 Note: If the Edge Protect Security Suite was installed for the current user only, use `~` before the `/Applications/...` path
 
 ```bash
-pyinstaller ~/Applications/ModusToolbox-Edge-Protect-Security-Suite-1.0/tools/edgeprotecttools/build/pyinstaller.spec --distpath . --log-level DEBUG
+pyinstaller ~/Applications/ModusToolbox-Edge-Protect-Security-Suite-1.X/tools/edgeprotecttools/build/pyinstaller.spec --distpath . --log-level DEBUG
 ```
 
 11. Deactivate the virtual environment with the command:
@@ -148,13 +149,13 @@ source ./venv/bin/activate
 7. Grant the write permission to all users if the Edge Protect Security Suite has been installed with root privileges:
 
 ```bash
-sudo chmod o+w /opt/Tools/ModusToolbox-Edge-Protect-Security-Suite-1.0/tools/edgeprotecttools/src
+sudo chmod o+w /opt/Tools/ModusToolbox-Edge-Protect-Security-Suite-1.X/tools/edgeprotecttools/src
 ```
 
 8. Install Edge Protect Tools from the sources directory:
 
 ```bash
-pip3 install --upgrade --force-reinstall /opt/Tools/ModusToolbox-Edge-Protect-Security-Suite-1.0/tools/edgeprotecttools/src
+pip3 install --upgrade --force-reinstall /opt/Tools/ModusToolbox-Edge-Protect-Security-Suite-1.X/tools/edgeprotecttools/src
 ```
 
 9. Install PyInstaller package version 6.9.0:
@@ -172,7 +173,7 @@ pip3 install --upgrade --force-reinstall git+https://github.com/wbond/oscrypto.g
 10. Generate the Edge Protect Tools standalone application:
 
 ```bash
-pyinstaller /opt/Tools/ModusToolbox-Edge-Protect-Security-Suite-1.0/tools/edgeprotecttools/build/pyinstaller.spec --distpath . --log-level DEBUG
+pyinstaller /opt/Tools/ModusToolbox-Edge-Protect-Security-Suite-1.X/tools/edgeprotecttools/build/pyinstaller.spec --distpath . --log-level DEBUG
 ```
 
 11. Deactivate the virtual environment with the command:
@@ -232,13 +233,13 @@ venv\Scripts\activate
 For the current user installation of the Edge Protect Security Suite, use a command like:
 
 ```commandline
-pip install --upgrade --force-reinstall C:\Users\%USERNAME%\ModusToolbox-Edge-Protect-Security-Suite-1.0\tools\edgeprotecttools\src
+pip install --upgrade --force-reinstall C:\Users\%USERNAME%\Infineon\Tools\ModusToolbox-Edge-Protect-Security-Suite-1.X\tools\edgeprotecttools\src
 ```
 
 For the installation with administrator privileges, use a command like:
 
 ```commandline
-pip install --upgrade --force-reinstall C:\Infineon\Tools\ModusToolbox-Edge-Protect-Security-Suite-1.0\tools\edgeprotecttools\src
+pip install --upgrade --force-reinstall C:\Infineon\Tools\ModusToolbox-Edge-Protect-Security-Suite-1.X\tools\edgeprotecttools\src
 ```
 
 8. Install PyInstaller package version 6.9.0:
@@ -252,13 +253,13 @@ pip install pyinstaller==6.9.0
 For the current user installation of the Edge Protect Security Suite, use a command like:
 
 ```commandline
-pyinstaller C:\Users\%USERNAME%\ModusToolbox-Edge-Protect-Security-Suite-1.0\tools\edgeprotecttools\build\pyinstaller.spec --distpath . --log-level DEBUG
+pyinstaller C:\Users\%USERNAME%\Infineon\Tools\ModusToolbox-Edge-Protect-Security-Suite-1.X\tools\edgeprotecttools\build\pyinstaller.spec --distpath . --log-level DEBUG
 ```
 
 For the installation with administrator privileges, use a command like:
 
 ```commandline
-pyinstaller C:\Infineon\Tools\ModusToolbox-Edge-Protect-Security-Suite-1.0\tools\edgeprotecttools\build\pyinstaller.spec --distpath . --log-level DEBUG
+pyinstaller C:\Infineon\Tools\ModusToolbox-Edge-Protect-Security-Suite-1.X\tools\edgeprotecttools\build\pyinstaller.spec --distpath . --log-level DEBUG
 ```
 
 10. Deactivate the virtual environment with the command:

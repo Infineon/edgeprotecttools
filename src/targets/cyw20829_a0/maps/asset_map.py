@@ -248,16 +248,3 @@ class AssetMapCYW20829:
         }
 
         return assets
-
-
-def asset_item_data(p, asset_name, asset_item_name):
-    """ Gets a tuple with the asset item size and mask """
-    shift = None
-    mask = None
-    assets = AssetMapCYW20829.get(p)
-    for item in assets[asset_name]['data']:
-        if item['name'] == asset_item_name:
-            shift = item['shift']
-            mask = item['mask']
-            break
-    return shift, mask

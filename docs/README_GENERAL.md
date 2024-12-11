@@ -66,29 +66,49 @@ $ edgeprotecttools create-key --key-type ECDSA-P256 --template ec_public_numbers
 
 
 ## Convert key
-Converts an asymmetric key to a different format.
+Converts an asymmetric key to a different encoding or/and format.
 
-| Output format |    Key type    | Description                                                                                                                                                                                                                                               |
-|---------------|:--------------:|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `PEM`         | `ECDSA`, `RSA` | PEM format. The key data is encoded in `PEM` encoding with `TraditionalOpenSSL` format for private keys. The key data is encoded in `PEM` encoding with `SubjectPublicKeyInfo` format for public keys.                                                    |
-| `DER`         | `ECDSA`, `RSA` | DER format. The key data is encoded in `DER` encoding with `TraditionalOpenSSL` format for private keys. The key data is encoded in `DER` encoding with `SubjectPublicKeyInfo` format for public keys.                                                    |
-| `DER-PKCS8`   |    `ECDSA`     | Saves key in `DER` encoding with `PKCS8` format.  Accepts only `ECDSA` private keys.                                                                                                                                                                      |
-| `JWK`         | `ECDSA`, `RSA` | JWK format.                                                                                                                                                                                                                                               |
-| `C_ARRAY`     | `ECDSA`, `RSA` | Saves public key in C-array format. The key data is encoded in `DER` encoding with `SubjectPublicKeyInfo` format for `ECDSA` keys. The key data is encoded in `DER` encoding with `PKCS1` format for `RSA` keys. Accepts only `ECDSA`, `RSA` public keys. |
-| `SECURE_BOOT` |     `RSA`      | Generates RSA public key modulus, exponent, and additional coefficients and formats it as Secure boot RSA public key format. Accepts only `RSA` public keys.                                                                                              |
-| `X962`        |    `ECDSA`     | Exports key public numbers to a binary file. Accepts only `ECDSA` public keys.                                                                                                                                                                            |
+| Encoding and format      |         Key type         | Description                                                                                                                                                                                                   |
+|--------------------------|:------------------------:|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `PEM`                    | `ECDSA`, `RSA`, `X25519` | `Base64` encoded key. The format is `TraditionalOpenSSL` for private keys and `SubjectPublicKeyInfo` for public keys.                                                                                         |
+| `PEM-SUBJPUBKEYINFO`     | `ECDSA`, `RSA`, `X25519` | `Base64` encoded key in the `SubjectPublicKeyInfo` format for public keys.                                                                                                                                    |
+| `PEM-PKCS1`              |     `RSA`, `X25519`      | `Base64` encoded key in the `PKCS1` format for public keys.                                                                                                                                                   |
+| `PEM-OPENSSL`            | `ECDSA`, `RSA`, `X25519` | `Base64` encoded key in the `TraditionalOpenSSL` format for private keys.                                                                                                                                     |
+| `PEM-PKCS8`              | `ECDSA`, `RSA`, `X25519` | `Base64` encoded key in the `PKCS8` format for private keys.                                                                                                                                                  |
+| `DER`                    | `ECDSA`, `RSA`, `X25519` | `DER` encoded key. The format is `TraditionalOpenSSL` for private keys and `SubjectPublicKeyInfo` for public keys.                                                                                            |
+| `DER-SUBJPUBKEYINFO`     | `ECDSA`, `RSA`, `X25519` | `DER` encoded key in the `SubjectPublicKeyInfo` format for public keys.                                                                                                                                       |
+| `DER-PKCS1`              |     `RSA`, `X25519`      | `DER` encoded key in the `PKCS1` format for public keys.                                                                                                                                                      |
+| `DER-OPENSSL`            | `ECDSA`, `RSA`, `X25519` | `DER` encoded key in the `TraditionalOpenSSL` format for private keys.                                                                                                                                        |
+| `DER-PKCS8`              | `ECDSA`, `RSA`, `X25519` | `DER` encoded key in the `PKCS8` format for private keys.                                                                                                                                                     |
+| `JWK`                    | `ECDSA`, `RSA`, `X25519` | JSON Web Key.                                                                                                                                                                                                 |
+| `C_ARRAY`                | `ECDSA`, `RSA`, `X25519` | Saves `DER` encoded key bytes as a C-array.<br>For private keys the format is `PKCS8`.<br>For public keys the format is `SubjectPublicKeyInfo` except the `RSA` key. The `RSA` public keys format is `PKCS1`. |
+| `C_ARRAY-SUBJPUBKEYINFO` | `ECDSA`, `RSA`, `X25519` | Saves `DER` encoded key bytes as a C-array. The format is `SubjectPublicKeyInfo` for public keys.                                                                                                             |
+| `C_ARRAY-PKCS1`          |     `RSA`, `X25519`      | Saves `DER` encoded key bytes as a C-array. The format is `PKCS1` for public keys.                                                                                                                            |
+| `C_ARRAY-OPENSSL`        | `ECDSA`, `RSA`, `X25519` | Saves `DER` encoded key bytes as a C-array. The format is `TraditionalOpenSSL` for private keys.                                                                                                              |
+| `C_ARRAY-PKCS8`          | `ECDSA`, `RSA`, `X25519` | Saves `DER` encoded key bytes as a C-array. The format is `PKCS8` for private keys.                                                                                                                           |
+| `SECURE_BOOT`            |          `RSA`           | Generates RSA public key modulus, exponent, and additional coefficients and formats it as Secure boot RSA public key format. Accepts only `RSA` public keys.                                                  |
+| `X962`                   |         `ECDSA`          | Exports key public numbers to a binary file. Accepts only `ECDSA` public keys.                                                                                                                                |
 
 ### Command: `convert-key`
 ### Parameters
-| Name           | Optional/Required | Description                                                                                      |
-|----------------|:-----------------:|--------------------------------------------------------------------------------------------------|
-| -f, --fmt      |     required      | Output key format. Available values: `PEM`, `DER`, `DER-PKCS8`, `JWK`, `C_ARRAY`, `SECURE_BOOT`. |
-| -k, --key-path |     required      | Input key path. Accepts keys in `PEM`, `DER`, `JWK` formats.                                     |
-| -o, --output   |     required      | Output file.                                                                                     |
-| --endian       |     optional      | Byte order. Available values: `big`, `little`. Default value: `little`                           |
+| Name                  | Optional/Required | Description                                                                                      |
+|-----------------------|:-----------------:|--------------------------------------------------------------------------------------------------|
+| -f, --fmt, --format   |     required      | Output key format. Available values: `PEM`, `DER`, `DER-PKCS8`, `JWK`, `C_ARRAY`, `SECURE_BOOT`. |
+| -k, --key, --key-path |     required      | Input key path. Accepts keys in `PEM`, `DER`, `JWK` formats.                                     |
+| -o, --output          |     required      | Output file.                                                                                     |
+| --endian              |     optional      | Byte order. Available values: `big`, `little`. Default value: `little`                           |
+| --password            |     optional      | Private key password.                                                                            |
+| --var-name            |     optional      | Variable name in C array                                                                         |
 ### Usage example
 ```bash
-$ edgeprotecttools convert-key --fmt JWK -k key.pem -o key.json
+# Convert PEM encoded public key to DER in PKCS1 format
+$ edgeprotecttools convert-key --fmt DER-PKCS1 -k key.pem -o key.der
+
+# Convert DER encoded private key to PEM in PKCS8 format
+$ edgeprotecttools convert-key --fmt PEM-PKCS8 -k key.der -o key.pem
+
+# Convert PEM encoded private key to C-array in PKCS8 format
+$ edgeprotecttools convert-key --fmt C_ARRAY-PKCS8 -k privkey.pem -o privkey.h --var-name priv_key
 ```
 
 

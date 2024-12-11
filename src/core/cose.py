@@ -17,7 +17,6 @@ limitations under the License.
 import os
 
 import cwt
-import rsa
 from cbor import cbor
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from cwt.utils import to_cose_header
@@ -44,23 +43,13 @@ class Cose:
                 f"'kid' is of type '{type(kid).__name__}', "
                 f"'int', 'str' is expected")
 
-        kid = str(kid) if kid else None
-
-        if kid and kid.startswith('0x'):
-            kid_raw = int(kid, 16)
-            kid_encoded = kid_raw.to_bytes(number_size(kid_raw),
-                                           byteorder='little')
-        else:
-            kid_raw = kid
-            kid_encoded = kid
-
-        key = Cose._cose_key(key_path, kid=kid_raw)
+        key = Cose._cose_key(key_path, kid=kid)
         ctx = cwt.COSE.new()
         encoded = ctx.encode_and_sign(
             payload,
             key=key,
             protected={1: key.alg},
-            unprotected={'kid': kid_encoded} if kid is not None else {})
+            unprotected={'kid': key.kid} if kid is not None else {})
         return encoded
 
     @staticmethod
@@ -82,18 +71,9 @@ class Cose:
                     f"'int', 'str' is expected")
 
             kid = str(kid) if kid else None
-
-            if kid and kid.startswith('0x'):
-                kid_raw = int(kid, 16)
-                kid_encoded = kid_raw.to_bytes(number_size(kid_raw),
-                                               byteorder='little')
-            else:
-                kid_raw = kid
-                kid_encoded = kid
-
-            sign_key = Cose._cose_key(key, kid=kid_raw)
+            sign_key = Cose._cose_key(key, kid=kid)
             protected = {1: sign_key.alg}
-            unprotected = {'kid': kid_encoded} if kid is not None else {}
+            unprotected = {'kid': sign_key.kid} if kid is not None else {}
             signers.append(cwt.Signer.new(
                 sign_key,
                 protected=protected,
@@ -119,15 +99,7 @@ class Cose:
                 f"'kid' is of type '{type(kid).__name__}', "
                 f"'int', 'str' is expected")
 
-        kid = str(kid) if kid else None
-
-        if kid and kid.startswith('0x'):
-            kid_raw = int(kid, 16)
-            kid_encoded = kid_raw.to_bytes(number_size(kid_raw),
-                                           byteorder='little')
-        else:
-            kid_encoded = kid.encode('utf-8') if kid else None
-
+        kid_encoded = Cose._cose_kid(kid)
         kid = {4: kid_encoded} if kid is not None else {}
         protected = cbor.dumps(to_cose_header({'alg': algorithm.upper()}))
         payload = cbor.loads(payload)
@@ -155,15 +127,7 @@ class Cose:
                 raise TypeError(
                     f"'kid' is of type '{type(kid).__name__}', "
                     f"'int', 'str' is expected")
-
-            kid = str(kid) if kid else None
-
-            if kid and kid.startswith('0x'):
-                kid_raw = int(kid, 16)
-                kid_encoded = kid_raw.to_bytes(number_size(kid_raw),
-                                               byteorder='little')
-            else:
-                kid_encoded = kid.encode('utf-8') if kid else None
+            kid_encoded = Cose._cose_kid(kid)
             kid = {4: kid_encoded} if kid is not None else {}
             protected = cbor.dumps(to_cose_header({'alg': alg.upper()}))
             signers.append([protected, kid, sig])
@@ -199,7 +163,6 @@ class Cose:
         """
         ctx = cwt.COSE.new()
         key = Cose._cose_key(key_path, kid=kid)
-
         try:
             ctx.decode(data, key)
         except cwt.exceptions.VerifyError:
@@ -209,22 +172,47 @@ class Cose:
     @staticmethod
     def _cose_key(key_path, kid=None):
         """Gets a COSE key based on JWK, PEM, or DER"""
+        kid_encoded = Cose._cose_kid(kid)
         try:
             key = load_private_key(key_path)
         except ValueError:
             key = load_public_key(key_path)
         if isinstance(key, (rsa.RSAPrivateKey, rsa.RSAPublicKey)):
+            alg = RSAHandler.alg(key)
             if RSAHandler.is_private_key(key):
-                key = RSAHandler.private_jwk(key, kid)
+                key = RSAHandler.private_pem(key)
             else:
-                key = RSAHandler.public_jwk(key, kid)
+                key = RSAHandler.public_pem(key)
         elif isinstance(
                 key, (ec.EllipticCurvePrivateKey, ec.EllipticCurvePublicKey)):
+            alg = ECHandler.alg(key)
             if ECHandler.is_private_key(key):
-                key = ECHandler.private_jwk(key, kid)
+                key = ECHandler.private_pem(key)
             else:
-                key = ECHandler.public_jwk(key, kid)
-        return cwt.COSEKey.from_jwk(key)
+                key = ECHandler.public_pem(key)
+        else:
+            raise ValueError(f"Unsupported key type {type(key)}")
+        return cwt.COSEKey.from_pem(key, kid=kid_encoded, alg=alg)
+
+    @staticmethod
+    def _cose_kid(kid=None):
+        if kid:
+            if isinstance(kid, str):
+                if kid.startswith('0x'):
+                    kid_raw = int(kid, 16)
+                    kid_encoded = kid_raw.to_bytes(number_size(kid_raw),
+                                                   byteorder='little')
+                else:
+                    kid_encoded = kid.encode('utf-8')
+            elif isinstance(kid, int):
+                kid_encoded = kid.to_bytes(number_size(kid), byteorder='little')
+            elif isinstance(kid, bytes):
+                kid_encoded = kid
+            else:
+                raise ValueError(f"Unsupported 'kid' type {type(kid)}")
+        else:
+            kid_encoded = None
+        return kid_encoded
 
     @staticmethod
     def dump(payload, output):

@@ -1,5 +1,5 @@
 """
-Copyright 2019-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2023-2024 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,23 +14,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from .target_builder import CYW20829Builder
-
-target_map = {
-    'cyw20829': {
-        'default': {
-            'class': CYW20829Builder,
-            'family': 'MXS40Sv2 Family',
-            'display_name': 'CYW20829',
-            'type': 'family',
-            'platform': 'mxs40sv2'
-        },
-        'b0': {
-            'class': CYW20829Builder,
-            'family': 'MXS40Sv2 Family',
-            'display_name': 'CYW20829',
-            'type': 'family',
-            'platform': 'mxs40sv2'
-        }
-    }
-}
+from .ram_app_status_codes import RamAppStatusPsocC3
+from .rom_boot_status_codes import RomBootStatusPsocC3
+from .status_codes import StatusPsocC3

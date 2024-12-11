@@ -25,6 +25,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 
 from ...core import strops
+from ...core.enums import KeyFormat
 from ...core.json_helper import read_json
 from ...core.key_helper import calc_key_hash
 from ...core.key_handlers.rsa_handler import RSAHandler
@@ -42,8 +43,8 @@ def generate_key(key_size, template=None):
     if template:
         data = read_json(template)
         try:
-            public_key = RSAHandler.populate_public_key(
-                data['exponent'], data['modulus'])
+            public_key = RSAHandler.populate_public_key(data['exponent'],
+                                                        data['modulus'])
             private_key = None
         except ValueError as e:
             raise ValueError(
@@ -75,35 +76,32 @@ def create_pubkey_hash(pubkey_path, hash_path):
     logger.info("Saved public key hash to '%s'", hash_path)
 
 
-def save_key(key, output, fmt, kid=None, password=None):
+def save_key(key, output, encoding, fmt=None, kid=None, password=None):
     """Saves the key to the file
     @param key: Private or public key object
     @param output: Key output path
-    @param fmt: Defines key format PEM, DER, or JWK
+    @param encoding: Defines key encoding PEM, DER, or JWK
+    @param fmt: Defines key format
     @param kid: Customer key ID
     @param password: Password for the private key encryption
     """
-    dirname = os.path.dirname(output)
-    if dirname:
-        os.makedirs(dirname, exist_ok=True)
+    dir_name = os.path.dirname(output)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
 
-    if fmt.upper() == 'PEM':
-        _save_encoded(key, output, serialization.Encoding.PEM,
+    if encoding.upper() == 'PEM':
+        _save_encoded(key, output, serialization.Encoding.PEM, fmt,
                       password=password)
-    elif fmt.upper() == 'DER':
-        _save_encoded(key, output, serialization.Encoding.DER,
+    elif encoding.upper() == 'DER':
+        _save_encoded(key, output, serialization.Encoding.DER, fmt,
                       password=password)
-    elif fmt.upper() == 'JWK':
+    elif encoding.upper() == 'JWK':
         _save_jwk(key, output, kid=kid)
     else:
-        raise ValueError(f"Invalid key format '{fmt}'")
+        raise ValueError(f"Invalid key encoding '{encoding}'")
 
 
 def _save_jwk(key, output, kid=None):
-    dirname = os.path.dirname(output)
-    if dirname:
-        os.makedirs(dirname, exist_ok=True)
-
     if isinstance(key, rsa.RSAPrivateKey):
         jwk = RSAHandler.private_jwk(key, kid)
     elif isinstance(key, rsa.RSAPublicKey):
@@ -115,25 +113,43 @@ def _save_jwk(key, output, kid=None):
         fp.write(json.dumps(jwk, indent=4))
 
 
-def _save_encoded(key, output, encoding, password=None):
+def _save_encoded(key, output, encoding, fmt, password=None):
     if isinstance(key, rsa.RSAPrivateKey):
         if password:
             enc_alg = serialization.BestAvailableEncryption(password.encode())
         else:
             enc_alg = serialization.NoEncryption()
+        if fmt:
+            fmt = KeyFormat[fmt]
+        else:
+            fmt = serialization.PrivateFormat.TraditionalOpenSSL
 
-        serialized = key.private_bytes(
-            encoding=encoding,
-            format=serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=enc_alg)
+        if not isinstance(fmt, serialization.PrivateFormat):
+            raise ValueError(f"Invalid format for private key '{fmt}'")
+
+        serialized = key.private_bytes(encoding=encoding, format=fmt,
+                                       encryption_algorithm=enc_alg)
     elif isinstance(key, rsa.RSAPublicKey):
-        serialized = key.public_bytes(
-            encoding=encoding,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        if fmt:
+            fmt = KeyFormat[fmt]
+        else:
+            fmt = serialization.PublicFormat.SubjectPublicKeyInfo
+
+        if not isinstance(fmt, serialization.PublicFormat):
+            raise ValueError(f"Invalid format for public key '{fmt}'")
+
+        serialized = key.public_bytes(encoding=encoding, format=fmt)
     else:
-        serialized = key.public_key().public_bytes(
-            encoding=encoding,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        )
+        if fmt:
+            fmt = KeyFormat[fmt]
+        else:
+            fmt = serialization.PublicFormat.SubjectPublicKeyInfo
+
+        if not isinstance(fmt, serialization.PublicFormat):
+            raise ValueError(f"Invalid format for public key '{fmt}'")
+
+        pubkey = key.public_key()
+        serialized = pubkey.public_bytes(encoding=encoding, format=fmt)
+
     with open(output, 'wb') as fp:
         fp.write(serialized)

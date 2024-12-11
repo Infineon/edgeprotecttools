@@ -23,6 +23,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization
 
+from ...core.enums import KeyFormat
 from ...core.json_helper import read_json
 from ...core.key_handlers.ec_handler import ECHandler
 
@@ -79,38 +80,32 @@ def generate_key(curve: CurveTypes, template=None, byteorder="big"):
     return private_key, public_key
 
 
-def save_key(key, output, fmt, kid=None, password=None):
+def save_key(key, output, encoding, fmt=None, kid=None, password=None):
     """Saves the key to the file
     @param key: Private or public key object
     @param output: Key output path
-    @param fmt: Defines key format PEM, DER, or JWK
+    @param encoding: Defines key format PEM, DER, or JWK
+    @param fmt: Defines key format
     @param kid: Customer key ID
     @param password: Password for the private key encryption
     """
-    dirname = os.path.dirname(output)
-    if dirname:
-        os.makedirs(dirname, exist_ok=True)
+    dir_name = os.path.dirname(output)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
 
-    if fmt.upper() == 'PEM':
+    if encoding.upper() == 'PEM':
         _save_encoded(key, output, serialization.Encoding.PEM, fmt,
                       password=password)
-    elif fmt.upper() in ('DER', 'DER-PKCS8'):
-        if fmt.upper() == 'DER-PKCS8' and \
-                not isinstance(key, ec.EllipticCurvePrivateKey):
-            raise ValueError('The expected key type is ECDSA private')
+    elif encoding.upper() == 'DER':
         _save_encoded(key, output, serialization.Encoding.DER, fmt,
                       password=password)
-    elif fmt.upper() == 'JWK':
+    elif encoding.upper() == 'JWK':
         _save_jwk(key, output, kid=kid)
     else:
-        raise ValueError(f"Invalid key format '{fmt}'")
+        raise ValueError(f"Invalid key encoding '{encoding}'")
 
 
 def _save_jwk(key, output, kid=None):
-    dirname = os.path.dirname(output)
-    if dirname:
-        os.makedirs(dirname, exist_ok=True)
-
     if isinstance(key, ec.EllipticCurvePrivateKey):
         jwk = ECHandler.private_jwk(key, kid)
     elif isinstance(key, ec.EllipticCurvePublicKey):
@@ -124,31 +119,41 @@ def _save_jwk(key, output, kid=None):
 
 def _save_encoded(key, output, encoding, fmt, password=None):
     if isinstance(key, ec.EllipticCurvePrivateKey):
-        fmts = {
-            'PEM': serialization.PrivateFormat.TraditionalOpenSSL,
-            'DER': serialization.PrivateFormat.TraditionalOpenSSL,
-            'DER-PKCS8': serialization.PrivateFormat.PKCS8,
-        }
-
         if password:
             enc_alg = serialization.BestAvailableEncryption(password.encode())
         else:
             enc_alg = serialization.NoEncryption()
+        if fmt:
+            fmt = KeyFormat[fmt]
+        else:
+            fmt = serialization.PrivateFormat.TraditionalOpenSSL
 
-        serialized = key.private_bytes(
-            encoding=encoding,
-            format=fmts[fmt.upper()],
-            encryption_algorithm=enc_alg
-        )
+        if not isinstance(fmt, serialization.PrivateFormat):
+            raise ValueError(f"Invalid format for private key '{fmt}'")
+
+        serialized = key.private_bytes(encoding=encoding, format=fmt,
+                                       encryption_algorithm=enc_alg)
     elif isinstance(key, ec.EllipticCurvePublicKey):
-        serialized = key.public_bytes(
-            encoding=encoding,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        )
+        if fmt:
+            fmt = KeyFormat[fmt]
+        else:
+            fmt = serialization.PublicFormat.SubjectPublicKeyInfo
+
+        if not isinstance(fmt, serialization.PublicFormat):
+            raise ValueError(f"Invalid format for public key '{fmt}'")
+
+        serialized = key.public_bytes(encoding=encoding, format=fmt)
     else:
-        serialized = key.public_key().public_bytes(
-            encoding=encoding,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        )
+        if fmt:
+            fmt = KeyFormat[fmt]
+        else:
+            fmt = serialization.PublicFormat.SubjectPublicKeyInfo
+
+        if not isinstance(fmt, serialization.PublicFormat):
+            raise ValueError(f"Invalid format for public key '{fmt}'")
+
+        pubkey = key.public_key()
+        serialized = pubkey.public_bytes(encoding=encoding, format=fmt)
+
     with open(output, 'wb') as fp:
         fp.write(serialized)

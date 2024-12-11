@@ -35,7 +35,8 @@ class ChipLoad:
         logger.info("Image programming '%s'", self.app.dlm_path)
         status = ProvisioningStatus.FAIL
         btp_config = os.path.abspath(os.path.join(
-            os.path.dirname(__file__), '..', 'patch_test.btp'))
+            os.path.dirname(__file__), '..', 'packets', 'apps', 'minidriver',
+            'patch_test.btp'))
         if self.tool.program(filename=self.app.dlm_path,
                              address=self.app.image_address,
                              btp_config=btp_config):

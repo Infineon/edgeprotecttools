@@ -14,10 +14,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from ..cyw20829 import CYW20829Builder
+from ..cyw20829_b0 import CYW20829B0Builder
 
 
-class CYW89829Builder(CYW20829Builder):
+class CYW89829Builder(CYW20829B0Builder):
     """ CYW89829 target builder """
 
     def get_test_packages(self):

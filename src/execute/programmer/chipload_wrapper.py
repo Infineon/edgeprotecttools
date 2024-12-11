@@ -139,3 +139,7 @@ class ChipLoad(ProgrammerBase):
     def verify(self, filename):
         """N/A for ChipLoad"""
         raise NotImplementedError
+
+    def hci_command(self, command, timeout=1):
+        """Executes HCI commands and returns received data"""
+        return self.runner.hci_run(command, timeout)

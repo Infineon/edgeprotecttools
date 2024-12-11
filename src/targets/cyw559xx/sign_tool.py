@@ -30,9 +30,11 @@ class SignToolCYW559xx:
     """A class for signing CYW559xx images"""
 
     next_cert_size = 4
+    cert_size_info = 4
 
     @staticmethod
-    def sign(image, certs, output=None, **kwargs) -> Union[IntelHex, None]:
+    def sign(image, certs, output=None, **kwargs) -> Union[
+        IntelHex, bytes, None]:
         """Signs firmware image by adding key and content
         certificates to it
         @param image: The image to sign
@@ -40,7 +42,21 @@ class SignToolCYW559xx:
         @param output: The output path
         @return: Image with added certificates
         """
-        cert_size_info = 4
+        cons_cert_bytes = SignToolCYW559xx.consolidated_cert(certs)
+
+        if kwargs.get('ota'):
+            return SignToolCYW559xx._ota_patch(image, cons_cert_bytes, output)
+        elif kwargs.get('ram'):
+            return SignToolCYW559xx._ram_patch(image, cons_cert_bytes, output)
+        else:
+            return SignToolCYW559xx._flash_patch(image, cons_cert_bytes, output)
+
+    @staticmethod
+    def consolidated_cert(certs):
+        """Consolidates certificates into a single bytes object
+        @param certs: A list of certificates to consolidate
+        @return: Consolidated certificates bytes
+        """
         certs_size = 0
         cons_cert_bytes = b''
 
@@ -55,19 +71,17 @@ class SignToolCYW559xx:
             logger.debug("Processing certificate '%s'", cert)
             logger.debug("Certificate size: %d bytes", cert_size)
 
+        header = struct.pack('<I', certs_size + SignToolCYW559xx.cert_size_info)
         cons_cert_bytes = (
-                struct.pack('<I', certs_size + cert_size_info) +
+                header +
                 cons_cert_bytes +
                 b'\x00' * SignToolCYW559xx.next_cert_size
         )
 
         logger.debug("Total certificates size: %d bytes (including size info)",
                      certs_size)
+        return cons_cert_bytes
 
-        if kwargs.get('ram'):
-            return SignToolCYW559xx._ram_patch(image, cons_cert_bytes, output)
-        else:
-            return SignToolCYW559xx._flash_patch(image, cons_cert_bytes, output)
 
     @staticmethod
     def _ram_patch(image, cons_cert_bytes, output) -> IntelHex:
@@ -112,3 +126,31 @@ class SignToolCYW559xx:
         with open(output, 'w', encoding='utf-8') as file:
             file.writelines(final_lines)
         return final
+
+    @staticmethod
+    def _ota_patch(image, cons_cert_bytes, output) -> bytes:
+        """Patches the image for OTA
+        @param image: The image to patch
+        @param cons_cert_bytes: Consolidated certificates to add
+        @param output: The output path
+        @return: The patched image object
+        """
+        if isinstance(image, str):
+            with open(image, 'rb') as file:
+                image_bytes = file.read()
+        elif isinstance(image, bytes):
+            image_bytes = image
+        else:
+            raise TypeError(
+                'Expected str or bytes, got %s' % type(image).__name__)
+
+        image_bytes = (
+                image_bytes[:-SignToolCYW559xx.cert_size_info] +
+                cons_cert_bytes
+        )
+
+        if output:
+            with open(output, 'wb') as file:
+                file.write(image_bytes)
+
+        return image_bytes

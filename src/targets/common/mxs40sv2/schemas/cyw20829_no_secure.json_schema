@@ -395,6 +395,17 @@
                                     "type": "boolean"
                                 }
                             }
+                        },
+                        "program_oem_secure_key": {
+                            "id": "program_oem_secure_key",
+                            "required": false,
+                            "description": "Programs the OEM secure key and makes it immutable (this can be done only once)",
+                            "properties": {
+                             	"value":
+                                {
+                                    "type": "boolean"
+                                }
+                            }
                         }
                     }
                 }
@@ -438,6 +449,17 @@
                             "id": "smif_aes_key",
                             "required": false,
                             "description": "Path to the AES-128 key for image encryption",
+                            "properties": {
+                                "value":
+                                {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "oem_secure_key": {
+                            "id": "oem_secure_key",
+                            "required": false,
+                            "description": "Hex string (16-bytes) or path to the OEM secure key",
                             "properties": {
                                 "value":
                                 {

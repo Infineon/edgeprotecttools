@@ -327,11 +327,20 @@ class RSAHandler:
             'qi': long_to_base64(
                 priv_key.private_numbers().iqmp
             ).decode('utf-8'),
-            'alg': RSAHandler._jwk_alg(priv_key)
+            'alg': RSAHandler.alg(priv_key)
         }
         if kid:
             key_json['kid'] = str(kid)
         return key_json
+
+    @staticmethod
+    def private_pem(priv_key: rsa.RSAPrivateKey):
+        """Converts private key to PEM format"""
+        return priv_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
 
     @staticmethod
     def public_jwk(pubkey, kid=None):
@@ -344,11 +353,19 @@ class RSAHandler:
             'e': long_to_base64(
                 pubkey.public_numbers().e
             ).decode('utf-8'),
-            'alg': RSAHandler._jwk_alg(pubkey)
+            'alg': RSAHandler.alg(pubkey)
         }
         if kid:
             key_json['kid'] = str(kid)
         return key_json
+
+    @staticmethod
+    def public_pem(pub_key: rsa.RSAPublicKey):
+        """Converts public key to PEM format"""
+        return pub_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
 
     @staticmethod
     def rsa2secureboot(key, is_reverse=True):
@@ -471,7 +488,7 @@ class RSAHandler:
         return np
 
     @staticmethod
-    def _jwk_alg(priv_key):
+    def alg(priv_key):
         if priv_key.key_size == 2048:
             alg = 'RS256'
         elif priv_key.key_size == 3072:

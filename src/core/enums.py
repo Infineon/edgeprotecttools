@@ -17,6 +17,8 @@ limitations under the License.
 from enum import Enum, IntEnum
 from collections import namedtuple
 
+from cryptography.hazmat.primitives import serialization
+
 
 class EntranceExamStatus(IntEnum):
     OK = 0
@@ -35,6 +37,7 @@ class ProvisioningStatus(IntEnum):
     FAIL = 1
     TERMINATED = 2
     SKIPPED = 3
+    STOP = 4
 
 
 class ValidationStatus(IntEnum):
@@ -57,6 +60,7 @@ class KeyAlgorithm:
     """
     ECDSA_P256 = 'ECDSA-P256'
     ECDSA_P384 = 'ECDSA-P384'
+    X25519 = 'X25519'
     RSA2048 = 'RSA2048'
     RSA3072 = 'RSA3072'
     RSA4096 = 'RSA4096'
@@ -65,6 +69,23 @@ class KeyAlgorithm:
     EC = ECDSA_P256
     RSA = RSA2048
     AES = AES128
+
+
+KeyFormat = {
+    'SUBJPUBKEYINFO': serialization.PublicFormat.SubjectPublicKeyInfo,
+    'PKCS1': serialization.PublicFormat.PKCS1,
+    'OPENSSL': serialization.PrivateFormat.TraditionalOpenSSL,
+    'PKCS8': serialization.PrivateFormat.PKCS8
+}
+
+KeyEncoding = {
+    'PEM': serialization.Encoding.PEM,
+    'DER': serialization.Encoding.DER,
+    'JWK': None,
+    'C_ARRAY': serialization.Encoding.DER,
+    'SECURE_BOOT': None,
+    'X962': serialization.Encoding.X962
+}
 
 
 class ImageType(Enum):

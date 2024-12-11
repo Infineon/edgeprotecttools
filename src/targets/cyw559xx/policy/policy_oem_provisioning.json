@@ -29,7 +29,7 @@
     }
   },
   "nv_counter": {
-    "description": "NV Counter",
+    "description": "Non-Volatile counter corresponding to the software version",
     "value": "0x00000000"
   }
 }

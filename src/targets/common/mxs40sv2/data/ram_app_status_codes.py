@@ -112,28 +112,9 @@ class RamAppStatusMXS40Sv2(StatusCodesBase):
                         "This is operation can be done only once"
             },
             0x45000037: {
-                "status": "CYAPP_HASH_CALCULATION_FAILED",
-                "desc": "Hash calculation failed."
-            },
-            0x45000038: {
-                "status": "CYAPP_INVALID_BOOT_CFG_ID",
-                "desc": "Invalid BOOT_CFG_ID configuration."
-            },
-            0x45000039: {
-                "status": "CYAPP_HUK_GEN_FAILED",
-                "desc": "Fail to generate Wrap Master Key key"
-            },
-            0x4500003A: {
-                "status": "CYAPP_DFU_FAILED",
-                "desc": "DFU flow failed"
-            },
-            0x4500003B: {
-                "status": "CYAPP_PROT_FW_POLICY_DISABLED",
-                "desc": "Protected FW policy is not configured"
-            },
-            0x4500003C: {
-                "status": "CYAPP_MPC_POLICY_INVALID",
-                "desc": "MPC_POLICY invalid"
+                "status": "CYAPP_OEM_SECURE_KEY_ALREADY_PROGRAMMED",
+                "desc": "The OEM_SECURE_KEY assets is already programmed. "
+                        "This operation can be done only once"
             },
             0x45000100: {
                 "status": "CYAPP_PARAM_NV_CNT_INVALID",
@@ -173,11 +154,7 @@ class RamAppStatusMXS40Sv2(StatusCodesBase):
                         "configuration"
             },
             0x45000108: {
-                "status": "CYAPP_RMA_ATTEMPT_COUNTER_INVALID",
-                "desc": "RMA_ATTEMPT_COUNTER equal to zero"
-            },
-            0x45000109: {
-                "status": "CYAPP_IAK_ALREADY_PROGRAMMED",
-                "desc": "IAK already programmed"
+                "status": "CYAPP_PARAM_OEM_SECURE_KEY_INVALID",
+                "desc": "The input parameter OEM_SECURE_KEY is not valid"
             }
         }

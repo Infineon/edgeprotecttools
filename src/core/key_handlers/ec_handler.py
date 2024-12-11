@@ -71,6 +71,14 @@ class ECHandler:
         return key_json
 
     @staticmethod
+    def public_pem(pub_key: EllipticCurvePublicKey):
+        """Converts public key to PEM format"""
+        return pub_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+
+    @staticmethod
     def private_jwk(privkey, kid=None):
         """ Gets EC private key is JSON format """
         alg, crv, lth = ECHandler._jwk_alg(privkey)
@@ -90,6 +98,15 @@ class ECHandler:
         return key_json
 
     @staticmethod
+    def private_pem(priv_key: EllipticCurvePrivateKey):
+        """Converts private key to PEM format"""
+        return priv_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+
+    @staticmethod
     def _jwk_alg(privkey):
         if isinstance(privkey.curve, ec.SECP256R1):
             alg = 'ES256'
@@ -102,6 +119,16 @@ class ECHandler:
         else:
             raise ValueError('Unsupported elliptic curve')
         return alg, crv, lth
+
+    @staticmethod
+    def alg(privkey):
+        if isinstance(privkey.curve, ec.SECP256R1):
+            alg = 'ES256'
+        elif isinstance(privkey.curve, ec.SECP384R1):
+            alg = 'ES384'
+        else:
+            raise ValueError('Unsupported elliptic curve')
+        return alg
 
     @staticmethod
     def public_bytes(pubkey: EllipticCurvePublicKey) -> bytes:

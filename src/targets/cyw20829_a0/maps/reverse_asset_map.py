@@ -16,7 +16,7 @@ limitations under the License.
 """
 import binascii
 
-from .asset_map import asset_item_data
+from .asset_map import AssetMapCYW20829
 from ...common.mxs40sv2 import asset_enums as enums
 
 
@@ -24,6 +24,7 @@ class ReverseAssetMap:
 
     def __init__(self, policy_parser):
         self.policy_parser = policy_parser
+        self.asset_map = AssetMapCYW20829
         self.encryption_enabled = None
 
     def reverse_asset(self, asset_name, asset_value):
@@ -57,8 +58,7 @@ class ReverseAssetMap:
         return [('device_policy.flow_control.target_lcs.value',
                  enums.LifecycleStage(asset_value).name)]
 
-    @staticmethod
-    def _control_word(asset_value):
+    def _control_word(self, asset_value):
         lst = list()
         lst.append((
             'device_policy.flow_control.program_oem_assets.value',
@@ -86,68 +86,68 @@ class ReverseAssetMap:
     def _access_restrict(self, asset_value):
         p = self.policy_parser
         lst = list()
-        shift, mask = asset_item_data(p, 'access_restrict', 'S_NS_AP_CTL_CM33')
+        shift, mask = self.asset_item_data(p, 'access_restrict', 'S_NS_AP_CTL_CM33')
         lst.append((
             'device_policy.debug.cpu.ap_cm33.value',
             enums.ApPermission((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(p, 'access_restrict', 'S_NS_AP_CTL_SYS')
+        shift, mask = self.asset_item_data(p, 'access_restrict', 'S_NS_AP_CTL_SYS')
         lst.append((
             'device_policy.debug.system.ap.value',
             enums.ApPermission((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(
+        shift, mask = self.asset_item_data(
             p, 'access_restrict', 'S_NS_SYS_AP_MPC_PPC_ENABLE')
         lst.append((
             'device_policy.debug.system.mpc/ppc.value',
             enums.MpcPpcPermission((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(p, 'access_restrict', 'S_NS_SRAM')
+        shift, mask = self.asset_item_data(p, 'access_restrict', 'S_NS_SRAM')
         lst.append((
             'device_policy.debug.system.sram.value',
             enums.SRAMPart((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(p, 'access_restrict', 'S_NS_MMIO')
+        shift, mask = self.asset_item_data(p, 'access_restrict', 'S_NS_MMIO')
         lst.append((
             'device_policy.debug.system.mmio.value',
             enums.MMIOPart((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(p, 'access_restrict', 'DEAD_AP_CTL_CM33')
+        shift, mask = self.asset_item_data(p, 'access_restrict', 'DEAD_AP_CTL_CM33')
         lst.append((
             'device_policy.debug.cpu.dead_ap_cm33.value',
             enums.ApPermission((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(p, 'access_restrict', 'S_NS_AP_CTL_DBG')
+        shift, mask = self.asset_item_data(p, 'access_restrict', 'S_NS_AP_CTL_DBG')
         lst.append((
             'device_policy.debug.cpu.cm33_dbg.value',
             enums.ApPermission((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(p, 'access_restrict', 'S_NS_AP_CTL_NID')
+        shift, mask = self.asset_item_data(p, 'access_restrict', 'S_NS_AP_CTL_NID')
         lst.append((
             'device_policy.debug.cpu.cm33_nid.value',
             enums.ApPermission((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(p, 'access_restrict', 'DEAD_AP_CTL_SYS')
+        shift, mask = self.asset_item_data(p, 'access_restrict', 'DEAD_AP_CTL_SYS')
         lst.append((
             'device_policy.debug.system.dead_ap.value',
             enums.ApPermission((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(p, 'access_restrict', 'DEAD_AP_CTL_DBG')
+        shift, mask = self.asset_item_data(p, 'access_restrict', 'DEAD_AP_CTL_DBG')
         lst.append((
             'device_policy.debug.cpu.dead_cm33_dbg.value',
             enums.ApPermission((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(p, 'access_restrict', 'DEAD_AP_CTL_NID')
+        shift, mask = self.asset_item_data(p, 'access_restrict', 'DEAD_AP_CTL_NID')
         lst.append((
             'device_policy.debug.cpu.dead_cm33_nid.value',
             enums.ApPermission((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(
+        shift, mask = self.asset_item_data(
             p, 'access_restrict', 'DEAD_SYS_AP_MPC_PPC_ENABLE')
         lst.append((
             'device_policy.debug.system.dead_mpc/ppc.value',
             enums.MpcPpcPermission((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(p, 'access_restrict', 'DEAD_SRAM')
+        shift, mask = self.asset_item_data(p, 'access_restrict', 'DEAD_SRAM')
         lst.append((
             'device_policy.debug.system.dead_sram.value',
             enums.SRAMPart((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(p, 'access_restrict', 'DEAD_MMIO')
+        shift, mask = self.asset_item_data(p, 'access_restrict', 'DEAD_MMIO')
         lst.append((
             'device_policy.debug.system.dead_mmio.value',
             enums.MMIOPart((asset_value >> shift) & mask).name))
         return lst
 
     def _wounding(self, asset_value):
-        shift, mask = asset_item_data(
+        shift, mask = self.asset_item_data(
             self.policy_parser, 'wounding', 'LISTEN_WINDOW')
         return [('device_policy.debug.cpu.listen_window.value',
                  enums.ListenWindow((asset_value >> shift) & mask).name)]
@@ -155,28 +155,28 @@ class ReverseAssetMap:
     def _oem_config(self, asset_value):
         p = self.policy_parser
         lst = list()
-        shift, mask = asset_item_data(p, 'oem_config', 'CHIP_SELECT')
+        shift, mask = self.asset_item_data(p, 'oem_config', 'CHIP_SELECT')
         lst.append((
             'device_policy.smif_config.chip_select.value',
             enums.ChipSelect((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(p, 'oem_config', 'DATA_WIDTH')
+        shift, mask = self.asset_item_data(p, 'oem_config', 'DATA_WIDTH')
         lst.append((
             'device_policy.smif_config.data_width.value',
             enums.DataWidth((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(p, 'oem_config', 'DATA_SELECT')
+        shift, mask = self.asset_item_data(p, 'oem_config', 'DATA_SELECT')
         lst.append((
             'device_policy.smif_config.data_select.value',
             enums.DataSelect((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(p, 'oem_config', 'ADDRESSING_MODE')
+        shift, mask = self.asset_item_data(p, 'oem_config', 'ADDRESSING_MODE')
         lst.append((
             'device_policy.smif_config.addressing_mode.value',
             enums.AddressingMode((asset_value >> shift) & mask).name))
-        shift, mask = asset_item_data(p, 'oem_config', 'SMIF_CRYPTO_ENABLED')
+        shift, mask = self.asset_item_data(p, 'oem_config', 'SMIF_CRYPTO_ENABLED')
         self.encryption_enabled = bool((asset_value >> shift) & mask)
         lst.append((
             'device_policy.smif_config.encryption.value',
             self.encryption_enabled))
-        shift, mask = asset_item_data(p, 'oem_config', 'SMIF_CONFIGURATION')
+        shift, mask = self.asset_item_data(p, 'oem_config', 'SMIF_CONFIGURATION')
         lst.append((
             'device_policy.smif_config.smif_configuration.value',
             enums.SMIFConfiguation((asset_value >> shift) & mask).name))
@@ -205,3 +205,15 @@ class ReverseAssetMap:
         else:
             field = 'pre_build.keys.oem_pub_key_1.value'
         return [(field, binascii.hexlify(asset_value).decode())]
+
+    def asset_item_data(self, p, asset_name, asset_item_name):
+        """ Gets a tuple with the asset item size and mask """
+        shift = None
+        mask = None
+        assets = self.asset_map.get(p)
+        for item in assets[asset_name]['data']:
+            if item['name'] == asset_item_name:
+                shift = item['shift']
+                mask = item['mask']
+                break
+        return shift, mask

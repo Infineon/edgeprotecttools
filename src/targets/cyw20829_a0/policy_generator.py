@@ -25,6 +25,8 @@ from ...core.jsonpath import set_node_value
 class PolicyGenerator:
     def __init__(self, policy_parser):
         self.policy_parser = policy_parser
+        self.asset_map = AssetMapCYW20829
+        self.reverse_asset_map = ReverseAssetMap
 
     def populate(self, packets, assets):
         """
@@ -41,7 +43,7 @@ class PolicyGenerator:
         unpacked = self._unpack_binary(binary, assets)
         datadict = replace(self.policy_parser.json, 'value', None)
 
-        reverse_map = ReverseAssetMap(self.policy_parser)
+        reverse_map = self.reverse_asset_map(self.policy_parser)
         for asset_name, asset_value in unpacked.items():
             items = reverse_map.reverse_asset(asset_name, asset_value)
             for path, value in items:
@@ -64,7 +66,7 @@ class PolicyGenerator:
         """ Gets format string based on asset map items size """
         fmt = '<'
         assets_size = 0
-        assets = AssetMapCYW20829.get(self.policy_parser)
+        assets = self.asset_map.get(self.policy_parser)
         for asset in asset_list:
             size = assets[asset]['size']
             if size == 4:

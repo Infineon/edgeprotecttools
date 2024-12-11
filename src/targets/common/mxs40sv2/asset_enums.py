@@ -154,6 +154,8 @@ class ControlWord(IntEnum):
     REVOKE_OEM_PUBKEY_MSK = 0x10
     RESET_DEVICE_MSK = 0x20
 
+    PROGRAM_OEM_SECURE_KEY_MSK = 0x40
+
 
 class DeviceResponse(IntEnum):
     """Device response CBOR map key ID"""

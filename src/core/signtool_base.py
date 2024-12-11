@@ -62,10 +62,10 @@ class SignToolBase(ABC):
                        pad=int(str(pad), 0) if pad else pad) == 0
 
     @staticmethod
-    def load_key(key_path):
+    def load_key(key_path, password=None):
         """Loads key from specified path"""
         try:
-            key = load_private_key(key_path)
+            key = load_private_key(key_path, password=password)
         except ValueError:
             try:
                 key = load_public_key(key_path)

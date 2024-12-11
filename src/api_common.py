@@ -22,7 +22,7 @@ import hashlib
 import shutil
 import sys
 
-from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.hazmat.primitives.asymmetric import ec, rsa, x25519
 from intelhex import IntelHex, HexRecordError
 
 from .core.connect_helper import ConnectHelper
@@ -39,13 +39,13 @@ from .core.strategy_context import ProvisioningPacketCtx, ProvisioningContext
 from .core.enums import (
     ValidationStatus, ProvisioningStatus, KeyAlgorithm, KeyPair
 )
-from .core.key_handlers import emit_c_public
+from .core.key_handlers import emit_c, key_encoding_and_format
 from .execute.combine_sign_tool import (CommandJsonValidator,
                                         CommandProcessor,
                                         CommandGroupParser)
 from .execute.ihex2hcd import hex2hcd
 from .execute.image_signing import MergeTool, SplitTool, SignTool, MultiImage
-from .execute.keygens import ec_keygen, rsa_keygen, aes_keygen
+from .execute.keygens import ec_keygen, rsa_keygen, aes_keygen, x25519_keygen
 from .execute.programmer.programmer import ProgrammingTool
 from .execute.encryption import EncryptorAES, XipEncryptor
 from .execute.cbor_parser import CborParser
@@ -389,7 +389,7 @@ class CommonAPI:
         @return: True if key(s) created successfully, otherwise False.
         """
         key_algorithms = [
-            'ECDSA-P256', 'ECDSA-P384', 'RSA2048', 'RSA3072',
+            'ECDSA-P256', 'ECDSA-P384', 'X25519', 'RSA2048', 'RSA3072',
             'RSA4096', 'AES128', 'AES256'
         ]
 
@@ -404,9 +404,20 @@ class CommonAPI:
 
         key_param = self.__key_param(alg)
 
-        keys_exist = False
         if isinstance(output, str):
             output = (output,)
+        if len(output) == 2:
+            keys = KeyPair(output[0], output[1])
+            if keys.private == keys.public:
+                raise ValueError('Same path for private and public keys')
+        elif kwargs.get('template'):
+            keys = KeyPair(output[0], output[0])
+        elif alg != KeyAlgorithm.AES:
+            keys = KeyPair(None, output[0])
+        else:
+            keys = None
+
+        keys_exist = False
         for key_path in output:
             keys_exist = os.path.isfile(key_path)
             if keys_exist:
@@ -420,14 +431,6 @@ class CommonAPI:
                     return True
 
         # Generate keys
-        keys = None
-        if len(output) == 2:
-            keys = KeyPair(output[0], output[1])
-        elif kwargs.get('template'):
-            keys = KeyPair(output[0], output[0])
-        elif alg != KeyAlgorithm.AES:
-            keys = KeyPair(None, output[0])
-
         if alg in (KeyAlgorithm.ECDSA_P256, KeyAlgorithm.ECDSA_P384):
             private_key, public_key = ec_keygen.generate_key(
                 key_param, template=kwargs.get('template'),
@@ -461,38 +464,54 @@ class CommonAPI:
         elif alg in (KeyAlgorithm.AES128, KeyAlgorithm.AES256):
             aes_keygen.generate_key(
                 key_size=key_param, add_iv=False, output=output[0])
+        elif alg == KeyAlgorithm.X25519:
+            if not keys.private:
+                raise ValueError('Private key path is not specified')
+            if not keys.public or keys.public == keys.private:
+                raise ValueError('Public key path is not specified')
+            private, public = x25519_keygen.generate_key()
+            x25519_keygen.save_key(private, keys.private, fmt,
+                                   password=kwargs.get('password'))
+            logger.info("Created a key '%s'", os.path.abspath(keys.private))
+            x25519_keygen.save_key(public, keys.public, fmt)
+            logger.info("Created a key '%s'", os.path.abspath(keys.public))
         return True
 
     @staticmethod
-    def convert_key(key, fmt, **kwargs):
+    def convert_key(key, enc_fmt, **kwargs):
         """Converts key to other formats
         @param key: Key cryptography object
-        @param fmt: Output key file format
+        @param enc_fmt: Output key file encoding and format separated by a dash
         @param kwargs:
             endian - Indicates byte order
             output - Path to output file
         """
-
+        password = kwargs.get('password')
+        var_name = kwargs.get("var_name")
         output = kwargs.get('output')
         if output is None:
             raise ValueError('Output path is not specified')
 
         if isinstance(key, str):
-            key = SignTool.load_key(key)
+            key = SignTool.load_key(key, password=password)
 
-        if fmt.lower() == 'c_array':
-            if not isinstance(
-                    key, (ec.EllipticCurvePublicKey, rsa.RSAPublicKey)
-            ):
-                raise ValueError(
-                    'The expected key type is RSA public or ECDSA public'
-                )
-            result = emit_c_public(key)
+        key_encoding, key_format = key_encoding_and_format(enc_fmt)
+
+        if key_encoding == 'C_ARRAY':
+            if isinstance(key, (
+                    ec.EllipticCurvePrivateKey, ec.EllipticCurvePublicKey,
+                    rsa.RSAPrivateKey, rsa.RSAPublicKey,
+                    x25519.X25519PrivateKey, x25519.X25519PublicKey)):
+                result = emit_c(key, key_format, password=password, var_name=var_name)
+            else:
+                raise ValueError('The expected key types are: '
+                                 'RSA, ECDSA, or X25519')
+
             with open(output, 'w', encoding='utf-8') as f:
                 f.write(result)
             logger.info("Created a file '%s'", os.path.abspath(output))
 
-        elif fmt.lower() == 'secure_boot':
+        elif key_encoding == 'SECURE_BOOT':
             result = RSAHandler.rsa2secureboot(
                 key, kwargs.get('endian') == 'little'
             )
@@ -500,7 +519,7 @@ class CommonAPI:
                 f.write(result)
             logger.info("Created a file '%s'", os.path.abspath(output))
 
-        elif fmt.lower() == 'x962':
+        elif key_encoding == 'X962':
             if not isinstance(key, ec.EllipticCurvePublicKey):
                 raise ValueError('The expected key type is ECDSA public')
 
@@ -510,20 +529,23 @@ class CommonAPI:
                 f.write(public_bytes)
             logger.info("Created a file '%s'", os.path.abspath(output))
 
-        elif fmt.lower() in ['pem', 'der', 'der-pkcs8', 'jwk']:
+        elif key_encoding in ('PEM', 'DER', 'JWK'):
             if isinstance(key, (rsa.RSAPrivateKey, rsa.RSAPublicKey)):
-                if fmt.lower() not in ('pem', 'der', 'jwk'):
-                    raise ValueError('The expected format is one of: '
-                                     'PEM, DER, JWK')
-                rsa_keygen.save_key(key, output, fmt)
+                rsa_keygen.save_key(key, output, key_encoding, fmt=key_format,
+                                    password=password)
                 logger.info("Created a key '%s'", os.path.abspath(output))
-            elif isinstance(
-                    key, (ec.EllipticCurvePrivateKey, ec.EllipticCurvePublicKey)
-            ):
-                ec_keygen.save_key(key, output, fmt)
+            elif isinstance(key, (ec.EllipticCurvePrivateKey,
+                                  ec.EllipticCurvePublicKey)):
+                ec_keygen.save_key(key, output, key_encoding, fmt=key_format,
+                                   password=password)
+                logger.info("Created a key '%s'", os.path.abspath(output))
+            elif isinstance(key, (x25519.X25519PrivateKey,
+                                  x25519.X25519PublicKey)):
+                x25519_keygen.save_key(key, output, key_encoding,
+                                       fmt=key_format, password=password)
                 logger.info("Created a key '%s'", os.path.abspath(output))
             else:
-                raise ValueError('Unexpected key type')
+                raise TypeError('Unexpected key type')
 
         else:
             raise ValueError('Unknown conversion format')
@@ -852,7 +874,7 @@ class CommonAPI:
         overwrite = True if self.skip_prompts else None
         self.target.project_initializer.init(cwd, overwrite, **kwargs)
 
-    def print_version(self, probe_id=None, ap='sysap', **kwargs):
+    def print_version(self, probe_id=None, ap='sysap', acquire=True, **kwargs):
         """Outputs firmware version bundled with the package
         @param probe_id: Probe serial number
         @param ap: The access port used to read data from device
@@ -861,7 +883,7 @@ class CommonAPI:
         try:
             connected = ConnectHelper.connect(
                 self.tool, self.target, ap=ap, probe_id=probe_id,
-                ignore_errors=True)
+                ignore_errors=True, acquire=acquire)
         except ValueError as e:
             logger.error(e)
         self.target.version_provider.print_version(**kwargs)
@@ -1105,6 +1127,8 @@ class CommonAPI:
             param = 16
         elif key_type == 'AES256':
             param = 32
+        elif key_type == 'X25519':
+            param = None
         else:
             raise ValueError(f"Invalid key type '{key_type}'")
         return param

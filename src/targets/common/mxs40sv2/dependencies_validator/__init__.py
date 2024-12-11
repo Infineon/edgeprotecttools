@@ -20,3 +20,4 @@ from .hci_mode_validator import HciModeValidator
 from .nv_counter_validator import NvCounterValidator
 from .pre_build_keys_exist_validator import PreBuildKeysExistValidator
 from .revoke_oem_encryption_validator import RevocationAndEncryptionValidator
+from .oem_secure_key_validator import OemSecureKeyValidator

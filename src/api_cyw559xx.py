@@ -29,6 +29,7 @@ from .targets.cyw559xx.certs import (
 from .targets.cyw559xx.certs.validators import (
     CertConfigValidator, CertConfigAdvancedValidator
 )
+from .targets.cyw559xx.device_data import DeviceData
 from .targets.cyw559xx.sign_tool import SignToolCYW559xx
 
 logger = logging.getLogger(__name__)
@@ -127,6 +128,8 @@ class CYW559xxAPI(CommonAPI):
                 logger.info("Saved image to '%s'",
                             os.path.abspath(kwargs.get('output')))
             if kwargs.get('hcd'):
+                if kwargs.get('ota'):
+                    raise ValueError('HCD is NA for OTA images')
                 try:
                     hex2hcd(kwargs.get('output'), kwargs.get('hcd'))
                 except (FileNotFoundError, RuntimeError) as e:
@@ -135,3 +138,17 @@ class CYW559xxAPI(CommonAPI):
                 logger.info("Saved HCD file to '%s'",
                             os.path.abspath(kwargs.get('hcd')))
         return signed
+
+    def get_csr(self, output, csr_id='0'):
+        """Gets CSR data from the device"""
+        if ConnectHelper.connect(self.tool, self.target):
+            info = DeviceData(self.tool)
+            return info.create_csr(output, csr_id)
+        return False
+
+    def read_soc_id(self, output):
+        """Gets SOC ID"""
+        if ConnectHelper.connect(self.tool, self.target):
+            info = DeviceData(self.tool)
+            return info.read_soc_id(output)
+        return False

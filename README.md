@@ -115,10 +115,10 @@ This package contains security tools for creating keys, creating certificates, s
 * [Changelog](https://github.com/Infineon/edgeprotecttools/blob/master/CHANGELOG.md)
 
 # Standalone Executable
-Edge Protect Tools can be used as a standalone application. The executable can be found in the `tools/edgeprotecttools/bin` directory of the Early Access Pack installation or Edge Protect Security Suite.
+Edge Protect Tools can be used as a standalone application. The executable can be found in the `tools/edgeprotecttools/bin` directory of the Edge Protect Security Suite or Early Access Pack installation.
 
 # Installing From Sources
-Alternatively Edge Protect Tools can be installed from the sources as a Python package. The source code is located in the `tools/edgeprotecttools/src` directory of the Early Access Pack installation or Edge Protect Security Suite.
+Alternatively Edge Protect Tools can be installed from the sources as a Python package. The source code is located in the `tools/edgeprotecttools/src` directory of the Edge Protect Security Suite or Early Access Pack installation.
 
 Install Python 3.12 on your computer. You can download it from https://www.python.org/downloads/. Set up the appropriate environment variable(s) for your operating system.
 

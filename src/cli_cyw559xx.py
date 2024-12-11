@@ -119,7 +119,7 @@ def cmd_secure_cert(ctx, config, output):
 @main.command('secure-image', help='Creates a secure image by merging key and '
                                    'content certificates to the application')
 @click.option('--image', type=click.Path(), required=True,
-              help='Application image')
+              help='Application HEX file')
 @click.option('--cert', 'certs', type=click.Path(), required=True,
               multiple=True, help='Certificate in DER format')
 @click.option('-o', '--output', type=click.Path(), required=True,
@@ -132,8 +132,62 @@ def cmd_secure_image(ctx, image, certs, output, hcd):
     def process():
         if 'TOOL' not in ctx.obj:
             return False
-        merged = ctx.obj['TOOL'].secure_image(image, certs, output=output,
+        signed = ctx.obj['TOOL'].secure_image(image, certs, output=output,
                                               hcd=hcd)
-        return merged is not None
+        return signed is not None
+
+    return process
+
+
+@main.command('secure-ota-image',
+              help='Creates a secure OTA image by merging key and content '
+                   'certificates to the application')
+@click.option('--image', type=click.Path(), required=True,
+              help='OTA application BIN file')
+@click.option('--cert', 'certs', type=click.Path(), required=True,
+              multiple=True, help='Certificate in DER format')
+@click.option('-o', '--output', type=click.Path(), required=True,
+              help='Output BIN file')
+@click.pass_context
+def cmd_secure_ota_image(ctx, image, certs, output):
+    """Merges application OTA image with the key and content certificates"""
+    @process_handler()
+    def process():
+        if 'TOOL' not in ctx.obj:
+            return False
+        signed = ctx.obj['TOOL'].secure_image(image, certs, output=output,
+                                              ota=True)
+        return signed is not None
+
+    return process
+
+
+@main.command('get-csr', help='Load the CSR from the device')
+@click.option('-o', '--output', 'output', type=click.Path(), required=True,
+              help='CSR output path')
+@click.option('--csr-id', type=click.Choice(['0', '1', '2']), help='CSR ID',
+              default='0')
+@click.pass_context
+def cmd_get_csr(ctx, output, csr_id):
+    """Load device CSR"""
+    @process_handler()
+    def process():
+        if 'TOOL' not in ctx.obj:
+            return False
+        return ctx.obj['TOOL'].get_csr(output, csr_id=csr_id)
+
+    return process
+
+
+@main.command('read-soc-id', help='Load SOC ID from the device')
+@click.option('-o', '--output', 'output', type=click.Path(), help='SOC ID path')
+@click.pass_context
+def cmd_read_soc_id(ctx, output):
+    """Read device SOC ID"""
+    @process_handler()
+    def process():
+        if 'TOOL' not in ctx.obj:
+            return False
+        return ctx.obj['TOOL'].read_soc_id(output)
 
     return process

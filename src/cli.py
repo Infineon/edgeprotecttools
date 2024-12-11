@@ -631,7 +631,7 @@ def cose_verify(ctx, input_path, key):
 
 @main.command('create-key', help='Creates private and public key pair')
 @click.option('--key-type', type=click.Choice(
-    ['ECDSA-P256', 'ECDSA-P384',
+    ['ECDSA-P256', 'ECDSA-P384', 'X25519',
      'RSA2048', 'RSA3072', 'RSA4096',
      'AES128', 'AES256'],
     case_sensitive=False), required=True, help='Key type')
@@ -655,6 +655,7 @@ def cmd_create_key(ctx, key_type, output, template, fmt, kid, byteorder,
     """Creates key pair"""
     @process_handler()
     def process():
+        validate_args()
         if 'TOOL' not in ctx.obj:
             return False
         return ctx.obj['TOOL'].create_keys(
@@ -662,30 +663,34 @@ def cmd_create_key(ctx, key_type, output, template, fmt, kid, byteorder,
             byteorder=byteorder, password=password
         )
 
+    def validate_args():
+        if key_type == 'X25519' and template:
+            sys.stderr.write("Error: The '--template' option is not supported "
+                             "for X25519 key type.\n")
+            sys.exit(2)
     return process
 
 
 @main.command('convert-key', help='Converts key to other formats')
-@click.option('-f', '--fmt', '--format', 'fmt',
-              type=click.Choice(
-                  ['pem', 'der', 'der-pkcs8',
-                   'jwk', 'c_array', 'secure_boot', 'x962'],
-                  case_sensitive=False
-              ), required=True, help='Output key format')
-@click.option('-k', '--key-path', type=click.Path(), required=True,
-              help='Input key path')
+@click.option('-f', '--fmt', '--format', 'fmt', required=True,
+              help='Output key format')
+@click.option('-k', '--key', '--key-path', 'key_path', type=click.Path(),
+              required=True, help='Input key path')
 @click.option('-o', '--output', type=click.Path(), required=True,
               help='Output file')
 @click.option('--endian', 'endian',
               type=click.Choice(['big', 'little'], case_sensitive=False),
               default='little', help='Byte order')
+@click.option('--password', help='Private key password')
+@click.option('--var-name', help='Variable name for the key in C array format')
 @click.pass_context
-def cmd_convert_key(_ctx, fmt, key_path, output, endian):
+def cmd_convert_key(_ctx, fmt, key_path, output, endian, password, var_name):
     """Converts key to other formats"""
     @process_handler()
     def process():
         CommonAPI.convert_key(
-            key_path, fmt, endian=endian, output=output
+            key_path, fmt, endian=endian, output=output, password=password,
+            var_name=var_name
         )
         return True
 

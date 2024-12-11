@@ -71,16 +71,21 @@ class ChipLoadRunner:
             exec_path = os.path.abspath(self.tool_path)
 
         self.init_serial()
-        status = self.check_connected()
-        if status:
-            status = self.init_load_session()
+
+        status = False
+        if self.check_connected():
+            if self.device_in_dm_state():
+                status = self.init_load_session()
+            else:
+                logger.error('Failed to check device state')
         self.serial.close()
 
-        btp_config = kwargs.get('btp_config')
-        command = self.create_command(exec_path, image, launch_addr, btp_config)
-        command_line = ' '.join(command)
-        logger.debug('Execute command: %s', command_line)
         if status:
+            btp_config = kwargs.get('btp_config')
+            command = self.create_command(exec_path, image, launch_addr,
+                                          btp_config)
+            command_line = ' '.join(command)
+            logger.debug('Execute command: %s', command_line)
             result = subprocess.run(command, capture_output=True, check=False)
             if result.returncode != 0:
                 self.check_result_and_log(result.stdout, None)
@@ -98,7 +103,7 @@ class ChipLoadRunner:
         """Check connection by the reset response"""
         attempt = 0
         while attempt < attempts:
-            res = self.send_receive(bytes.fromhex(OPCode.RESET))
+            res = self.send_receive(bytes.fromhex(OPCode.RESET), size=7)
             if res == bytes.fromhex(OPResponse.RESET):
                 return True
             attempt += 1
@@ -108,10 +113,16 @@ class ChipLoadRunner:
         logger.info('Make sure that the device is in HCI mode')
         return False
 
+    def device_in_dm_state(self):
+        """Checks if device is in DM state"""
+        commands = [
+            (OPCode.READ_SUPPORTED_VCS, OPResponse.READ_SUPPORTED_VCS)
+        ]
+        return self.run_commands(commands)
+
     def init_load_session(self):
         """Switching the device into download mode"""
         commands = [
-            (OPCode.SUPER_DUPER_PEEK_POKE, OPResponse.SUPER_DUPER_PEEK_POKE),
             (OPCode.RESET, OPResponse.RESET),
             (OPCode.ENTER_DOWNLOAD_MODE, OPResponse.ENTER_DOWNLOAD_MODE),
             (OPCode.RESET, OPResponse.RESET),
@@ -138,11 +149,13 @@ class ChipLoadRunner:
                 self.send_receive(bytes.fromhex(command))
         return True
 
-    def send_receive(self, message: bytes, exp_result=None):
+    def send_receive(
+            self, message: bytes, exp_result=None, timeout=1, size=1000):
         """Sends data to serial and returns response data"""
+        self.serial.timeout = timeout
         self.serial.write(message)
         logger.debug('Send: %s', message.hex())
-        received = self.serial.read(250)
+        received = self.serial.read(size)
         if received:
             logger.debug('Response: %s', received.hex())
         if exp_result and received != exp_result:
@@ -209,3 +222,13 @@ class ChipLoadRunner:
             }
             return comm_settings
         raise ValueError('UART configuration not defined')
+
+    def hci_run(self, command, timeout):
+        """Executes HCI commands and returns received data"""
+        data = None
+        self.init_serial()
+        status = self.check_connected()
+        if status:
+            data = self.send_receive(command, timeout=timeout)
+        self.serial.close()
+        return data

@@ -17,8 +17,8 @@ limitations under the License.
 from ..cyw20829_a0 import CYW20829A0Builder
 
 
-class CYW20829Builder(CYW20829A0Builder):
-    """ CYW20829 target builder """
+class CYW20829B0Builder(CYW20829A0Builder):
+    """ CYW20829 B0 target builder """
 
     def get_test_packages(self):
         return {

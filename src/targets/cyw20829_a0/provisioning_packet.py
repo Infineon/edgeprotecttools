@@ -31,8 +31,9 @@ logger = logging.getLogger(__name__)
 class ProvisioningPacketCYW20829(ProvisioningPacketStrategy):
     """ Provisioning packet generator for MXS40Sv2 targets """
 
-    ASSETS_DIR = os.path.abspath(os.path.join(
-        os.path.dirname(__file__), '../common', '..', 'cyw20829', 'flows'))
+    ASSETS_DIR = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), 'flows')
+    )
 
     def __init__(self, policy_parser, asset_map):
         self.policy_parser = policy_parser
