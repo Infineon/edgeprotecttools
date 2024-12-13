@@ -28,6 +28,7 @@ from intelhex import IntelHex, HexRecordError
 from .core.connect_helper import ConnectHelper
 from .core.cose import Cose
 from .core.deprecated import deprecated
+from .core.exceptions import ValidationError
 from .core.key_handlers.ec_handler import ECHandler
 from .core.key_handlers.rsa_handler import RSAHandler
 from .core.target_director import TargetDirector
@@ -39,7 +40,8 @@ from .core.strategy_context import ProvisioningPacketCtx, ProvisioningContext
 from .core.enums import (
     ValidationStatus, ProvisioningStatus, KeyAlgorithm, KeyPair
 )
-from .core.key_handlers import emit_c, key_encoding_and_format
+from .core.key_handlers import (
+    emit_c, key_encoding_and_format, load_public_key, load_private_key)
 from .execute.combine_sign_tool import (CommandJsonValidator,
                                         CommandProcessor,
                                         CommandGroupParser)
@@ -1049,15 +1051,74 @@ class CommonAPI:
             :output: Path to the output certificate file
         @return: Certificate object
         """
-        generator = X509CertificateGenerator(kwargs.get('config'))
+        generator = X509CertificateGenerator(
+            kwargs.get('config'),
+            csr=kwargs.get('csr'),
+            ca_cert=kwargs.get('ca_cert'),
+            self_signed=kwargs.get('self_signed')
+        )
+
+        if generator.csr and not generator.verify_csr():
+            raise ValueError('CSR verification failed')
+
         certificate = generator.generate(kwargs.get('signing_key'),
                                          password=kwargs.get('password'))
         output = kwargs.get('output')
         if output:
             output = os.path.abspath(output)
             generator.save_certificate(output, encoding=kwargs.get('encoding'))
-            logger.info("Key certificate saved to '%s'", output)
+            logger.info("Certificate saved to '%s'", output)
         return certificate
+
+    @staticmethod
+    def verify_x509_certificate(certificate, verifier):
+        """Verifies X.509 certificate.
+        @param certificate: Certificate to verify
+        @param verifier: Key, CA certificate, or CSR
+        @return: True if success, otherwise False
+        """
+        if isinstance(certificate, str):
+            try:
+                certificate = X509CertificateGenerator.load_cert(certificate)
+            except ValueError:
+                logger.error('Invalid file format: %s',
+                             os.path.abspath(certificate))
+                return False
+
+        if isinstance(verifier, str):
+            verifier = os.path.abspath(verifier)
+            try:
+                pubkey = load_public_key(verifier)
+                logger.info('Verifying with public key: %s', verifier)
+            except ValueError:
+                try:
+                    key = load_private_key(verifier)
+                    pubkey = key.public_key()
+                    logger.info('Verifying with public key: %s', verifier)
+                except ValueError:
+                    try:
+                        cert = X509CertificateGenerator.load_cert(verifier)
+                        pubkey = cert.public_key()
+                        logger.info('Verifying with certificate: %s', verifier)
+                    except ValueError:
+                        try:
+                            csr = X509CertificateGenerator.load_csr(verifier)
+                            pubkey = csr.public_key()
+                            logger.info('Verifying with CSR: %s', verifier)
+                        except ValueError:
+                            logger.error('Invalid file format: %s', verifier)
+                            return False
+        else:
+            pubkey = verifier
+
+        try:
+            X509CertificateGenerator.verify_cert(certificate, pubkey)
+            logger.info('Certificate verification success')
+            return True
+        except ValidationError as e:
+            logger.error(e)
+            logger.error('Certificate verification failed')
+            return False
 
     def _init_ocd(self):
         settings = OcdSettings()
@@ -1109,7 +1170,7 @@ class CommonAPI:
     def _get_target(self, target_name, policy, cwd, rev=None):
         director = TargetDirector()
         self.target_builder = get_target_builder(director, target_name, rev=rev)
-        return director.get_target(policy, target_name, cwd)
+        return director.get_target(policy, cwd)
 
     @staticmethod
     def __key_param(key_type):

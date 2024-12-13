@@ -53,7 +53,8 @@ class ProgrammerBase(metaclass=ABCMeta):
 
     @abstractmethod
     def connect(self, target_name=None, interface=None, probe_id=None, ap=None,
-                acquire=True, power=None, voltage=None, ignore_errors=False):
+                acquire=True, power=None, voltage=None, ignore_errors=False,
+                rev=None):
         """
         Connects to target.
         @param target_name: The target name.
@@ -64,6 +65,7 @@ class ProgrammerBase(metaclass=ABCMeta):
         @param power: Target power
         @param voltage: Target power voltage
         @param ignore_errors: Ignore errors and continue execution
+        @param rev: The target revision.
         @return: True if connected successfully, otherwise False
         """
 

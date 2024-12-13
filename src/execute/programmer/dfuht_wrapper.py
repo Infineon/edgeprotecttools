@@ -41,7 +41,8 @@ class Dfuht(ProgrammerBase):
         self.probe_id = self.runner.serial_port if self.runner else None
 
     def connect(self, target_name=None, interface=None, probe_id=None, ap=None,
-                acquire=True, power=None, voltage=None, ignore_errors=False):
+                acquire=True, power=None, voltage=None, ignore_errors=False,
+                rev=None):
         """Checks whether the specified target is connected"""
         if self.require_path and self.tool_path:
             self.runner.dfuht_path = self.tool_path

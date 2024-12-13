@@ -16,7 +16,6 @@ limitations under the License.
 """
 import json
 
-import jose.exceptions
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec, rsa, x25519
 from cryptography.hazmat.primitives.serialization import (

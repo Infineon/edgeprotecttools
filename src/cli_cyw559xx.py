@@ -166,7 +166,7 @@ def cmd_secure_ota_image(ctx, image, certs, output):
 @click.option('-o', '--output', 'output', type=click.Path(), required=True,
               help='CSR output path')
 @click.option('--csr-id', type=click.Choice(['0', '1', '2']), help='CSR ID',
-              default='0')
+              default='0', show_default=True)
 @click.pass_context
 def cmd_get_csr(ctx, output, csr_id):
     """Load device CSR"""

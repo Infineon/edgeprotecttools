@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 1.3.0
+### Added
+- X.509 certificates generation and verification
+- Device certificate generation for CYW559xx
+
 ## 1.2.0
 ### Added
 - Support for PSOC C3 device

@@ -1249,23 +1249,48 @@ def cmd_verify_image(ctx, image, key):
 @main.command('x509-cert', help='Creates X.509 certificate')
 @click.option('-c', '--config', type=click.Path(), required=True,
               help='The path to the certificate configuration file')
+@click.option('--csr', type=click.Path(), help='The path to the CSR file')
+@click.option('--ca-cert', type=click.Path(),
+              help='The path to the CA certificate')
+@click.option('--self-signed', is_flag=True, default=False,
+              help='Indicates whether the certificate is self-signed')
 @click.option('--key', '--key-path', 'key', type=click.Path(), required=True,
               help='The path to the certificate signing key')
 @click.option('--password', help='Signing key password')
-@click.option('-e', '--encoding', type=click.Choice(['PEM', 'DER']),
+@click.option('-e', '--encoding',
+              type=click.Choice(['PEM', 'DER'], case_sensitive=False),
               default='PEM', help='The encoding of the certificate')
 @click.option('-o', '--output', type=click.Path(), required=True,
               help='The path to the output certificate file')
 @click.pass_context
-def cmd_x509_cert(ctx, config, key, password, encoding, output):
+def cmd_x509_cert(ctx, config, csr, ca_cert, self_signed, key, password,
+                  encoding, output):
     """Creates X.509 certificate"""
     @process_handler()
     def process():
         if 'TOOL' not in ctx.obj:
             return False
         return ctx.obj['TOOL'].x509_certificate(
-            config=config, signing_key=key, password=password,
-            encoding=encoding, output=output)
+            config=config, csr=csr, ca_cert=ca_cert, self_signed=self_signed,
+            signing_key=key, password=password, encoding=encoding,
+            output=output)
+
+    return process
+
+
+@main.command('verify-x509-cert', help='Verifies X.509 certificate')
+@click.option('--cert', type=click.Path(), required=True,
+              help='The path to the certificate file')
+@click.option('--verifier', type=click.Path(), required=True,
+              help='One of the following: key, CA certificate, or CSR')
+@click.pass_context
+def cmd_verify_x509_cert(ctx, cert, verifier):
+    """Creates X.509 certificate"""
+    @process_handler()
+    def process():
+        if 'TOOL' not in ctx.obj:
+            return False
+        return ctx.obj['TOOL'].verify_x509_certificate(cert, verifier)
 
     return process
 
@@ -1287,7 +1312,7 @@ def default_policy(target_name, rev=None):
     director = TargetDirector()
     target_name = target_name.lower()
     get_target_builder(director, target_name, rev=rev)
-    target = director.get_target(None, target_name, None)
+    target = director.get_target(None, None)
     return target.policy
 
 

@@ -57,6 +57,7 @@ class ProjectInitializerCYW559xx(ProjectInitializer):
             ],
             'certs': [
                 'key_cert_config.json',
-                'content_cert_config.json'
-            ],
+                'content_cert_config.json',
+                'x509cert.json'
+            ]
         }

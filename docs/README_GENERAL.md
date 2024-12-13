@@ -18,6 +18,8 @@
 - [Splitting images](#splitting-images)
 - [Extracting data](#extracting-data)
 - [Hash files](#hash-files)
+- [Create X.509 certificate](#create-x509-certificate)
+- [Verify X.509 certificate](#verify-x509-certificate)
 - [Serial interface configuration](#serial-interface-configuration)
 - [HSM](#hsm)
 - [AES encryption](#aes-encryption)
@@ -449,6 +451,101 @@ $ edgeprotecttools hash -i file.bin -a SHA256
 #### Save hash to file
 ```bash
 $ edgeprotecttools hash -i file.bin -a SHA256 -o hash.txt
+```
+
+
+## Create X.509 certificate
+Creates an X.509 certificate.
+### Command: `x509-cert`
+### Parameters
+| Name              | Optional/Required | Description                                                                                                                                                                                       |
+|-------------------|:-----------------:|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -c, --config      |     required      | The path to the certificate configuration file.                                                                                                                                                   |
+| --csr             |     optional      | The path to the CSR file. It can be used in a pair with the configuration file to generate a certificate from both, the configuration file and CSR. The configuration file has a higher priority. |
+| --ca-cert         |     optional      | The path to the CA certificate. Used to establish a certificate chain.                                                                                                                            |
+| --self-signed     |     optional      | The flag indicates that the certificate is self-signed. Leave the `subject_public_key` property empty in the configuration file to generate a self-signed certificate.                            |
+| --key, --key-path |     required      | The path to the certificate signing key.                                                                                                                                                          |
+| --password        |     optional      | Signing key password. Used if the key is encrypted.                                                                                                                                               |
+| -e, --encoding    |     optional      | The encoding of the certificate. Available values: `PEM`, `DER`. The default value is `PEM`.                                                                                                      |
+| -o, --output      |     required      | The path to the output certificate file.                                                                                                                                                          |
+### Configuration file
+The configuration file is a JSON file that contains the certificate parameters.
+```json
+{
+  "version": 3,
+  "serial_number": "",
+  "issuer": {
+    "country": "",
+    "organization": "",
+    "organizational_unit": "",
+    "state_or_province": "",
+    "locality": "",
+    "street_address": "",
+    "postal_code": "",
+    "email_address": "",
+    "common_name": ""
+  },
+  "validity": {
+    "not_before": "",
+    "not_after": "2160-10-05T16:52:44"
+  },
+  "subject": {
+    "country": "",
+    "organization": "",
+    "organizational_unit": "",
+    "state_or_province": "",
+    "locality": "",
+    "street_address": "",
+    "postal_code": "",
+    "email_address": "",
+    "common_name": ""
+  },
+  "subject_public_key": "",
+  "extensions": []
+}
+```
+#### Extensions
+The `extensions` field is an array of objects that contain custom certificate attributes.
+The extension value can be of the following formats:
+* `hex` - the value is a hexadecimal string (e.g `FF00FF00`).
+* `binary_file` - the value is a path to the binary file (e.g `file.bin`).
+* `base64` - the value is a base64 string (e.g `aGVsbG8=`).
+
+The extension item example:
+```json
+{
+  "name": "MyExtension",
+  "oid": "2.24.2.1",
+  "critical": true,
+  "data_format": "hex",
+  "value": "FFFFFFFF"
+}
+```
+### Usage example
+```bash
+# Generate a certificate from the configuration file
+$ edgeprotecttools x509-cert --config config.json --key key.pem --output cert.pem
+
+# Generate a certificate from the CSR and the configuration file and save it in DER format
+$ edgeprotecttools x509-cert --config config.json --csr csr.der --key key.pem --output cert.der --encoding DER
+```
+
+
+## Verify X.509 certificate
+Verifies an X.509 certificate with a key, CA certificate, or CSR.
+### Command: `verify-x509-cert`
+### Parameters
+| Name       | Optional/Required | Description                                                            |
+|------------|:-----------------:|------------------------------------------------------------------------|
+| --cert     |     required      | The path to the certificate file.                                      |
+| --verifier |     required      | One of the following: a public or private key, CA certificate, or CSR. |
+### Usage example
+```bash
+# Verify certificate with a key
+$ edgeprotecttools verify-x509-cert --cert cert.pem --verifier pubkey.pem
+
+# Verify certificate with a CA certificate
+$ edgeprotecttools verify-x509-cert --cert cert.pem --verifier ca_cert.pem
 ```
 
 

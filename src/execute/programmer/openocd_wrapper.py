@@ -71,7 +71,7 @@ class Openocd(ProgrammerBase):
 
     def connect(self, target_name=None, interface=None, probe_id=None,
                 ap='sysap', acquire=None, power=None, voltage=None,
-                ignore_errors=False):
+                ignore_errors=False, rev=None):
         """
         Connects to target using default debug interface.
         @param target_name: The target name.
@@ -82,28 +82,30 @@ class Openocd(ProgrammerBase):
         @param power: Indicates whether to on/off the KitProg3 power
         @param voltage: The KitProg3 voltage level
         @param ignore_errors: Ignore errors and continue execution
+        @param rev: The target revision
         @return: True if connected successfully, otherwise False
         """
         if interface:
             raise NotImplementedError
 
         if target_name:
+            full_name = target_name + '_' + rev if rev else target_name
             ocd_target_name = ''
             # Search for device in target map
             with open(TARGET_MAP, encoding='utf-8') as f:
                 file_content = f.read()
                 json_data = json.loads(file_content)
             for json_target in json_data:
-                if target_name.lower().strip() == json_target.lower().strip():
+                if full_name.lower().strip() == json_target.lower().strip():
                     # Get target info
                     director = TargetDirector()
                     try:
-                        from ...targets import target_data
-                        director.builder = target_data(target_name)['class']()
+                        from ...targets import get_target_builder
+                        get_target_builder(director, target_name, rev=rev)
                     except KeyError as e:
                         raise ValueError(
                             f'Unknown target "{target_name}"') from e
-                    self.target = director.get_target(None, target_name, None)
+                    self.target = director.get_target(None, None)
                     # Get target name which is relevant to OpenOCD
                     ocd_target_name = json_data[json_target]['target']
                     self.mcu = json_data[json_target].get('mcu')

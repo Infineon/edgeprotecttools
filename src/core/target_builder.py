@@ -23,8 +23,20 @@ class TargetBuilder(ABC):
     concrete target builder classes
     """
 
-    def __init__(self):
+    def __init__(self, target_name, rev=None):
+        self._target_name = target_name
+        self._rev = rev
         self._target_dir = None
+
+    @property
+    def target_name(self):
+        """ Target name """
+        return self._target_name
+
+    @property
+    def rev(self):
+        """ Target revision """
+        return self._rev
 
     @property
     def target_dir(self):

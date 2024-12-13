@@ -47,11 +47,12 @@ class TargetDirector:
         self._builder.target_dir = os.path.dirname(os.path.realpath(
             inspect.getfile(builder.__class__)))
 
-    def get_target(self, policy, name, cwd):
+    def get_target(self, policy, cwd):
         target = Target()
 
         # Target directory
-        target.name = name
+        target.name = self._builder.target_name
+        target.rev = self._builder.rev
         target.cwd = cwd
         target.target_dir = self._builder.target_dir
 
@@ -165,6 +166,7 @@ class TargetDirector:
 class Target:
     def __init__(self):
         self._name = None
+        self._rev = None
         self._policy = None
         self._default_policy = None
         self._ocds = None
@@ -204,6 +206,14 @@ class Target:
     @name.setter
     def name(self, name):
         self._name = name
+
+    @property
+    def rev(self):
+        return self._rev
+
+    @rev.setter
+    def rev(self, rev):
+        self._rev = rev
 
     @property
     def policy(self):

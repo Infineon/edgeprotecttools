@@ -78,7 +78,7 @@ def get_target_builder(director, target_name, rev=None):
     """Gets target builder by target name"""
     try:
         target = target_data(target_name, rev=rev)
-        director.builder = target['class']()
+        director.builder = target['class'](target_name, rev=rev)
         return director.builder
     except KeyError as e:
         raise ValueError(f'Unknown target "{target_name}"') from e

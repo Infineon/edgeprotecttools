@@ -36,15 +36,17 @@ class ChipLoad(ProgrammerBase):
         self.probe_id = self.runner.serial_port if self.runner else None
 
     def connect(self, target_name=None, interface=None, probe_id=None, ap=None,
-                acquire=True, power=None, voltage=None, ignore_errors=False):
+                acquire=True, power=None, voltage=None, ignore_errors=False,
+                rev=None):
         """Checks whether the serial port name exists in the comm ports list"""
-        target_name = probe_id if probe_id else self.probe_id
+        port_name = probe_id if probe_id else self.probe_id
         commports = list(serial.tools.list_ports.comports())
+        logger.info('Available serial ports: %s', [p.name for p in commports])
         for commport in commports:
-            if target_name == commport.name:
-                logger.info("Target connected %s", target_name)
+            if port_name in (commport.device, commport.name):
+                logger.info('Using port %s', port_name)
                 return True
-        raise ValueError(f"Unknown probe ID '{target_name}'")
+        raise ValueError(f"Unknown port '{port_name}'")
 
     def disconnect(self):
         """N/A for ChipLoad"""

@@ -71,7 +71,8 @@ class ConnectHelper:
 
             ConnectHelper.connected = tool.connect(
                 target.name, probe_id=probe_id, ap=ap, acquire=acquire,
-                power=power, voltage=voltage, ignore_errors=ignore_errors)
+                power=power, voltage=voltage, ignore_errors=ignore_errors,
+                rev=target.rev)
 
         if not ConnectHelper.connected:
             if tool.name == 'openocd' and not ignore_errors:

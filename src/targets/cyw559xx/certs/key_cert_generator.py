@@ -48,14 +48,11 @@ class KeyCertificateGenerator:
             {
                 "serial_number": "1000000000",
                 "issuer": {
-                    "country": "",
-                    "organization": "",
-                    "organizational_unit": "",
-                    "state_or_province_name": "",
-                    "common_name": "ARM",
-                    "serial_number": ""
+                    "common_name": "ARM"
                 },
-                "subject": "KeyCert",
+                "subject": {
+                    "common_name": "KeyCert"
+                },
                 "subject_public_key": signing_key.public_key(),
                 "validity": {
                     "not_before": "",
@@ -66,21 +63,21 @@ class KeyCertificateGenerator:
                         "name": "",
                         "oid": "2.20.1.1",
                         "critical": True,
-                        "data_source": "hex",
+                        "data_format": "hex",
                         "value": header_ext.hex()
                     },
                     {
                         "name": "",
                         "oid": "2.20.1.2",
                         "critical": True,
-                        "data_source": "hex",
+                        "data_format": "hex",
                         "value": pubkey_np_ext.hex()
                     },
                     {
                         "name": "",
                         "oid": "2.20.1.3",
                         "critical": True,
-                        "data_source": "hex",
+                        "data_format": "hex",
                         "value": cert_body_ext.hex()
                     }
                 ]

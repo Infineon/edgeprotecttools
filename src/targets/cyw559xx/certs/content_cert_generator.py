@@ -54,14 +54,11 @@ class ContentCertificateGenerator:
             {
                 "serial_number": "1000000000",
                 "issuer": {
-                    "country": "",
-                    "organization": "",
-                    "organizational_unit": "",
-                    "state_or_province_name": "",
                     "common_name": "ARM",
-                    "serial_number": ""
                 },
-                "subject": "CntCert",
+                "subject": {
+                    "common_name": "CntCert"
+                },
                 "subject_public_key": signing_key.public_key(),
                 "validity": {
                     "not_before": "",
@@ -72,21 +69,21 @@ class ContentCertificateGenerator:
                         "name": "",
                         "oid": "2.20.2.1",
                         "critical": True,
-                        "data_source": "hex",
+                        "data_format": "hex",
                         "value": header_ext.hex()
                     },
                     {
                         "name": "",
                         "oid": "2.20.2.2",
                         "critical": True,
-                        "data_source": "hex",
+                        "data_format": "hex",
                         "value": pubkey_np_ext.hex()
                     },
                     {
                         "name": "",
                         "oid": "2.20.2.4",
                         "critical": True,
-                        "data_source": "hex",
+                        "data_format": "hex",
                         "value": cert_body_ext.hex()
                     }
                 ]

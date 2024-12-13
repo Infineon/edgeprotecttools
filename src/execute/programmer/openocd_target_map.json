@@ -12,12 +12,19 @@
 
   "cyb06445lqi-s3d42": {"target": "psoc6_512k_secure", "mcu": "psoc64.cpu", "cm0": "cm0", "cm4": "cm4", "sysap": "sysap"},
   "cy8cproto-064b0s3": {"target": "psoc6_512k_secure", "mcu": "psoc64.cpu", "cm0": "cm0", "cm4": "cm4", "sysap": "sysap"},
+  "cy8cproto-064b0s3_a1": {"target": "psoc6_512k_secure", "mcu": "psoc64.cpu", "cm0": "cm0", "cm4": "cm4", "sysap": "sysap"},
   "cyb06xx5": {"target": "psoc6_512k_secure", "mcu": "psoc64.cpu", "cm0": "cm0", "cm4": "cm4", "sysap": "sysap"},
+  "cyb06xx5_a1": {"target": "psoc6_512k_secure", "mcu": "psoc64.cpu", "cm0": "cm0", "cm4": "cm4", "sysap": "sysap"},
 
   "cyw20829": {"target": "cyw20829", "mcu": "cyw20829", "cm33": "cm33ap", "sysap": "sysap"},
+  "cyw20829_a0": {"target": "cyw20829", "mcu": "cyw20829", "cm33": "cm33ap", "sysap": "sysap"},
+  "cyw20829_b0": {"target": "cyw20829", "mcu": "cyw20829", "cm33": "cm33ap", "sysap": "sysap"},
+  "cyw20829_b1": {"target": "cyw20829", "mcu": "cyw20829", "cm33": "cm33ap", "sysap": "sysap"},
   "cyw89829": {"target": "cyw20829", "mcu": "cyw20829", "cm33": "cm33ap", "sysap": "sysap"},
 
-  "pse84": {"target": "cat1d", "mcu": "cat1d", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
+  "pse84": {"target": "infineon/pse84", "mcu": "pse84", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
+  "pse84_a0": {"target": "infineon/pse84_a0", "mcu": "pse84", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
+  "pse84_b0": {"target": "infineon/pse84", "mcu": "pse84", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "psoc_c3": {"target": "infineon/psc3", "mcu": "psc3", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "psb3000": {"target": "cat1d", "mcu": "cat1d", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "acw64xx": {"target": "infineon/psoc1208", "mcu": "psoc1208", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
