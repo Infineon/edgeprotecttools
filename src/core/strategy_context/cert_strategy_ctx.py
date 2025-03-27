@@ -1,5 +1,5 @@
 """
-Copyright 2019-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2019-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ class CertificateStrategy(ABC):
     """
     @abstractmethod
     def create_certificate(self, filename, encoding, overwrite, **kwargs):
-        """Create x509 certificate"""
+        """Create certificate"""
 
     @abstractmethod
     def create_csr(self, output, key_path, **kwargs):
@@ -32,11 +32,11 @@ class CertificateStrategy(ABC):
 
     @abstractmethod
     def default_certificate_data(self, tool, target, probe_id):
-        """Adds default data to the x509 certificate"""
+        """Adds default data to the certificate"""
 
     @abstractmethod
     def verify_certificate(self, cert_path, root_cert_path, key_path):
-        """Verifies x509 certificate"""
+        """Verifies certificate"""
 
 
 class CertificateContext:
@@ -68,7 +68,7 @@ class CertificateContext:
                                                  **kwargs)
 
     def verify_certificate(self, cert_path, root_cert_path, key_path):
-        """Verifies x509 certificate"""
+        """Verifies certificate"""
         return self._strategy.verify_certificate(
             cert_path, root_cert_path, key_path)
 

@@ -2,7 +2,7 @@
 from PyInstaller.utils.hooks import collect_submodules
 
 hiddenimports = []
-hiddenimports += collect_submodules('lief')
+hiddenimports += collect_submodules('elftools')
 
 
 a = Analysis(

@@ -1,5 +1,5 @@
 """
-Copyright 2019-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2019-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,7 @@ from ...core.key_handlers.ec_handler import ECHandler
 
 logger = logging.getLogger(__name__)
 
-CurveTypes = Union[ec.SECP256R1, ec.SECP384R1]
+CurveTypes = Union[ec.SECP256R1, ec.SECP384R1, ec.SECP521R1]
 
 
 def generate_key(curve: CurveTypes, template=None, byteorder="big"):
@@ -51,11 +51,13 @@ def generate_key(curve: CurveTypes, template=None, byteorder="big"):
                 data = f.read()
 
             if (isinstance(curve, ec.SECP256R1) and len(data) == 65) \
-                    or (isinstance(curve, ec.SECP384R1) and len(data) == 97):
+                or (isinstance(curve, ec.SECP384R1) and len(data) == 97) \
+                    or (isinstance(curve, ec.SECP521R1) and len(data) == 133):
                 public_key = ECHandler.populate_public_key(data, curve=curve)
                 private_key = None
             elif (isinstance(curve, ec.SECP256R1) and len(data) == 32) \
-                    or (isinstance(curve, ec.SECP384R1) and len(data) == 48):
+                or (isinstance(curve, ec.SECP384R1) and len(data) == 48)\
+                    or (isinstance(curve, ec.SECP521R1) and len(data) == 66):
                 value = int.from_bytes(data, byteorder=byteorder)
                 public_key = None
                 private_key = ECHandler.populate_private_key(value, curve=curve)
@@ -71,7 +73,7 @@ def generate_key(curve: CurveTypes, template=None, byteorder="big"):
                 f'The template structure is invalid ({template})') from e
 
     else:
-        if not isinstance(curve, (ec.SECP256R1, ec.SECP384R1)):
+        if not isinstance(curve, (ec.SECP256R1, ec.SECP384R1, ec.SECP521R1)):
             raise TypeError(f"Unsupported curve '{type(curve)}'")
 
         private_key = ec.generate_private_key(curve, default_backend())

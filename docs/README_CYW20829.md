@@ -1,4 +1,5 @@
 # Table of Contents
+- [CYW20829/CYW89829 HW/SW compatibility](#cyw20829cyw89829-hwsw-compatibility)
 - [Main features](#main-features)
 - [Quick start](#quick-start)
 - [Usage example](#usage-example)
@@ -33,10 +34,43 @@
     - [Sign and encrypt an image](#sign-and-encrypt-an-image)
 
 
+# CYW20829/CYW89829 HW/SW compatibility
+<table>
+  <thead>
+    <tr>
+      <td>Target/Kit</td>
+      <td>Silicon ID, Silicon Rev., Family ID</td>
+      <td>ROM Boot Version</td>
+      <td>RAM Applications Version</td>
+    </tr>
+  </thead>
+  <tbody>
+  <tr>
+    <td>cyw20829</td>
+    <td>0xEB43, 0x21 (B0), 0x110</td>
+    <td>1.2.0.8334</td>
+    <td>1.2.0.3073</td>
+  </tr>
+  <tr>
+    <td>cyw20829</td>
+    <td>0xEB40, 0x22 (B1), 0x110</td>
+    <td>1.3.0.12044</td>
+    <td>1.3.0.4574</td>
+  </tr>
+  <tr>
+    <td>cyw89829</td>
+    <td>0xEB47, 0x21 (B0), 0x110</td>
+    <td>1.2.0.8334</td>
+    <td>1.2.0.3073</td>
+  </tr>
+  </tbody>
+</table>
+
+
 # Main features
-* [Create a key](#create-a-key) - Creates an RSA private/public key pair or AES key for image encryption.
-* [Provisioning a device](#provision-a-device) - Provisioning is the act of configuring a device with an authorized set of keys, policies, and optionally certificates.
-* [Sign a user application](#sign-an-image) - Signs a user application with a private key locally or with a Hardware Security Module.
+* [Create a key](#create-key) - Creates an RSA private/public key pair or AES key for image encryption.
+* [Provisioning a device](#provision-device) - Provisioning is the act of configuring a device with an authorized set of keys, policies, and optionally certificates.
+* [Sign a user application](#sign-image) - Signs a user application with a private key locally or with a Hardware Security Module.
 * [Encrypt a user application](#encrypt-the-user-application) - Signs and encrypts a user application.
 * [Create a debug certificate](#create-debug-certificate) - The debug certificate is used by ROM boot code to enable CM33-AP and/or Sys-AP when it is temporarily disabled.
 
@@ -56,6 +90,8 @@ $ edgeprotecttools set-ocd --name openocd --path /Users/username/tools/openocd
 
 ## 2. Define a target
 Run the following command and find the name of your target in the list of supported targets (**cyw20829** or **cyw89829**).
+
+**IMPORTANT**: Make sure to use the correct device revision by specifying the `--rev` option. If the option is not specified, the tool will use the latest revision (`B1`).
 ```bash
 $ edgeprotecttools device-list
 ```
@@ -170,7 +206,7 @@ A 128-bit encryption key is provisioned as is. There is an option to have two OE
  _NOTE_: An encryption key can be transferred to a device during provisioning only (NOT reprovisioning). Also, if encryption is used, oem_key_0 cannot be revoked during reprovisioning.
 
 # Probe ID
-If there is more than one device connected it is necessary to provide the probe ID. Otherwise OpenOCD will use the first found. Use `fw-loader` which is one of the ModusToolbox™ tools.
+If there is more than one device connected it is necessary to provide the probe ID. Otherwise, OpenOCD will use the first found. Use `fw-loader` which is one of the ModusToolbox™ tools.
 ```bash
 $ ~/ModusToolbox/tools_3.1/fw-loader/bin/fw-loader.exe --device-list
 Infineon Firmware Updater, Version: 3.5.0.2114
@@ -217,15 +253,15 @@ The interface provides common options. These options are common for all commands
 Creates an RSA private/public key pair to provision a device and to sign a user application. There must be a common key pair between the secure device and user application. A device must be provisioned with a public key, the user application must be signed with a corresponding private key from the same pair. Also, the command can be used to generate an AES key for image encryption.
 ### Command: `create-key`
 ### Parameters
-| Name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Optional/Required  | Description  |
-| --------------------------------|:------------------:| -------------|
-| -k, --key-id [0\|1]             | optional (mutually exclusive with the _--output_ option) | The OEM key ID. This ID defines the paths where the public and private keys will be saved based on the selected policy _pre_build_ and _post_build_ sections. Depending on the selected value 0 or 1, _oem_key_0_ or _oem_key_1_ will be used. |
-| -o, --output [private] [public] | optional (mutually exclusive with the _--key-id_ option) | Key pair output files. This is an alternative option and can be used to create a key in the different from the policy location. If it is specified, the _--key-id_ option will be ignored. However, using _--key-id_ is preferable. It allows avoiding accidental provisioning and signing with a key from the different pairs. As the option value, provide private and public key paths. Specify the option multiple times to create multiple key pairs. |
-| --aes                           | optional (mutually exclusive with the _--key-id_ and _--output_ options)          | Indicates whether to generate an AES key for image encryption. The key will be saved by the path specified in the policy _smif_aes_key_ field.
-| --key-path    | optional        | Used to generate a key into a specific path. This option should only be used with _--aes_ or _--template_ option to specify location for these type of keys. The option is not applicable to OEM keys. For OEM keys there is the _--key-id_ option. |
-| --overwrite / --no-overwrite    | optional           | Indicates whether overwrite a key if it already exists. If not specified the command prompt would ask for a decision.|
-| --template    | optional        | A JSON file containing public key modulus and exponent. The option is used for creating a PEM file based on public key modulus and exponent. Usually used to convert key public numbers returned by HSM to a standard format key. |
-| --hash-path   | optional        | A path where to save the public key hash if needed.|
+| Name                            |                            Optional/Required                             | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+|---------------------------------|:------------------------------------------------------------------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -k, --key-id [0\|1]             |         optional (mutually exclusive with the _--output_ option)         | The OEM key ID. This ID defines the paths where the public and private keys will be saved based on the selected policy _pre_build_ and _post_build_ sections. Depending on the selected value 0 or 1, _oem_key_0_ or _oem_key_1_ will be used.                                                                                                                                                                                                             |
+| -o, --output [private] [public] |         optional (mutually exclusive with the _--key-id_ option)         | Key pair output files. This is an alternative option and can be used to create a key in the different from the policy location. If it is specified, the _--key-id_ option will be ignored. However, using _--key-id_ is preferable. It allows avoiding accidental provisioning and signing with a key from the different pairs. As the option value, provide private and public key paths. Specify the option multiple times to create multiple key pairs. |
+| --aes                           | optional (mutually exclusive with the _--key-id_ and _--output_ options) | Indicates whether to generate an AES key for image encryption. The key will be saved by the path specified in the policy _smif_aes_key_ field.                                                                                                                                                                                                                                                                                                             |
+| --key-path                      |                                 optional                                 | Used to generate a key into a specific path. This option should only be used with _--aes_ or _--template_ option to specify location for these type of keys. The option is not applicable to OEM keys. For OEM keys there is the _--key-id_ option.                                                                                                                                                                                                        |
+| --overwrite / --no-overwrite    |                                 optional                                 | Indicates whether overwrite a key if it already exists. If not specified the command prompt would ask for a decision.                                                                                                                                                                                                                                                                                                                                      |
+| --template                      |                                 optional                                 | A JSON file containing public key modulus and exponent. The option is used for creating a PEM file based on public key modulus and exponent. Usually used to convert key public numbers returned by HSM to a standard format key.                                                                                                                                                                                                                          |
+| --hash-path                     |                                 optional                                 | A path where to save the public key hash if needed.                                                                                                                                                                                                                                                                                                                                                                                                        |
 ### Usage example
 ```bash
 # Generate a new RSA-2048 key pair and save it to the path specified in the "oem_priv_key_0" property in the policy file.
@@ -244,10 +280,10 @@ $ edgeprotecttools -t cyw20829 -p policy/policy_secure.json create-key --aes
 Configuring a device with a set of keys and policies.
 ### Command: `provision-device`
 ### Parameters
-| Name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Optional/Required  | Description  |
-| -------------------|:-----------------:| -------------|
-| --probe-id         | optional          | Probe serial number. Make sure to specify the probe ID if there is more than one device connected to avoid accidental programming of the wrong device.|
-| --existing-packet  | optional          | Skip provisioning packet creation and use the existing packet. This may be useful when a packet with RAM application input parameters already exists and the tool does not have to generate it again. If not specified, the packet will be generated based on the specified policy.|
+| Name              | Optional/Required | Description                                                                                                                                                                                                                                                                         |
+|-------------------|:-----------------:|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --probe-id        |     optional      | Probe serial number. Make sure to specify the probe ID if there is more than one device connected to avoid accidental programming of the wrong device.                                                                                                                              |
+| --existing-packet |     optional      | Skip provisioning packet creation and use the existing packet. This may be useful when a packet with RAM application input parameters already exists and the tool does not have to generate it again. If not specified, the packet will be generated based on the specified policy. |
 ### Usage example
 ```bash
 # From the specified policy file generate provisioning packet and initiate device provisioning
@@ -265,13 +301,13 @@ $ edgeprotecttools -t cyw20829 -p policy/policy_secure.json provision-device --e
 Once a device has been provisioned it can only be reprovisioned. Reprovisioning allows configuring a limited set of settings (e.g. provisioning an additional OEM key, revoking _icv_pubkey_0_ and oem_pubkey_0 keys, changing anti-rollback counter, etc). The _policy_reprovisioning_secure.json_ file contains only those settings that can be changed.
 ### Command: `reprovision-device`
 ### Parameters
-| Name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Optional/Required  | Description  |
-| --------------------|:------------------:| -------------|
-| -k, --key-id [0\|1] | optional           | The OEM private key ID used to sign the reprovisioning packet. This ID informs the tool about the key location. The tool will use the path specified in the selected policy _post_build_ section.|
-| --key-path          | optional           | Sets OEM private key that is used to sign the reprovisioning packet. Overrides --key-id option.|
-| --probe-id          | optional           | Probe serial number. Make sure to specify the probe ID if there is more than one device connected to avoid accidental programming of the wrong device.|
-| --existing-packet   | optional           | Skip reprovisioning packet creation and use the existing packet. This may be useful when a packet with RAM application input parameters already exists and the tool does not have to generate it again. If not specified, the packet will be generated based on the specified policy.|
-| --signature         | optional           | The name of the file containing the signature. Use this option to attach a signature returned by HSM to the unsigned packet. More details in [Signing reprovisioning data packet with HSM](#signing-reprovisioning-data-packet-with-HSM).|
+| Name                | Optional/Required | Description                                                                                                                                                                                                                                                                           |
+|---------------------|:-----------------:|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -k, --key-id [0\|1] |     optional      | The OEM private key ID used to sign the reprovisioning packet. This ID informs the tool about the key location. The tool will use the path specified in the selected policy _post_build_ section.                                                                                     |
+| --key-path          |     optional      | Sets OEM private key that is used to sign the reprovisioning packet. Overrides --key-id option.                                                                                                                                                                                       |
+| --probe-id          |     optional      | Probe serial number. Make sure to specify the probe ID if there is more than one device connected to avoid accidental programming of the wrong device.                                                                                                                                |
+| --existing-packet   |     optional      | Skip reprovisioning packet creation and use the existing packet. This may be useful when a packet with RAM application input parameters already exists and the tool does not have to generate it again. If not specified, the packet will be generated based on the specified policy. |
+| --signature         |     optional      | The name of the file containing the signature. Use this option to attach a signature returned by HSM to the unsigned packet. More details in [Signing reprovisioning data packet with HSM](#signing-reprovisioning-data-packet-with-HSM).                                             |
 ### Usage example
 ```bash
 # From the specified policy file generate a reprovisioning packet and initiate device reprovisioning. The packet is signed with the key specified in the policy "oem_priv_key_0" property. Alternatively to the "--key-id" option the "--key-path" option can be used to specify the key path
@@ -292,13 +328,13 @@ $ edgeprotecttools -t cyw20829 -p policy/policy_reprovisioning_secure.json repro
 Creates provisioning/reprovisioning data packet without starting the device provisioning process.
 ### Command: `create-provisioning-packet`
 ### Parameters
-| Name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Optional/Required  | Description  |
-| --------------------|:------------------:| -------------|
-| -k, --key-id [0\|1] | optional           | The OEM private key ID used to sign the reprovisioning packet. Applicable with reprovisioning policy type only. The ID informs the tool about the key location. The tool will use the path specified in the selected policy _post_build_ section. |
-| --key-path          | optional           | Key file path to sign the reprovisioning packet. Applicable with reprovisioning policy type only. This is an alternative option and can be used to specify different from the policy key file location. If it is specified, the _--key-id_ option will be ignored. However, using _--key-id_ is preferable. It allows avoiding accidental provisioning and signing with keys from the different pairs. |
-| --signature         | optional           | The file path containing the signature. Used to sign the reprovisioning packet by HSM ([Signing reprovisioning data packet with HSM](#signing-reprovisioning-data-packet-with-HSM)). |
-| --pubkey            | optional           | The public key to be added to the reprovisioning packet. Used to sign the reprovisioning packet by HSM ([Signing reprovisioning data packet with HSM](#signing-reprovisioning-data-packet-with-HSM)). |
-| --non-signed        | optional           | The flag indicating that reprovisioning packet will not be signed. Used to create the reprovisioning packet for signing by HSM ([Signing reprovisioning data packet with HSM](#signing-reprovisioning-data-packet-with-HSM)). |
+| Name                | Optional/Required | Description                                                                                                                                                                                                                                                                                                                                                                                            |
+|---------------------|:-----------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -k, --key-id [0\|1] |     optional      | The OEM private key ID used to sign the reprovisioning packet. Applicable with reprovisioning policy type only. The ID informs the tool about the key location. The tool will use the path specified in the selected policy _post_build_ section.                                                                                                                                                      |
+| --key-path          |     optional      | Key file path to sign the reprovisioning packet. Applicable with reprovisioning policy type only. This is an alternative option and can be used to specify different from the policy key file location. If it is specified, the _--key-id_ option will be ignored. However, using _--key-id_ is preferable. It allows avoiding accidental provisioning and signing with keys from the different pairs. |
+| --signature         |     optional      | The file path containing the signature. Used to sign the reprovisioning packet by HSM ([Signing reprovisioning data packet with HSM](#signing-reprovisioning-data-packet-with-HSM)).                                                                                                                                                                                                                   |
+| --pubkey            |     optional      | The public key to be added to the reprovisioning packet. Used to sign the reprovisioning packet by HSM ([Signing reprovisioning data packet with HSM](#signing-reprovisioning-data-packet-with-HSM)).                                                                                                                                                                                                  |
+| --non-signed        |     optional      | The flag indicating that reprovisioning packet will not be signed. Used to create the reprovisioning packet for signing by HSM ([Signing reprovisioning data packet with HSM](#signing-reprovisioning-data-packet-with-HSM)).                                                                                                                                                                          |
 ### Usage example
 ```bash
 # Create provisioning packet using secure policy
@@ -319,33 +355,33 @@ $ edgeprotecttools -t cyw20829 -p policy/policy_reprovisioning_secure.json creat
 Signs a user application with a key. Optionally encrypts the signed application.
 ### Command: `sign-image`
 ### Parameters
-| Name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Optional/Required  | Description   |
-| ------------------------- |:------------------:| ------------- |
-| -i, --image               | required           | User application file. The output file format is based on the input file extension (bin or hex) |
-| -k, --key-id [0\|1]       | optional (mutually exclusive with the _--key-path_ option) | The OEM key ID. This ID defines the key location based on the selected policy _post_build_ section. Depending on the selected value 0 or 1, _oem_priv_key_0_ or _oem_priv_key_1_ will be used. |
-| --key-path                | optional (mutually exclusive with the _--key-id_ option) | Key file path to sign the image. This is an alternative option and can be used to specify different from the policy key file location. If it is specified, the _--key-id_ option will be ignored. However, using _--key-id_ is preferable. It allows avoiding accidental provisioning and signing with keys from the different pairs. |
-| --signature                | optional           | The name of the file containing the signature. Used to add an existing signature generated by HSM to the image. More details in [Signing application with HSM](#signing-application-with-hsm).|
-| -R, --erased-val [0\|0xff] | optional           | The value that is read back from erased flash. The default value is 0.|
-| -o, --output              | optional           | Signed image output file. If not specified, a copy of the input file will be created with the _unsigned_ prefix, then the input file will be signed. |
-| --encrypt                 | optional           | Enable the encryption feature. If present, the image will be encrypted after signing. |
-| --enckey                  | optional           | Path to the AES key. If absent, the key path is taken from the policy _smif_aes_key_ field. |
-| --hex-addr                | optional           | Adjusts start address in .hex output file. The default value is 0. Ignored for output images in .bin format.|
-| --app-addr                | optional           | The address of the application to encrypt. Accepts values as hexadecimal or decimal numbers. The default value is 0. |
-| -f, --image-format        | optional           | The image format defines the image header size, signing and encryption algorithms. Values: _bootrom_ram_app_ - RAM application started by ROM boot code; _bootrom_next_app_ - external memory application started by ROM boot code (e.g. [MCUBoot](#https://docs.mcuboot.com/)); _mcuboot_user_app_ - application started by MCUBoot. The default value is _mcuboot_user_app_. |
-| -H, --header-size         | optional           | Sets image header size. Overrides header size defined by the --image-format option. |
-| -S, --slot-size           | optional           | Sets maximum slot size. The default value is 0x20000.
-| --pad                     | optional           | Adds padding to the image trailer. Pads the image from the end of the TLV area up to the slot size. _boot_magic_ is always at the very end after the padding. Needed for [MCUBoot](#https://docs.mcuboot.com/) image upgrade.|
-| --confirm                 | optional           | Adds image OK status to the trailer. Pads the image from the end of the TLV area up to the slot size and sets the image OK byte to 0x01 (the eighth byte from the end). The padding is required for this feature and is always applied. _boot_magic_ is always at the very end after the padding. Needed for [MCUBoot](#https://docs.mcuboot.com/) image upgrade.|
-| --overwrite-only          | optional           | Sets Overwrite mode in [MCUBoot](#https://docs.mcuboot.com/) image header instead of Swap.|
-| --update-key-id [0\|1]    | optional           | Sets OEM private key ID used to sign the update data packet. Used to add the update packet with the NV counter to the protected TLV.|
-| --update-key-path         | optional           | The alternative option to _--update-key-id_ used to sign the update data packet. Overrides the --update-key-id option.|
-| --min-erase-size          | optional           | Sets minimum erase size. The default value is 0x1000.|
-| --align [1\|2\|4\|8]      | optional           | Sets flash alignment. The default value is 8.|
-| -v, --version             | optional           | Sets image version in the image header. The default value is 0.1.|
-| -d, --dependencies        | optional           | Add dependency on another image, format: "(<image_ID>,<image_version>), ... ".|
-| --image-id                | optional           | Image ID. The value is used to update NV counter. The default value is 0.|
-| --nonce                   | optional           | A 12-bytes hex string or a file containing nonce used for encryption. If not provided, a random value will be generated. Hex string of the length less than 12 will be padded with zeros (e.g. A1 = 0000000000000000000000A1).|
-| --nonce-output            | optional           | The path to a file where to save the nonce.|
+| Name                       |                     Optional/Required                      | Description                                                                                                                                                                                                                                                                                                                                                                    |
+|----------------------------|:----------------------------------------------------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -i, --image                |                          required                          | User application file. The output file format is based on the input file extension (bin or hex).                                                                                                                                                                                                                                                                               |
+| -k, --key-id [0\|1]        | optional (mutually exclusive with the _--key-path_ option) | The OEM key ID. This ID defines the key location based on the selected policy _post_build_ section. Depending on the selected value 0 or 1, _oem_priv_key_0_ or _oem_priv_key_1_ will be used.                                                                                                                                                                                 |
+| --key-path                 |  optional (mutually exclusive with the _--key-id_ option)  | Key file path to sign the image. This is an alternative option and can be used to specify different from the policy key file location. If it is specified, the _--key-id_ option will be ignored. However, using _--key-id_ is preferable. It allows avoiding accidental provisioning and signing with keys from the different pairs.                                          |
+| --signature                |                          optional                          | The name of the file containing the signature. Used to add an existing signature generated by HSM to the image. More details in [Signing application with HSM](#signing-application-with-hsm).                                                                                                                                                                                 |
+| -R, --erased-val [0\|0xff] |                          optional                          | The value that is read back from erased flash. The default value is 0.                                                                                                                                                                                                                                                                                                         |
+| -o, --output               |                          optional                          | Signed image output file. If not specified, a copy of the input file will be created with the _unsigned_ prefix, then the input file will be signed.                                                                                                                                                                                                                           |
+| --encrypt                  |                          optional                          | Enable the encryption feature. If present, the image will be encrypted after signing.                                                                                                                                                                                                                                                                                          |
+| --enckey                   |                          optional                          | Path to the AES key. If absent, the key path is taken from the policy _smif_aes_key_ field.                                                                                                                                                                                                                                                                                    |
+| --hex-addr                 |                          optional                          | Adjusts start address in .hex output file. The default value is 0. Ignored for output images in .bin format.                                                                                                                                                                                                                                                                   |
+| --app-addr                 |                          optional                          | The address of the application to encrypt. Accepts values as hexadecimal or decimal numbers. The default value is 0.                                                                                                                                                                                                                                                           |
+| -f, --image-format         |                          optional                          | The image format defines the image header size, signing and encryption algorithms. Values: _bootrom_ram_app_ - RAM application started by ROM boot code; _bootrom_next_app_ - external memory application started by ROM boot code (e.g. [MCUBoot](#https://docs.mcuboot.com/)); _mcuboot_user_app_ - application started by MCUBoot. The default value is _mcuboot_user_app_. |
+| -H, --header-size          |                          optional                          | Sets image header size. Overrides header size defined by the --image-format option.                                                                                                                                                                                                                                                                                            |
+| -S, --slot-size            |                          optional                          | Sets maximum slot size. The default value is 0x20000.                                                                                                                                                                                                                                                                                                                          |
+| --pad                      |                          optional                          | Adds padding to the image trailer. Pads the image from the end of the TLV area up to the slot size. _boot_magic_ is always at the very end after the padding. Needed for [MCUBoot](#https://docs.mcuboot.com/) image upgrade.                                                                                                                                                  |
+| --confirm                  |                          optional                          | Adds image OK status to the trailer. Pads the image from the end of the TLV area up to the slot size and sets the image OK byte to 0x01 (the eighth byte from the end). The padding is required for this feature and is always applied. _boot_magic_ is always at the very end after the padding. Needed for [MCUBoot](#https://docs.mcuboot.com/) image upgrade.              |
+| --overwrite-only           |                          optional                          | Sets Overwrite mode in [MCUBoot](#https://docs.mcuboot.com/) image header instead of Swap.                                                                                                                                                                                                                                                                                     |
+| --update-key-id [0\|1]     |                          optional                          | Sets OEM private key ID used to sign the update data packet. Used to add the update packet with the NV counter to the protected TLV.                                                                                                                                                                                                                                           |
+| --update-key-path          |                          optional                          | The alternative option to _--update-key-id_ used to sign the update data packet. Overrides the --update-key-id option.                                                                                                                                                                                                                                                         |
+| --min-erase-size           |                          optional                          | Sets minimum erase size. The default value is 0x1000.                                                                                                                                                                                                                                                                                                                          |
+| --align [1\|2\|4\|8]       |                          optional                          | Sets flash alignment. The default value is 8.                                                                                                                                                                                                                                                                                                                                  |
+| -v, --version              |                          optional                          | Sets image version in the image header. The default value is 0.1.                                                                                                                                                                                                                                                                                                              |
+| -d, --dependencies         |                          optional                          | Add dependency on another image, format: "(<image_ID>,<image_version>), ... ".                                                                                                                                                                                                                                                                                                 |
+| --image-id                 |                          optional                          | Image ID. The value is used to update NV counter. The default value is 0.                                                                                                                                                                                                                                                                                                      |
+| --nonce                    |                          optional                          | A 12-bytes hex string or a file containing nonce used for encryption. If not provided, a random value will be generated. Hex string of the length less than 12 will be padded with zeros (e.g. A1 = 0000000000000000000000A1).                                                                                                                                                 |
+| --nonce-output             |                          optional                          | The path to a file where to save the nonce.                                                                                                                                                                                                                                                                                                                                    |
 ### Usage example
 ```bash
 # Sign the image with the "oem_priv_key_0" specified in the policy
@@ -370,14 +406,14 @@ Refer to [Encrypt the user application](#encrypt-the-user-application) for more 
 Encrypts binary file data.
 ### Command: `encrypt`
 ### Parameters
-| Name           | Optional/Required | Description |
-| -------------- |:-----------------:| ------------- |
-| -i, --input    | required          | The binary file to encrypt.|
-| -o, --output   | required          | Signed image output file.|
-| --enckey       | required          | The key used to encrypt the image.|
-| --iv           | required          | Initialization vector. Decimal or hexadecimal value. Must be equal to application address.|
-| --nonce        | required          | A 12-bytes hex string or a file containing nonce used for encryption. If not provided, a random value will be generated. Hex string of the length less than 12 will be padded with zeros (e.g. A1 = 0000000000000000000000A1).
-| --nonce-output | optional          | The path to a file where to save the nonce.|
+| Name           | Optional/Required | Description                                                                                                                                                                                                                    |
+|----------------|:-----------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -i, --input    |     required      | The binary file to encrypt.                                                                                                                                                                                                    |
+| -o, --output   |     required      | Signed image output file.                                                                                                                                                                                                      |
+| --enckey       |     required      | The key used to encrypt the image.                                                                                                                                                                                             |
+| --iv           |     required      | Initialization vector. Decimal or hexadecimal value. Must be equal to application address.                                                                                                                                     |
+| --nonce        |     required      | A 12-bytes hex string or a file containing nonce used for encryption. If not provided, a random value will be generated. Hex string of the length less than 12 will be padded with zeros (e.g. A1 = 0000000000000000000000A1). |
+| --nonce-output |     optional      | The path to a file where to save the nonce.                                                                                                                                                                                    |
 ### Usage example
 ```bash
 # Encrypt image
@@ -389,23 +425,23 @@ $ edgeprotecttools -t cyw20829 encrypt --input image.bin --output image_encrypte
 Extends a firmware image with the [protected TLV](https://docs.mcuboot.com/design.html#protected-tlvs) area and [mcuboot header](https://github.com/mcu-tools/mcuboot/blob/master/docs/design.md#image-format), but does not sign the image. Usually, this command is useful for [signing and image with a Hardware Security Module](#signing-application-with-hsm).
 ### Command: `extend-image`
 ### Parameters
-| Name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Optional/Required | Description |
-| ----------------------------- |:------------------:| ------------- |
-| -i, --image                   | required           | User application file. The output file format is based on the input file extension (bin or hex). |
-| --pubkey                      | optional           | The public key to be added to the image. Necessary for the image further verification. |
-| -R, --erased-val [0\|0xff]    | optional           | The value that is read back from erased flash. The default value is 0.|
-| -o, --output                  | optional           | Extended image output file. If not specified, a copy of the input file will be created with the _orig_ prefix, then the input file will be processed.|
-| --protected-tlv [tag] [value] | optional           | Custom TLV that will be placed into a protected area. Basically, this is the user's custom data. Add the "0x" prefix if the value should be interpreted as an integer, otherwise, it will be interpreted as a string. Specify the option multiple times to add multiple TLVs. |
-| -f, --image-format        | optional           | The image format defines the image header size, signing and encryption algorithms. Values: _bootrom_ram_app_ - RAM application started by ROM boot code; _bootrom_next_app_ - external memory application started by ROM boot code (e.g. [MCUBoot](#https://docs.mcuboot.com/)); _mcuboot_user_app_ - application started by MCUBoot. The default value is _mcuboot_user_app_. |
-| -H, --header-size         | optional           | Sets image header size. Overrides header size defined by the --image-format option. |
-| -S, --slot-size           | optional           | Sets maximum slot size. The default value is 0x20000.|
-| --pad                     | optional           | Adds padding to the image trailer. Pads the image from the end of the TLV area up to the slot size. _boot_magic_ is always at the very end after the padding. Needed for [MCUBoot](#https://docs.mcuboot.com/) image upgrade.|
-| --confirm                 | optional           | Adds image OK status to the trailer. Pads the image from the end of the TLV area up to the slot size and sets the image OK byte to 0x01 (the eighth byte from the end). The padding is required for this feature and is always applied. _boot_magic_ is always at the very end after the padding. Needed for [MCUBoot](#https://docs.mcuboot.com/) image upgrade.|
-| --overwrite-only          | optional           | Sets Overwrite mode in [MCUBoot](#https://docs.mcuboot.com/) image header instead of Swap.|
-| --align [1\|2\|4\|8]      | optional           | Sets flash alignment. The default value is 8.|
-| --update-key-id [0\|1]    | optional           | Sets OEM private key ID used to sign the update data packet. Used to add the update packet with the NV counter to the protected TLV.|
-| --update-key-path         | optional           | The alternative option to _--update-key-id_ used to sign the update data packet. Overrides the --update-key-id option.|
-| --image-id                | optional           | Image ID. The value is used to update NV counter. The default value is 0.|
+| Name                          | Optional/Required | Description                                                                                                                                                                                                                                                                                                                                                                    |
+|-------------------------------|:-----------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -i, --image                   |     required      | User application file. The output file format is based on the input file extension (bin or hex).                                                                                                                                                                                                                                                                               |
+| --pubkey                      |     optional      | The public key to be added to the image. Necessary for the image further verification.                                                                                                                                                                                                                                                                                         |
+| -R, --erased-val [0\|0xff]    |     optional      | The value that is read back from erased flash. The default value is 0.                                                                                                                                                                                                                                                                                                         |
+| -o, --output                  |     optional      | Extended image output file. If not specified, a copy of the input file will be created with the _orig_ prefix, then the input file will be processed.                                                                                                                                                                                                                          |
+| --protected-tlv [tag] [value] |     optional      | Custom TLV that will be placed into a protected area. Basically, this is the user's custom data. Add the "0x" prefix if the value should be interpreted as an integer, otherwise, it will be interpreted as a string. Specify the option multiple times to add multiple TLVs.                                                                                                  |
+| -f, --image-format            |     optional      | The image format defines the image header size, signing and encryption algorithms. Values: _bootrom_ram_app_ - RAM application started by ROM boot code; _bootrom_next_app_ - external memory application started by ROM boot code (e.g. [MCUBoot](#https://docs.mcuboot.com/)); _mcuboot_user_app_ - application started by MCUBoot. The default value is _mcuboot_user_app_. |
+| -H, --header-size             |     optional      | Sets image header size. Overrides header size defined by the --image-format option.                                                                                                                                                                                                                                                                                            |
+| -S, --slot-size               |     optional      | Sets maximum slot size. The default value is 0x20000.                                                                                                                                                                                                                                                                                                                          |
+| --pad                         |     optional      | Adds padding to the image trailer. Pads the image from the end of the TLV area up to the slot size. _boot_magic_ is always at the very end after the padding. Needed for [MCUBoot](#https://docs.mcuboot.com/) image upgrade.                                                                                                                                                  |
+| --confirm                     |     optional      | Adds image OK status to the trailer. Pads the image from the end of the TLV area up to the slot size and sets the image OK byte to 0x01 (the eighth byte from the end). The padding is required for this feature and is always applied. _boot_magic_ is always at the very end after the padding. Needed for [MCUBoot](#https://docs.mcuboot.com/) image upgrade.              |
+| --overwrite-only              |     optional      | Sets Overwrite mode in [MCUBoot](#https://docs.mcuboot.com/) image header instead of Swap.                                                                                                                                                                                                                                                                                     |
+| --align [1\|2\|4\|8]          |     optional      | Sets flash alignment. The default value is 8.                                                                                                                                                                                                                                                                                                                                  |
+| --update-key-id [0\|1]        |     optional      | Sets OEM private key ID used to sign the update data packet. Used to add the update packet with the NV counter to the protected TLV.                                                                                                                                                                                                                                           |
+| --update-key-path             |     optional      | The alternative option to _--update-key-id_ used to sign the update data packet. Overrides the --update-key-id option.                                                                                                                                                                                                                                                         |
+| --image-id                    |     optional      | Image ID. The value is used to update NV counter. The default value is 0.                                                                                                                                                                                                                                                                                                      |
 ### Usage example
 ```bash
 # Unsigned image with MCUboot metadata with the additional protected TLVs
@@ -420,11 +456,11 @@ $ edgeprotecttools -t cyw20829 -p policy/policy_reprovisioning_secure.json exten
 Converts image of bin format to hex format.
 ### Command: `bin2hex`
 ### Parameters
-| Name          | Optional/Required  | Description     |
-| ------------- |:------------------:| --------------- |
-| --image       | required           | Input bin file  |
-| -o, --output  | required           | Output hex file |
-| --offset      | optional           | Starting address offset for loading bin |
+| Name         | Optional/Required | Description                             |
+|--------------|:-----------------:|-----------------------------------------|
+| --image      |     required      | Input bin file                          |
+| -o, --output |     required      | Output hex file                         |
+| --offset     |     optional      | Starting address offset for loading bin |
 ### Usage example
 ```bash
 # Convert binary to Intel hex format with the start address 0x20000
@@ -438,14 +474,14 @@ The debug certificate is used by ROM boot code to enable CM33-AP and/or Sys-AP w
 The command creates a debug or RMA certificate binary based on the template. The certificate must contain a public key for further verification. If it is signed using the local private key then the public key is extracted from the private. If the certificate is going to be signed using HSM, then create a non-signed certificate and specify the public key.
 ### Command: `debug-certificate`
 ### Parameters
-| Name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Optional/Required  | Description   |
-| ------------------------- |:------------------:| ------------- |
-| --non-signed              | optional           | The flag indicating that debug certificate will not be signed. Otherwise, a private key must be specified.|
-| -t, --template            | optional           | The path to the certificate template in the JSON format. Can be found in the _packets_ directory of the project. |
-| -k, --key-id [0\|1]       | optional (mutually exclusive with the _--key-path_ option) | The OEM private key ID used to sign the certificate. This ID defines the key location based on the selected policy _post_build_ section. Depending on the selected value 0 or 1, _oem_priv_key_0_ or _oem_priv_key_1_ will be used. |
-| --key-path                | optional (mutually exclusive with the _--key-id_ option) | Either a private key path for signing the certificate or a public key to be added to the certificate. This is an alternative option and can be used to specify different from the policy key file location. If it is specified, the _--key-id_ option will be ignored. |
-| --sign [cert] [signature] | optional           | The option for signing an existing certificate using existing signature file generated by HSM. More details in [Creation and signing debug certificate with HSM](#creation-and-signing-a-debug-certificate-with-hsm). |
-| -o, --output              | required           | The file where to save the debug certificate. |
+| Name                      |                     Optional/Required                      | Description                                                                                                                                                                                                                                                            |
+|---------------------------|:----------------------------------------------------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --non-signed              |                          optional                          | The flag indicating that debug certificate will not be signed. Otherwise, a private key must be specified.                                                                                                                                                             |
+| -t, --template            |                          optional                          | The path to the certificate template in the JSON format. Can be found in the _packets_ directory of the project.                                                                                                                                                       |
+| -k, --key-id [0\|1]       | optional (mutually exclusive with the _--key-path_ option) | The OEM private key ID used to sign the certificate. This ID defines the key location based on the selected policy _post_build_ section. Depending on the selected value 0 or 1, _oem_priv_key_0_ or _oem_priv_key_1_ will be used.                                    |
+| --key-path                |  optional (mutually exclusive with the _--key-id_ option)  | Either a private key path for signing the certificate or a public key to be added to the certificate. This is an alternative option and can be used to specify different from the policy key file location. If it is specified, the _--key-id_ option will be ignored. |
+| --sign [cert] [signature] |                          optional                          | The option for signing an existing certificate using existing signature file generated by HSM. More details in [Creation and signing debug certificate with HSM](#creation-and-signing-a-debug-certificate-with-hsm).                                                  |
+| -o, --output              |                          required                          | The file where to save the debug certificate.                                                                                                                                                                                                                          |
 
 ### Edit certificate template
 The certificate template is located in the _packets_ directory of the project (_debug_cert.json_). 
@@ -480,10 +516,10 @@ $ edgeprotecttools -t cyw20829 -p policy/policy_secure.json debug-certificate --
 Reads the die ID from device.
 ### Command: `read-die-id`
 ### Parameters
-| Name           | Optional/Required  | Description   |
-| -------------- |:------------------:| ------------- |
-| -o, --out-file | optional           | The name of the file where to save the die ID. If not specified, the information will be displayed in the console. |
-| --probe-id     | optional           | Probe serial number. Make sure to specify the probe ID if there is more than one device connected.|
+| Name           | Optional/Required | Description                                                                                                        |
+|----------------|:-----------------:|--------------------------------------------------------------------------------------------------------------------|
+| -o, --out-file |     optional      | The name of the file where to save the die ID. If not specified, the information will be displayed in the console. |
+| --probe-id     |     optional      | Probe serial number. Make sure to specify the probe ID if there is more than one device connected.                 |
 ### Usage example
 ```bash
 # Print device die ID and save it to the file
@@ -498,9 +534,9 @@ $ edgeprotecttools -t cyw20829 -p policy/policy_secure.json read-die-id --probe-
 Shows ROM boot code version and RAM applications version used for provisioning.
 ### Command: `version`
 ### Parameters
-| Name           | Optional/Required  | Description   |
-| -------------- |:------------------:| ------------- |
-| --probe-id     | optional           | Probe serial number. Make sure to specify the probe ID if there is more than one device connected.|
+| Name       | Optional/Required | Description                                                                                        |
+|------------|:-----------------:|----------------------------------------------------------------------------------------------------|
+| --probe-id |     optional      | Probe serial number. Make sure to specify the probe ID if there is more than one device connected. |
 ### Usage example
 ```bash
 $ edgeprotecttools -t cyw20829 -p policy/policy_secure.json version
@@ -511,9 +547,9 @@ $ edgeprotecttools -t cyw20829 -p policy/policy_secure.json version
 Gets device information - silicon ID, silicon revision, and family ID.
 ### Command: `device-info`
 ### Parameters
-| Name           | Optional/Required  | Description   |
-| -------------- |:------------------:| ------------- |
-| --probe-id     | optional           | Probe serial number. Make sure to specify the probe ID if there is more than one device connected.|
+| Name       | Optional/Required | Description                                                                                        |
+|------------|:-----------------:|----------------------------------------------------------------------------------------------------|
+| --probe-id |     optional      | Probe serial number. Make sure to specify the probe ID if there is more than one device connected. |
 ### Usage example
 ```bash
 $ edgeprotecttools -t cyw20829 -p policy/policy_secure.json device-info
@@ -524,10 +560,10 @@ $ edgeprotecttools -t cyw20829 -p policy/policy_secure.json device-info
 This command is for debugging purposes only. It creates a policy file (JSON) based on an application input parameters binary.
 ### Command: `prov-packet-to-policy`
 ### Parameters
-| Name          | Optional/Required  | Description   |
-| ------------- |:------------------:| ------------- |
-| --packet      | required           | Binary with input parameters. |
-| -o, --output  | required           | The file where to save the policy. |
+| Name         | Optional/Required | Description                        |
+|--------------|:-----------------:|------------------------------------|
+| --packet     |     required      | Binary with input parameters.      |
+| -o, --output |     required      | The file where to save the policy. |
 ### Usage example
 ```bash
 $ edgeprotecttools -t cyw20829 -p policy/policy_secure.json prov-packet-to-policy --packet packets/apps/prov_oem/in_params.bin --output policy/policy_secure_debug.json
@@ -538,10 +574,10 @@ $ edgeprotecttools -t cyw20829 -p policy/policy_secure.json prov-packet-to-polic
 The command advances the device lifecycle stage to RMA. If the device is in the SECURE LCS the transition process requires a certificate. Use debug certificate with the RMA flag enabled (refer to [Create debug certificate](#create-debug-certificate)). The certificate must be signed with the OEM private key.
 ### Command: `convert-to-rma`
 ### Parameters
-| Name          | Optional/Required  | Description   |
-| ------------- |:------------------:| ------------- |
-| -c, --cert    | optional           | Debug certificate with the RMA flag enabled. Signed with the OEM private key. |
-| --probe-id    | optional           | Probe serial number. Make sure to specify the probe ID if there is more than one device connected to avoid accidental programming of the wrong device.|
+| Name       | Optional/Required | Description                                                                                                                                            |
+|------------|:-----------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -c, --cert |     optional      | Debug certificate with the RMA flag enabled. Signed with the OEM private key.                                                                          |
+| --probe-id |     optional      | Probe serial number. Make sure to specify the probe ID if there is more than one device connected to avoid accidental programming of the wrong device. |
 ### Usage example
 ```bash
 $ edgeprotecttools -t cyw20829 convert-to-rma --cert packets/debug_cert.bin --probe-id 1A1A055A02010400

@@ -1,5 +1,5 @@
 """
-Copyright 2020-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2020-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -132,8 +132,7 @@ class OpenocdServer(OcdConfig):
     log_counter = 1
 
     def __init__(self, target, target_name=None, interface=None, probe_id=None,
-                 tool_path=None, power=None, voltage=None, ignore_errors=False,
-                 tcp_host_port=None):
+                 tool_path=None, power=None, voltage=None, tcp_host_port=None):
         """ Set initial basic configuration params for OpenOCD """
         if interface:
             raise NotImplementedError
@@ -146,7 +145,6 @@ class OpenocdServer(OcdConfig):
         self.custom_config = self._ocd_custom_config(target)
         self.power = power
         self.voltage = voltage
-        self.ignore_errors = ignore_errors
         self.tcp_host_port = tcp_host_port
         if self.custom_config['interface']:
             self.probe_interface = self.custom_config['interface']
@@ -358,13 +356,10 @@ class OpenocdServer(OcdConfig):
         result = [x for x in current_lines if x not in previous_set]
         return result
 
-    def _ocd_start_result(self, lines):
+    @staticmethod
+    def _ocd_start_result(lines):
         """Analyzes OpenOCD output and returns the result of the start"""
         for line in lines:
-            if 'Error' in line:
-                logger.error(line.rstrip())
-                if not self.ignore_errors:
-                    return False
             logger.info(line.rstrip())
             if 'Listening on port' in line:
                 return True

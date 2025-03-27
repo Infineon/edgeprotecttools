@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,7 +45,9 @@ class RamAppPackagePsocC3:
             'allow_signed': True,
             'header_size': 0x20,
             'slot_size': self.__slot_size,
-            'remove_tlv': [TLV_VALUES['SHA256']]
+            'remove_tlv': [TLV_VALUES['SHA256'],
+                           TLV_VALUES['SHA384'],
+                           TLV_VALUES['SHA512']]
         }
 
     @property

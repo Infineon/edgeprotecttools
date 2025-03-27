@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,10 +39,6 @@ class TblFile:
         self.tbl_path = tbl_path
         self.tbl_dir = os.path.dirname(tbl_path)
         self._images = self._get_tbl_images()
-
-    def __getitem__(self, item) -> List[TblImg]:
-        """Gets an image from the image table"""
-        return self._images[item]
 
     @property
     def images(self) -> List[TblImg]:

@@ -1,5 +1,5 @@
 """
-Copyright 2021-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2021-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -452,7 +452,8 @@ def cmd_version(_ctx):
 
 @main.command('hash', help='Calculates hash of a file')
 @click.option('-a', '--alg',  required=True, help='Hash algorithm',
-              type=click.Choice(['SHA256', 'SHA384'], case_sensitive=False))
+              type=click.Choice(['SHA256', 'SHA384', "SHA512"],
+                                case_sensitive=False))
 @click.option('-i', '--input', 'binary', type=click.Path(), required=True,
               help='Input file')
 @click.option('-o', '--output', type=click.Path(),
@@ -549,7 +550,7 @@ def cmd_cbor2json(_ctx, image, output, offset):
 @click.option('--signature-1', type=click.Path(),
               help='Secondary signature path to add to the message')
 @click.option('--algorithm-0', type=click.Choice(
-              ['ES256', 'ES384', 'RS256', 'RS384'],
+              ['ES256', 'ES384', 'ES512', 'RS256', 'RS384'],
               case_sensitive=False), default='ES256',
               help='Primary signature algorithm')
 @click.option('--algorithm-1', type=click.Choice(
@@ -631,7 +632,7 @@ def cose_verify(ctx, input_path, key):
 
 @main.command('create-key', help='Creates private and public key pair')
 @click.option('--key-type', type=click.Choice(
-    ['ECDSA-P256', 'ECDSA-P384', 'X25519',
+    ['ECDSA-P256', 'ECDSA-P384', 'ECDSA-P521', 'X25519',
      'RSA2048', 'RSA3072', 'RSA4096',
      'AES128', 'AES256'],
     case_sensitive=False), required=True, help='Key type')
@@ -1212,7 +1213,8 @@ def cmd_extract_payload(ctx, image, output):
 @click.option('-s', '--signature', type=click.Path(), required=True,
               help='Binary file containing signature')
 @click.option('--alg', type=click.Choice(
-              ['ECDSA-P256', 'ECDSA-P384', 'RSA2048', 'RSA4096'], case_sensitive=False),
+              ['ECDSA-P256', 'ECDSA-P384', 'ECDSA-P521',
+               'RSA2048', 'RSA4096'], case_sensitive=False),
               required=True, help='Signature algorithm')
 @click.option('-o', '--output', type=click.Path(), required=True,
               help='The path where to save the image with the signature (bin)')

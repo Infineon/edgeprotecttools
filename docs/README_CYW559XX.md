@@ -4,9 +4,10 @@
   - [Content Certificate](#content-certificate)
   - [Generate Secure Certificates](#generate-secure-certificates)
 - [Secure Image](#secure-image)
-- [Secure OTA Image](#secure-ota-image)
-- [Read device CSR](#read-device-csr)
-- [Read device SOC ID](#read-device-soc-id)
+- [Encrypt Application](#encrypt-application)
+- [OTA Image](#ota-image)
+- [Read Device CSR](#read-device-csr)
+- [Read Device SOC ID](#read-device-soc-id)
 
 # Secure Certificates
 Secure boot is based on certificate chain mechanisms using the RSA private and public key schemes.
@@ -29,19 +30,19 @@ The chain consists of two key certificates and one content certificate.
 ## Key Certificate
 The key certificate is used to validate the hash of the public key of next certificate in the chain.
 ### Configuration File Parameters
-| Property         | Description                                                                                            |
-|------------------|--------------------------------------------------------------------------------------------------------|
-| cert_keypair     | Path to the private key used to sign the certificate. Must be the RSA key, 3072 bits in length.        |
-| cert_keypair_pwd | Password for the certificate private key. Keep empty if the key is not encrypted by password.          |
-| nv_counter       | The Non-Volatile counter value. A value between 0 and 96.                                              |
-| next_cert_pubkey | Path to the public key of the next certificate in the chain. Must be the RSA key, 3072 bits in length. |
+| Property         | Description                                                                                             |
+|------------------|---------------------------------------------------------------------------------------------------------|
+| cert_keypair     | Path to the private key used to sign the certificate. Must be the RSA key of the 3072-bit size.         |
+| cert_keypair_pwd | Password for the certificate private key. Keep empty if the key is not encrypted by password.           |
+| nv_counter       | The Non-Volatile counter value. A value between 0 and 96.                                               |
+| next_cert_pubkey | Path to the public key of the next certificate in the chain. Must be the RSA key of the 3072-bit size.  |
 
 ## Content Certificate
 The content certificate is used to load and validate software components.
 ### Configuration File Parameters
 | Property           | Description                                                                                                                                                                                                                                                                                                                |
 |--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| cert_keypair       | Path to the private key used to sign the certificate. Must be the RSA key, 3072 bits in length.                                                                                                                                                                                                                            |
+| cert_keypair       | Path to the private key used to sign the certificate. Must be the RSA key of the 3072-bit size.                                                                                                                                                                                                                            |
 | cert_keypair_pwd   | Password for the certificate private key. Keep empty if the key is not encrypted by password.                                                                                                                                                                                                                              |
 | nv_counter         | The Non-Volatile counter value. A value between 0 and 96.                                                                                                                                                                                                                                                                  |
 | load_verify_scheme | The scheme used to verify the software components. Applicable values: <br/>- RAM_LOAD_VERIFY - Load from flash to RAM and verify<br/>- FLASH_VERIFY - Full hash verification in flash without loading to RAM<br/>- RAM_VERIFY - Verify in RAM<br/>- RAM_LOAD - Load from flash into RAM                                    |
@@ -84,23 +85,38 @@ The following command creates a secure image by merging key and content certific
 $ edgeprotecttools -t cyw559xx secure-image --image mtb-example-threadx-hello-world_download.hex --cert certs/first_key_cert.cer --cert certs/second_key_cert.cer --cert certs/content_cert.cer --output mtb-example-threadx-hello-world_download_APPCERT.hex --hcd mtb-example-threadx-hello-world_download_APPCERT.hcd
 ```
 
-# Secure OTA Image
-The secure OTA image is a BIN file that contains the software components and the certificate chain.
-The following command creates a secure OTA image by merging key and content certificates to the application.
-### Command: `secure-ota-image`
+# Encrypt Application
+Encrypts the application.
+### Command: `encrypt`
+### Limitations
+The encryption feature is intended solely for development purposes and should not be used in production. Note that the initialization vector for encryption is currently fixed to 01010101010101010000000000000001.
+### Parameters
+| Name         | Optional/Required | Description                                                  |
+|--------------|:-----------------:|--------------------------------------------------------------|
+| --image      |     required      | The path to the application HEX file.                        |
+| --key        |     required      | The path to the AES-128 key used to encrypt the application. |
+| -o, --output |     required      | The encrypted image output path.                             |
+### Example
+```bash
+# Encrypt application
+$ edgeprotecttools -t cyw559xx encrypt --image mtb-example-threadx-hello-world_download_APPCERT.hex --key kce_app.bin --iv 0102030405060708090A0B0C --output mtb-example-threadx-hello-world_download_APPCERT_ENCRYPTED.hex
+```
+
+# OTA Image
+The OTA image is a BIN file that is intended to be run by the OTA driver.
+### Command: `ota-image`
 ### Parameters
 | Name         | Optional/Required | Description                                                                                                                                                                                          |
 |--------------|:-----------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| --image      |     required      | The path to the application OTA BIN file.                                                                                                                                                            |
-| --cert       |     required      | Certificate in DER format. Specify the option multiple times to add multiple certificates. Make sure the order is the following: first key certificate, second key certificate, content certificate. |
+| --image      |     required      | The path to the application HEX file.                                                                                                                                                                |
 | -o, --output |     required      | The path where to save the output BIN file.                                                                                                                                                          |
 ### Example
 ```bash
-# Create a secure OTA image. The order of the certificates must be the following: first key certificate, second key certificate, content certificate.
-$ edgeprotecttools -t cyw559xx secure-ota-image --image mtb-example-threadx-empty-app_APP_CYW955913EVK-01.ota.bin --cert certs/first_key_cert.cer --cert certs/second_key_cert.cer --cert certs/content_cert.cer --output mtb-example-threadx-empty-app_APP_CYW955913EVK-01_APPCERT.ota.bin
+# Create an OTA image
+$ edgeprotecttools -t cyw559xx ota-image --image mtb-example-threadx-hello-world_download_APPCERT.hex --output mtb-example-threadx-empty-app_APP_CYW955913EVK-01_APPCERT.ota.bin
 ```
 
-# Read device CSR
+# Read Device CSR
 Reads the device CSR from CYW559xx.
 ### Command: `get-csr`
 ### Parameters
@@ -114,7 +130,7 @@ Reads the device CSR from CYW559xx.
 $ edgeprotecttools -t cyw559xx get-csr --output csr.der
 ```
 
-# Read device SOC ID
+# Read Device SOC ID
 Reads the device SOC ID from CYW559xx.
 ### Command: `read-soc-id`
 ### Parameters

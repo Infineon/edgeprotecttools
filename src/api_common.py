@@ -1,5 +1,5 @@
 """
-Copyright 2019-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2019-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -140,6 +140,7 @@ class CommonAPI:
 
         if not hex_addr:
             hex_addr = self.target.memory_map.DLM_BASE_ADDR
+            logger.info('Default hex address = %s', hex(hex_addr))
 
         if not slot_size:
             slot_size = self.target.memory_map.DLM_SLOT_SIZE
@@ -391,8 +392,8 @@ class CommonAPI:
         @return: True if key(s) created successfully, otherwise False.
         """
         key_algorithms = [
-            'ECDSA-P256', 'ECDSA-P384', 'X25519', 'RSA2048', 'RSA3072',
-            'RSA4096', 'AES128', 'AES256'
+            'ECDSA-P256', 'ECDSA-P384', 'ECDSA-P521', 'X25519',
+            'RSA2048', 'RSA3072', 'RSA4096', 'AES128', 'AES256'
         ]
 
         if alg.upper() not in key_algorithms:
@@ -433,7 +434,8 @@ class CommonAPI:
                     return True
 
         # Generate keys
-        if alg in (KeyAlgorithm.ECDSA_P256, KeyAlgorithm.ECDSA_P384):
+        if alg in (KeyAlgorithm.ECDSA_P256, KeyAlgorithm.ECDSA_P384,
+                   KeyAlgorithm.ECDSA_P521):
             private_key, public_key = ec_keygen.generate_key(
                 key_param, template=kwargs.get('template'),
                 byteorder=kwargs.get('byteorder', 'big')
@@ -885,7 +887,7 @@ class CommonAPI:
         try:
             connected = ConnectHelper.connect(
                 self.tool, self.target, ap=ap, probe_id=probe_id,
-                ignore_errors=True, acquire=acquire)
+                acquire=acquire)
         except ValueError as e:
             logger.error(e)
         self.target.version_provider.print_version(**kwargs)
@@ -1033,8 +1035,7 @@ class CommonAPI:
         if is_mxs40sv2(self.target_name):
             raise NotImplementedError('Not supported by the selected target')
         status = ProvisioningStatus.FAIL
-        if ConnectHelper.connect(self.tool, self.target, probe_id=probe_id,
-                                 ignore_errors=True):
+        if ConnectHelper.connect(self.tool, self.target, probe_id=probe_id):
             context = ProvisioningContext(self.target.provisioning_strategy)
             status = context.open_rma(self.tool, self.target, cert)
             ConnectHelper.disconnect(self.tool)
@@ -1178,6 +1179,8 @@ class CommonAPI:
             param = ec.SECP256R1()
         elif key_type == 'ECDSA-P384':
             param = ec.SECP384R1()
+        elif key_type == 'ECDSA-P521':
+            param = ec.SECP521R1()
         elif key_type == 'RSA2048':
             param = 2048
         elif key_type == 'RSA3072':

@@ -58,10 +58,16 @@
                                         "add-signature",
                                         "custom-script",
                                         "extract-payload",
+                                        "encrypt-aes",
                                         "hex-segment",
                                         "merge",
                                         "shift",
-                                        "sign"
+                                        "sign",
+                                        "bin-dump",
+                                        "bin2hex",
+                                        "hash",
+                                        "hex-dump",
+                                        "hex2bin"
                                     ]
                                 },
                                 "inputs": {

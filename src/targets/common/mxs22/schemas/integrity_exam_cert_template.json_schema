@@ -1,0 +1,30 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "INTEGRITY_EXAM_CERTIFICATE",
+    "type": "object",
+    "required": ["device", "regions"],
+    "properties": {
+        "device": {
+            "type": "object",
+            "required": ["si", "family", "rev"],
+            "properties": {
+                "si": {
+                    "type": "string",
+                    "enum": ["0xED84", "0xED81", "0xED94", "0xED91", "0xED9D"]
+                },
+                "family": {
+                    "type": "string"
+                },
+                "rev": {
+                    "type": "string"
+                }
+            }
+        },
+        "regions": {
+            "type": "array"
+        },
+        "certificate": {
+            "type": "string"
+        }
+    }
+}

@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,3 +20,4 @@ class Format:
     """Determination of variables for a JSON 'format' field"""
     IHEX = 'ihex'
     BIN = 'bin'
+    TXT = 'txt'

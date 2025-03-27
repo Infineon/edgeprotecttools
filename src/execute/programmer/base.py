@@ -1,5 +1,5 @@
 """
-Copyright 2019-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2019-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -53,8 +53,7 @@ class ProgrammerBase(metaclass=ABCMeta):
 
     @abstractmethod
     def connect(self, target_name=None, interface=None, probe_id=None, ap=None,
-                acquire=True, power=None, voltage=None, ignore_errors=False,
-                rev=None):
+                acquire=True, power=None, voltage=None, rev=None):
         """
         Connects to target.
         @param target_name: The target name.
@@ -64,7 +63,6 @@ class ProgrammerBase(metaclass=ABCMeta):
         @param acquire: Indicates whether to acquire device on connect
         @param power: Target power
         @param voltage: Target power voltage
-        @param ignore_errors: Ignore errors and continue execution
         @param rev: The target revision.
         @return: True if connected successfully, otherwise False
         """

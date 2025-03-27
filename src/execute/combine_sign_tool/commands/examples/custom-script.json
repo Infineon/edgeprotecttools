@@ -2,7 +2,7 @@
     "schema-version": 1.0,
     "content": [
         {
-            "name": "Custom-script command example",
+            "name": "custom-script command example",
             "description": "Test template for the custom-script command",
             "enabled": true,
             "commands": [

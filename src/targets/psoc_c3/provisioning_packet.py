@@ -1,5 +1,5 @@
 """
-Copyright 2023-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -111,7 +111,7 @@ class ProvisioningPacketPsocC3(ProvisioningPacketStrategy):
                 input_params = app.in_params_path
             hex_addr = app.image_address
         output = os.path.abspath(output) if output else None
-        package = RamAppPackagePsocC3(app_path, input_params=input_params)
+        package = self._get_ram_app_package(app_path, input_params=input_params)
         if kwargs.get('slot_size'):
             package.slot_size = kwargs.get('slot_size')
         if not self.sign_save_dlm(package, output, key, hex_addr):
@@ -239,6 +239,10 @@ class ProvisioningPacketPsocC3(ProvisioningPacketStrategy):
         except KeyError as e:
             raise KeyError(f"Unknown flow name {e}") from e
         return Application(list(app_data)[-1], app_dir=flow.apps_dir)
+
+    @staticmethod
+    def _get_ram_app_package(app_path, input_params=None):
+        return RamAppPackagePsocC3(app_path, input_params=input_params)
 
     def _provisioning_assets(self):
         """Gets assets list"""

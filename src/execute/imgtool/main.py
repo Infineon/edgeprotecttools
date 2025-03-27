@@ -2,7 +2,7 @@
 #
 # Copyright 2017-2020 Linaro Limited
 # Copyright 2019-2020 Arm Limited
-# Copyright 2022-2024 Cypress Semiconductor Corporation (an Infineon company)
+# Copyright 2022-2025 Cypress Semiconductor Corporation (an Infineon company)
 # or an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
 #     Changes made to the original file:
 #     [Feb 26 2021]
@@ -62,6 +62,10 @@ def gen_ecdsa_p384(keyfile, passwd):
     keys.ECDSA384P1.generate().export_private(keyfile, passwd=passwd)
 
 
+def gen_ecdsa_p521(keyfile, passwd):
+    keys.ECDSA521P1.generate().export_private(keyfile, passwd=passwd)
+
+
 def gen_ed25519(keyfile, passwd):
     keys.Ed25519.generate().export_private(path=keyfile, passwd=passwd)
 
@@ -76,6 +80,7 @@ keygens = {
     'rsa-3072':   gen_rsa3072,
     'ecdsa-p256': gen_ecdsa_p256,
     'ecdsa-p384': gen_ecdsa_p384,
+    'ecdsa-p521': gen_ecdsa_p521,
     'ed25519':    gen_ed25519,
     'x25519':     gen_x25519,
 }
@@ -367,8 +372,10 @@ def sign(key, public_key_format, align, version, pad_sig, header_size,
              not isinstance(enckey, keys.ECDSA256P1Public))
            or (isinstance(key, keys.ECDSA384P1) and
                not isinstance(enckey, keys.ECDSA384P1Public))
-                or (isinstance(key, keys.RSA) and
-                    not isinstance(enckey, keys.RSAPublic))):
+           or (isinstance(key, keys.ECDSA521P1) and
+               not isinstance(enckey, keys.ECDSA521P1Public))
+           or (isinstance(key, keys.RSA) and
+               not isinstance(enckey, keys.RSAPublic))):
             # FIXME
             raise click.UsageError("Signing and encryption must use the same "
                                    "type of key")

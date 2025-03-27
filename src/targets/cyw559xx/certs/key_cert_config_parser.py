@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,7 @@ limitations under the License.
 import os
 from typing import Union
 
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 
 from .cert_config_parser_base import CertConfigParserBase
 from ....core.key_handlers import load_public_key
@@ -31,7 +31,7 @@ class KeyCertConfigParser(CertConfigParserBase):
         """Gets a value of hbk_id. Only one value is supported"""
         return 1
 
-    def next_cert_pubkey(self, ret_value=False) -> Union[str, rsa.RSAPublicKey,
+    def next_cert_pubkey(self, ret_value=False) -> Union[str, RSAPublicKey,
                                                          None]:
         """Gets a value of next_cert_pubkey property"""
         key = self.field('next_cert_pubkey', 'value')
@@ -41,5 +41,8 @@ class KeyCertConfigParser(CertConfigParserBase):
             if not os.path.isabs(key):
                 key = os.path.abspath(os.path.join(self.cert_config_dir, key))
             if ret_value:
-                return load_public_key(key)
+                key = load_public_key(key)
+                if not isinstance(key, RSAPublicKey) or key.key_size != 3072:
+                    raise ValueError('The next certificate public key must be '
+                                     'an RSA key of size 3072 bits')
         return key

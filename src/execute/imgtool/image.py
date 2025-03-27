@@ -1,7 +1,7 @@
 # Copyright 2018 Nordic Semiconductor ASA
 # Copyright 2017-2020 Linaro Limited
 # Copyright 2019-2020 Arm Limited
-# Copyright 2022-2024 Cypress Semiconductor Corporation (an Infineon company)
+# Copyright 2022-2025 Cypress Semiconductor Corporation (an Infineon company)
 # or an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
 #     Changes made to the original file:
 #     [Oct 6 2021]
@@ -38,17 +38,19 @@ import click
 from enum import Enum
 from intelhex import IntelHex
 import hashlib
-import struct
 import os.path
-from .keys import rsa, ecdsa, x25519
+import struct
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.primitives.asymmetric import ec, padding
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes, hmac
-from cryptography.exceptions import InvalidSignature
+
+from . import keys
+from .keys import rsa, ecdsa, x25519
 
 IMAGE_MAGIC = 0x96f3b83d
 IMAGE_HEADER_SIZE = 32
@@ -74,6 +76,7 @@ TLV_VALUES = {
         'PUBKEY': 0x02,
         'SHA256': 0x10,
         'SHA384': 0x11,
+        'SHA512': 0x12,
         'RSA2048': 0x20,
         'ECDSASIG': 0x22,
         'RSA3072': 0x23,
@@ -138,6 +141,63 @@ class TLV():
         e = STRUCT_ENDIAN_DICT[self.endian]
         header = struct.pack(e + 'HH', self.magic, len(self))
         return header + bytes(self.buf)
+
+
+USER_SHA_TO_ALG_AND_TLV = {
+    'auto'   : (hashlib.sha256, 'SHA256'),
+    '256'    : (hashlib.sha256, 'SHA256'),
+    '384'    : (hashlib.sha384, 'SHA384'),
+    '512'    : (hashlib.sha512, 'SHA512')
+}
+
+
+# Auto selecting hash algorithm for type(key)
+ALLOWED_KEY_SHA = {
+    keys.ECDSA521P1         : ['512'],
+    keys.ECDSA521P1Public   : ['512'],
+    keys.ECDSA384P1         : ['384'],
+    keys.ECDSA384P1Public   : ['384'],
+    keys.ECDSA256P1         : ['256'],
+    keys.ECDSA256P1Public   : ['256'],
+    keys.RSA                : ['256'],
+    keys.RSAPublic          : ['256'],
+    # This two are set to 256 for compatibility, the right would be 512
+    keys.Ed25519            : ['256', '512'],
+    keys.X25519             : ['256', '512']
+}
+
+
+def key_and_user_sha_to_alg_and_tlv(key, user_sha, is_pure=False):
+    """Matches key and user requested sha to sha algorithm and TLV name.
+
+       The returned tuple will contain hash functions and TVL name.
+       The function is designed to succeed or completely fail execution,
+       as providing incorrect pair here basically prevents doing
+       any more work.
+    """
+    if key is None:
+        # If key is none, we allow whatever user has selected for sha
+        return USER_SHA_TO_ALG_AND_TLV[user_sha]
+
+    # If key is not None, then we have to filter hash to only allowed
+    allowed = None
+    allowed_key_ssh = ALLOWED_KEY_SHA
+    try:
+        allowed = allowed_key_ssh[type(key)]
+
+    except KeyError:
+        raise click.UsageError("Colud not find allowed hash algorithms for {}"
+                               .format(type(key)))
+
+    # Pure enforces auto, and user selection is ignored
+    if user_sha == 'auto' or is_pure:
+        return USER_SHA_TO_ALG_AND_TLV[allowed[0]]
+
+    if user_sha in allowed:
+        return USER_SHA_TO_ALG_AND_TLV[user_sha]
+
+    raise click.UsageError("Key {} can not be used with --sha {}; allowed sha are one of {}"
+                           .format(key.sig_type(), user_sha, allowed))
 
 
 class Image():
@@ -335,10 +395,8 @@ class Image():
         self.enckey = enckey
 
         # Check what hashing algorithm should be used
-        if key is not None and isinstance(key, (ecdsa.ECDSA384P1,
-                                                ecdsa.ECDSA384P1Public)):
-            hash_algorithm = hashlib.sha384
-            hash_tlv = "SHA384"
+        if key is not None:
+            hash_algorithm, hash_tlv = key_and_user_sha_to_alg_and_tlv(key, 'auto', is_pure=False)
         else:
             hash_algorithm = hashlib.sha256
             hash_tlv = "SHA256"
@@ -439,13 +497,13 @@ class Image():
             if dependencies is not None:
                 for i in range(dependencies_num):
                     payload = struct.pack(
-                                    e + 'B3x'+'BBHI',
-                                    int(dependencies[DEP_IMAGES_KEY][i]),
-                                    dependencies[DEP_VERSIONS_KEY][i].major,
-                                    dependencies[DEP_VERSIONS_KEY][i].minor,
-                                    dependencies[DEP_VERSIONS_KEY][i].revision,
-                                    dependencies[DEP_VERSIONS_KEY][i].build
-                                    )
+                        e + 'B3x'+'BBHI',
+                        int(dependencies[DEP_IMAGES_KEY][i]),
+                        dependencies[DEP_VERSIONS_KEY][i].major,
+                        dependencies[DEP_VERSIONS_KEY][i].minor,
+                        dependencies[DEP_VERSIONS_KEY][i].revision,
+                        dependencies[DEP_VERSIONS_KEY][i].build
+                    )
                     prot_tlv.add('DEPENDENCY', payload)
 
             if custom_tlvs is not None and custom_tlvs['protected']:
@@ -627,7 +685,10 @@ class Image():
         if magic != TLV_INFO_MAGIC:
             return VerifyResult.INVALID_TLV_INFO_MAGIC, None, None
 
-        if isinstance(key, ecdsa.ECDSA384P1Public):
+        if isinstance(key, ecdsa.ECDSA521P1Public):
+            sha = hashlib.sha512()
+            hash_tlv = "SHA512"
+        elif isinstance(key, ecdsa.ECDSA384P1Public):
             sha = hashlib.sha384()
             hash_tlv = "SHA384"
         else:

@@ -1,5 +1,5 @@
 """
-Copyright 2022-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2022-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 __pkg_name__ = 'EdgeProtectTools'
-__version__ = '1.3.0'
+__version__ = '1.4.0'
 __pkg_author__ = 'Infineon Technologies AG'
 __pkg_short_name__ = 'E'
 __github_url__ = 'https://github.com/Infineon/edgeprotecttools'

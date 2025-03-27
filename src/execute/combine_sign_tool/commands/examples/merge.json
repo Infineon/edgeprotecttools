@@ -2,7 +2,7 @@
     "schema-version": 1.0,
     "content": [
         {
-            "name": "Merge command example",
+            "name": "merge command example",
             "description": "Merges two or more hex/bin files into a single file",
             "enabled": true,
             "commands": [

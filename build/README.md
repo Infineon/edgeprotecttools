@@ -75,10 +75,10 @@ Note: If the Edge Protect Security Suite was installed for the current user only
 pip3 install --upgrade --force-reinstall ~/Applications/ModusToolbox-Edge-Protect-Security-Suite-1.X/tools/edgeprotecttools/src
 ```
 
-9. Install PyInstaller package version 6.9.0:
+9. Install PyInstaller package version 6.11.1:
 
 ```bash
-pip3 install pyinstaller==6.9.0
+pip3 install pyinstaller==6.11.1
 ```
 
 10. Generate the Edge Protect Tools standalone application:
@@ -158,10 +158,10 @@ sudo chmod o+w /opt/Tools/ModusToolbox-Edge-Protect-Security-Suite-1.X/tools/edg
 pip3 install --upgrade --force-reinstall /opt/Tools/ModusToolbox-Edge-Protect-Security-Suite-1.X/tools/edgeprotecttools/src
 ```
 
-9. Install PyInstaller package version 6.9.0:
+9. Install PyInstaller package version 6.11.1:
 
 ```bash
-pip3 install pyinstaller==6.9.0
+pip3 install pyinstaller==6.11.1
 ```
 
 Note: If you use Ubuntu 24.04, install the oscrypto patch along with PyInstaller:
@@ -242,10 +242,10 @@ For the installation with administrator privileges, use a command like:
 pip install --upgrade --force-reinstall C:\Infineon\Tools\ModusToolbox-Edge-Protect-Security-Suite-1.X\tools\edgeprotecttools\src
 ```
 
-8. Install PyInstaller package version 6.9.0:
+8. Install PyInstaller package version 6.11.1:
 
 ```commandline
-pip install pyinstaller==6.9.0
+pip install pyinstaller==6.11.1
 ```
 
 9. Generate the Edge Protect Tools standalone application:

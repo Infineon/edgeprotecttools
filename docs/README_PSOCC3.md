@@ -162,8 +162,6 @@ Reconfiguring a device with the updated policies.
 ### Usage example
 ```bash
 $ edgeprotecttools -t psoc_c3 reprovision-device -p policy/policy_oem_reprovisioning.json --key keys/oem_rot_priv_key_0.pem --probe-id 061003B803260400
-# or
-$ edgeprotecttools -t psoc_c3 reprovision-device -p policy/policy_mpn_reprovisioning.json --key keys/mpn_rot_priv_key_0.pem --probe-id 061003B803260400
 ```
 
 
@@ -183,7 +181,6 @@ Creates a provisioning/reprovisioning data packet without starting the device pr
 $ edgeprotecttools -t psoc_c3 create-provisioning-packet -p policy/policy_oem_provisioning.json
 # Reprovisioning
 $ edgeprotecttools -t psoc_c3 create-provisioning-packet -p policy/policy_oem_reprovisioning.json --key keys/oem_rot_priv_key_0.pem
-$ edgeprotecttools -t psoc_c3 create-provisioning-packet -p policy/policy_mpn_reprovisioning.json --key keys/mpn_rot_priv_key_0.pem
 ```
 
 
@@ -275,7 +272,7 @@ All the above examples describe the flow when the private keys are available loc
 Refer to the [Signing application with HSM](https://github.com/Infineon/edgeprotecttools/blob/master/docs/README_GENERAL.md#signing-application-with-HSM) section.
 
 ## Signing reprovisioning packet with HSM
-The provisioning packet does not require to be signed. However, the reprovisioning data must be signed. The OEM key related data must be signed with the OEM key. The MPN key related data must be signed with the MPN key.
+The provisioning packet does not require to be signed. However, the reprovisioning data must be signed with the OEM key.
 The flow:
 1. Generate a non-signed reprovisioning packet with data to be cryptographically protected.
 2. Get the signature from HSM.

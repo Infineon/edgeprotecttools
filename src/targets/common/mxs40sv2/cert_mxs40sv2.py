@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,19 +44,15 @@ class CertificateStrategyMXS40Sv2(CertificateStrategy):
         raise NotImplementedError("N/A for MXS40SV2 platform")
 
     def create_certificate(self, filename, encoding, overwrite, **kwargs):
-        """Creates certificate in CBOR or x509 format"""
+        """Creates certificate in CBOR format"""
         private_key = kwargs.get('key')
         if private_key:
             self.key_validator.validate_private_key(private_key)
-        cert_format = kwargs.get('cert_format').lower()
-        if cert_format == 'cbor':
-            dev_cert = kwargs.get('dev_cert').lower()
-            if dev_cert == 'device_integrity':
-                return self._device_integrity_cert(output=filename, **kwargs)
-            raise ValueError(f"Invalid type of ifx cbor certificate "
-                             f"'{dev_cert}'")
-        raise ValueError(
-            f"Invalid type of the certificate format '{cert_format}'")
+
+        dev_cert = kwargs.get('dev_cert').lower()
+        if dev_cert == 'device_integrity':
+            return self._device_integrity_cert(output=filename, **kwargs)
+        raise ValueError(f"Invalid type of ifx certificate '{dev_cert}'")
 
     @staticmethod
     def _device_integrity_cert(output=None, **kwargs):

@@ -1,5 +1,5 @@
 """
-Copyright 2023-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -75,7 +75,7 @@ class AppLoadingFlow:
                 try:
                     self.target.version_provider.log_lifecycle_stage(tool)
                     LoggingConfigurator.enable_logging()
-                except RuntimeError:
+                except (RuntimeError, TimeoutError):
                     LoggingConfigurator.enable_logging()
                     if is_rma_dfu:
                         logging.info('Transition to RMA finished. '

@@ -1,5 +1,5 @@
 """
-Copyright 2023-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,12 +18,11 @@ import os
 import logging
 from pathlib import Path
 
-import lief
-from lief.ELF import SEGMENT_TYPES
 from cryptography.hazmat.primitives.hashes import Hash, SHA256
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
 from cryptography.hazmat.primitives.asymmetric import rsa
+from elftools.elf.elffile import ELFFile
 
 from ....execute.image_signing import Image
 from ....core.signtool_base import SignToolBase
@@ -202,79 +201,86 @@ class SignToolXMC7xxx(SignToolBase):
             :output: Output path for signed image
         """
 
-        SYM_NAME_APP_VERIFY_START = "__cy_app_verify_start"
-        SYM_NAME_APP_VERIFY_LEN = "__cy_app_verify_length"
+        SYM_APP_VERIFY_START = "__cy_app_verify_start"
+        SYM_APP_VERIFY_LEN = "__cy_app_verify_length"
         SECTION_APP_SIGNATURE = ".cy_app_signature"
+        SECTION_SYM_TAB = ".symtab"
 
         self._initialize(kwargs)
-
-        output = kwargs.get('output')
-
-        elf = lief.parse(image_path)
-
-        if elf is None:
-            raise ValueError(
-                f'Failed to parse image "{os.path.abspath(output)}"'
-            )
-
-        if elf.get_section(SECTION_APP_SIGNATURE) is None:
-            raise ValueError(
-                f'Unable to sign without section "{SECTION_APP_SIGNATURE}"'
-            )
-
-        app_start = elf.get_symbol(SYM_NAME_APP_VERIFY_START)
-        if app_start is None:
-            raise ValueError(
-                f'Unable to sign without symbol "{SYM_NAME_APP_VERIFY_START}"'
-            )
-
-        app_length = elf.get_symbol(SYM_NAME_APP_VERIFY_LEN)
-        if app_length is None:
-            raise ValueError(
-                f'Unable to sign without symbol "{SYM_NAME_APP_VERIFY_LEN}"'
-            )
 
         key = SignToolXMC7xxx.load_key(self.key_path)
         if not isinstance(key, rsa.RSAPrivateKey):
             raise ValueError('Expected key type: RSA private')
 
-        start = app_start.value
-        length = app_length.value
-        end = start + length
+        output = kwargs.get('output')
 
-        payload = [0] * length
+        with open(image_path, 'rb') as f:
+            elf_payload = f.read()
 
-        for segment in elf.segments:
-            p_addr = segment.physical_address
-            p_size = segment.physical_size
-            if segment.type in [SEGMENT_TYPES.LOAD,
-                                SEGMENT_TYPES.ARM_UNWIND] and p_size > 0:
-                if start <= p_addr < end:
-                    for i, b in enumerate(segment.content):
-                        if p_addr - start + i >= len(payload):
-                            break
-                        payload[p_addr - start + i] = b
-                elif 0 < start - p_addr < p_size:
-                    for i in range(0, min(length, p_addr + p_size - start)):
-                        payload[i] = segment.content[i + start - p_addr]
+        with open(image_path, 'rb') as f:
+            elf = ELFFile(f)
 
-        sha256 = Hash(SHA256())
-        sha256.update(bytes(payload))
-        digest = sha256.finalize()
+            if elf is None:
+                raise ValueError(
+                    f'Failed to parse image "{os.path.abspath(image_path)}"'
+                )
 
-        signature = key.sign(
-            digest,
-            PKCS1v15(),
-            Prehashed(SHA256())
-        )
+            for section_name in (SECTION_APP_SIGNATURE, SECTION_SYM_TAB):
+                if elf.get_section_by_name(section_name) is None:
+                    raise ValueError(
+                        f'Unable to sign without section "{section_name}"'
+                    )
 
-        SignToolXMC7xxx._update_section_content(
-            elf,
-            SECTION_APP_SIGNATURE,
-            list(signature)
-        )
+            signature_section = elf.get_section_by_name(SECTION_APP_SIGNATURE)
+            symtab = elf.get_section_by_name('.symtab')
 
-        elf.write(os.path.abspath(output))
+            for symbol_name in (SYM_APP_VERIFY_START, SYM_APP_VERIFY_LEN):
+                if symtab.get_symbol_by_name(symbol_name) is None:
+                    raise ValueError(
+                        f'Unable to sign without symbol "{symbol_name}"'
+                    )
+
+            app_start = symtab.get_symbol_by_name(SYM_APP_VERIFY_START)[0]
+            app_length = symtab.get_symbol_by_name(SYM_APP_VERIFY_LEN)[0]
+
+            start = app_start.entry.st_value
+            length = app_length.entry.st_value
+            end = start + length
+
+            payload = [0] * length
+
+            for segment in elf.iter_segments():
+                p_type = segment.header.p_type
+                p_addr = segment.header.p_paddr
+                p_size = segment.header.p_memsz
+                if p_type in ('PT_LOAD', 'PT_ARM_EXIDX') and p_size > 0:
+                    if start <= p_addr < end:
+                        for i, b in enumerate(segment.data()):
+                            if p_addr - start + i >= len(payload):
+                                break
+                            payload[p_addr - start + i] = b
+                    elif 0 < start - p_addr < p_size:
+                        for i in range(0, min(length, p_addr + p_size - start)):
+                            payload[i] = segment.content[i + start - p_addr]
+
+            sha256 = Hash(SHA256())
+            sha256.update(bytes(payload))
+            digest = sha256.finalize()
+
+            signature = key.sign(
+                digest,
+                PKCS1v15(),
+                Prehashed(SHA256())
+            )
+
+            new_payload = self._update_section_content(
+                elf_payload,
+                signature_section,
+                signature
+            )
+
+        with open(os.path.abspath(output), 'wb') as f:
+            f.write(new_payload)
 
         logger.info("Image signed successfully '%s'", os.path.abspath(output))
 
@@ -390,20 +396,15 @@ class SignToolXMC7xxx(SignToolBase):
             img.tlv_length <= slot_size - min_erase_size
 
     @staticmethod
-    def _update_section_content(elf, section_name, data, start_index=0):
-        section = elf.get_section(section_name)
-        if section is None:
-            raise ValueError(
-                f'Unable to find section "{section_name}"'
-            )
+    def _update_section_content(elf_payload, section, data):
+        offset = section.header.sh_offset
+        size = section.header.sh_size
+
         l = len(data)
-        if l > section.size:
+        if l > size:
             raise ValueError('Data exceeds section size')
-        if l + start_index > section.size:
-            raise ValueError('Data exceeds section size from specified index')
-        payload = list(section.content)
-        payload = payload[:start_index] + data + payload[start_index + l:]
-        section.content = payload
+        new_payload = elf_payload[:offset] + data + elf_payload[offset + l:]
+        return new_payload
 
     @staticmethod
     def _cleanup(file):

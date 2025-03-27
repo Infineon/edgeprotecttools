@@ -1,5 +1,5 @@
 """
-Copyright 2022-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2022-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -333,7 +333,7 @@ class Image:
             raise LookupError(
                 f"Cannot find ECDSA signature in '{self.image_path}'") from e
         sig = bytes(sig.value)
-        if len(sig) in (64, 96):
+        if len(sig) in (64, 96, 132):
             sig_len = len(sig) // 2
             r = int.from_bytes(sig[:sig_len], 'big')
             s = int.from_bytes(sig[sig_len:], 'big')
@@ -343,6 +343,8 @@ class Image:
             hash_algorithm = hashes.SHA256()
         elif key.key_size == 384:
             hash_algorithm = hashes.SHA384()
+        elif key.key_size == 521:
+            hash_algorithm = hashes.SHA512()
         else:
             raise ValueError(f'Unsupported key length {key.key_size}')
         key.verify(sig, self.payload, ec.ECDSA(hash_algorithm))

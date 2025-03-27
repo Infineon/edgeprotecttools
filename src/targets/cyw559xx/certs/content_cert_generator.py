@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -155,7 +155,7 @@ class ContentCertificateGenerator:
         """Gets the key certificate body"""
         is_encrypted = False
         image_data = []
-        for img in self.tbl:
+        for img in self.tbl.images:
             img_hash_bytes = self.image_hash(img.image_path)
             load_addr_bytes = struct.pack('<I', img.load_addr)
             flash_addr = struct.pack('<I', img.flash_addr)

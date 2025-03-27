@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,8 +19,10 @@ from os.path import join
 
 from .command_group import CommandData
 from .commands import (CommandAddSignature, CommandExtractPayload,
-                       CommandHexSegment, CommandMerge, CommandShift,
-                       CommandSign, CommandSubprocessRunner)
+                       CommandEncryptAes, CommandHexSegment, CommandMerge,
+                       CommandShift, CommandSign, CommandSubprocessRunner,
+                       CommandBinDump, CommandBin2Hex, CommandHash,
+                       CommandHexDump, CommandHex2Bin)
 from ...core.enums import ValidationStatus
 from ...core.json_validator import JsonValidator
 
@@ -28,18 +30,26 @@ from ...core.json_validator import JsonValidator
 class CommandJsonValidator(JsonValidator):
     """Json validator for sign&combine tools"""
     schema_dir = join(os.path.dirname(__file__), 'schemas')
+    schemas = {'root': join(schema_dir, 'root_schema.json')}
 
-    schemas = {
-        'root': join(schema_dir, 'root_schema.json'),
-        CommandAddSignature: join(schema_dir, CommandAddSignature.schema),
-        CommandExtractPayload: join(schema_dir, CommandExtractPayload.schema),
-        CommandHexSegment: join(schema_dir, CommandHexSegment.schema),
-        CommandMerge: join(schema_dir, CommandMerge.schema),
-        CommandShift: join(schema_dir, CommandShift.schema),
-        CommandSign: join(schema_dir, CommandSign.schema),
-        CommandSubprocessRunner: join(schema_dir,
-                                      CommandSubprocessRunner.schema)
-    }
+    def __init__(self, parser):
+        super().__init__(parser=parser)
+        for command in (
+                CommandAddSignature,
+                CommandExtractPayload,
+                CommandEncryptAes,
+                CommandHexSegment,
+                CommandMerge,
+                CommandShift,
+                CommandSign,
+                CommandSubprocessRunner,
+                CommandBinDump,
+                CommandBin2Hex,
+                CommandHash,
+                CommandHexDump,
+                CommandHex2Bin
+        ):
+            self.schemas[command] = join(self.schema_dir, command.schema)
 
     def validate_command(self, command_data: CommandData) -> ValidationStatus:
         """Validates command data against json schema"""

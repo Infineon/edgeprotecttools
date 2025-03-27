@@ -2,7 +2,7 @@
     "schema-version": 1.0,
     "content": [
         {
-            "name": "Shift command example",
+            "name": "shift command example",
             "description": "Shifts a hex segment to a secondary address",
             "enabled": true,
             "commands": [

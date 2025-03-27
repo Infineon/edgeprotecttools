@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import glob
 import logging
+import platform
 
 import serial.tools.list_ports
 
@@ -36,16 +38,33 @@ class ChipLoad(ProgrammerBase):
         self.probe_id = self.runner.serial_port if self.runner else None
 
     def connect(self, target_name=None, interface=None, probe_id=None, ap=None,
-                acquire=True, power=None, voltage=None, ignore_errors=False,
-                rev=None):
+                acquire=True, power=None, voltage=None, rev=None):
         """Checks whether the serial port name exists in the comm ports list"""
+        if self.require_path and self.tool_path:
+            self.runner.tool_path = self.tool_path
+
         port_name = probe_id if probe_id else self.probe_id
-        commports = list(serial.tools.list_ports.comports())
-        logger.info('Available serial ports: %s', [p.name for p in commports])
-        for commport in commports:
-            if port_name in (commport.device, commport.name):
-                logger.info('Using port %s', port_name)
-                return True
+
+        os_name = platform.system()
+        if os_name not in ['Windows', 'Linux', 'Darwin']:
+            raise ValueError(f'Unsupported OS platform: {os_name}')
+
+        if os_name == 'Windows':
+            commports = list(serial.tools.list_ports.comports())
+            logger.info('Available serial ports: %s',
+                        [p.name for p in commports])
+            for commport in commports:
+                if port_name in (commport.device, commport.name):
+                    logger.info('Using port %s', port_name)
+                    return True
+        else:
+            commports = glob.glob('/dev/tty.*')
+            logger.info('Available serial ports: %s', commports)
+            for commport in commports:
+                if port_name == commport:
+                    logger.info('Using port %s', port_name)
+                    return True
+
         raise ValueError(f"Unknown port '{port_name}'")
 
     def disconnect(self):

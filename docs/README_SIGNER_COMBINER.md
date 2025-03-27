@@ -11,8 +11,14 @@
   - [Merge](#merge)
   - [Sign image](#sign-image)
   - [Extract payload](#extract-payload)
+  - [Encrypt AES](#encrypt-aes)
   - [Add signature](#add-signature)
   - [Custom script](#custom-script)
+  - [Bin dump](#bin-dump)
+  - [Hex dump](#hex-dump)
+  - [Bin to hex](#bin-to-hex)
+  - [Hex to bin](#hex-to-bin)
+  - [Hash](#hash)
 - [JSON comments](#json-comments)
 - [Use cases](#use-cases)
 
@@ -221,7 +227,7 @@ Example:
     "schema-version": 1.0,
     "content": [
         {
-            "name": "Shift command example",
+            "name": "shift command example",
             "description": "Shifts a hex segment to a secondary address",
             "enabled": true,
             "commands": [
@@ -275,7 +281,7 @@ Example:
     "schema-version": 1.0,
     "content": [
         {
-            "name" : "Hex-segment example",
+            "name" : "hex-segment command example",
             "description": "Extracts a segment from the hex and saves it to a file",
             "enabled": true,
             "commands": [
@@ -333,7 +339,7 @@ Example:
     "schema-version": 1.0,
     "content": [
         {
-            "name": "Merge command example",
+            "name": "merge command example",
             "description": "Merges two or more hex/bin files into a single file",
             "enabled": true,
             "commands": [
@@ -377,43 +383,48 @@ All the numeric values can be provided in a decimal (e.g. `fill-value: 255`) or 
 
 Inputs:
 
-| Name        |  Type  | Optional/Required | Description                                                     |
-|-------------|:------:|:-----------------:|-----------------------------------------------------------------|
-| file        | string |     required      | Path to the file to be signed or converted into MCUboot format. |
-| description | string |     optional      | Description for this field.                                     |
+| Name                  |      Type       | Optional/Required | Description                                                                                                                                                                                                                                                                                     |
+|-----------------------|:---------------:|:-----------------:|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| file                  |     string      |     required      | Path to the file to be signed or converted into MCUboot format.                                                                                                                                                                                                                                 |
+| description           |     string      |     optional      | Description for this field.                                                                                                                                                                                                                                                                     |
+| signing-key           |     string      |     optional      | ECDSA or RSA private key used to sign the image.                                                                                                                                                                                                                                                |
+| header-size           | string, integer |     required      | MCUboot header size.                                                                                                                                                                                                                                                                            |
+| slot-size             | string, integer |     required      | Maximum slot size.                                                                                                                                                                                                                                                                              |
+| fill-value            | string, integer |     optional      | Value read back from erased flash. Default: `0`. Available values: `0`, `0xFF`.                                                                                                                                                                                                                 |
+| min-erase-size        | string, integer |     optional      | Minimum erase size. Default: `0x8000`.                                                                                                                                                                                                                                                          |
+| image-version         |     string      |     optional      | Image version in the image header. Default: `0.0.0`.                                                                                                                                                                                                                                            |
+| security-counter      | string, integer |     optional      | Value of security counter. Use the `auto` keyword to automatically generate it from the image version. Default: `auto`.                                                                                                                                                                         |
+| align                 | string, integer |     optional      | Flash alignment. Default: `8`. Available values: `1`, `2`, `4`, `8`.                                                                                                                                                                                                                            |
+| pubkey-format         |     string      |     optional      | Public key format in the image TLV: full key or hash of the key. Available values: `hash` or `full`. Default: `hash`.                                                                                                                                                                           |
+| pubkey-encoding       |     string      |     optional      | Public key encoding in the image TLV. Applicable values: `der`, or `raw`. Default: `der`.                                                                                                                                                                                                       |
+| signature-encoding    |     string      |     optional      | Image signature encoding. Applicable values: `asn1`, or `raw`. Default: `asn1`.                                                                                                                                                                                                                 |
+| pad                   |     boolean     |     optional      | Adds padding to the image trailer. Pads the image from the end of the TLV area up to the slot size. boot_magic is always at the very end after the padding.                                                                                                                                     |
+| confirm               |     boolean     |     optional      | Adds image OK status to the trailer. Pads the image from the end of the TLV area up to the slot size and sets the image OK byte to 0x01 (the eighth byte from the end). The padding is required for this feature and is always applied. boot_magic is always at the very end after the padding. |
+| overwrite-only        |     boolean     |     optional      | Use overwrite mode instead of swap.                                                                                                                                                                                                                                                             |
+| boot-record           |     string      |     optional      | Create CBOR encoded boot record TLV. Represents the role of the software component (e.g. CoFM for coprocessor firmware). Maximum 12 characters.                                                                                                                                                 |
+| hex-address           | string, integer |     optional      | Adjust the address in the hex output file.                                                                                                                                                                                                                                                      |
+| load-address          | string, integer |     optional      | Load address for image when it should run from RAM.                                                                                                                                                                                                                                             |
+| rom-fixed             | string, integer |     optional      | Set flash address the image is built for.                                                                                                                                                                                                                                                       |
+| max-sectors           | string, integer |     optional      | When padding allow for this amount of sectors. Default: `128`.                                                                                                                                                                                                                                  |
+| save-enctlv           |     boolean     |     optional      | When upgrading, save encrypted key TLVs instead of plain keys. Enable when BOOT_SWAP_SAVE_ENCTLV config option was set.                                                                                                                                                                         |
+| dependencies          |     string      |     optional      | Add dependency on another image. Format: `(<image_ID>,<image_version>), ... `.                                                                                                                                                                                                                  |
+| encryption-public-key |     string      |     optional      | ECDSA public key used to generate the symmetric key for image encryption (ECIES schema). It must be the receiver's public key.                                                                                                                                                                  |
+| encryption-secret-key |     string      |     optional      | Symmetric key used to encrypt the image (AES).                                                                                                                                                                                                                                                  |
+| encryption-address    |     string      |     optional      | Starting address for data encryption.                                                                                                                                                                                                                                                           |
+| protected-tlv         |      list       |     optional      | The custom TLV to be placed into a protected area (the signed part). Add the `0x` prefix for the value to be interpreted as an `integer`, otherwise it will be interpreted as a `string`.                                                                                                       |
+| tlv                   |      list       |     optional      | The custom TLV to be placed into a non-protected area. Add the `0x` prefix for the value to be interpreted as an `integer`, otherwise it will be interpreted as a `string`.                                                                                                                     |
+
 
 Outputs:
 
-| Name               |      Type       | Optional/Required | Description                                                                                                                                                                                                                                                                                     |
-|--------------------|:---------------:|:-----------------:|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| description        |     string      |     optional      | Description for this field.                                                                                                                                                                                                                                                                     |
-| file               |     string      |     required      | Path to the signed and/or converted to the MCUboot format image.                                                                                                                                                                                                                                |
-| format             |     string      |     required      | Format of the output file. Available values: `ihex` or `bin`.                                                                                                                                                                                                                                   |
-| signing-key        |     string      |     optional      | ECDSA or RSA private key used to sign the image.                                                                                                                                                                                                                                                |
-| header-size        | string, integer |     required      | MCUboot header size.                                                                                                                                                                                                                                                                            |
-| slot-size          | string, integer |     required      | Maximum slot size.                                                                                                                                                                                                                                                                              |
-| fill-value         | string, integer |     optional      | Value read back from erased flash. Default: `0`. Available values: `0`, `0xFF`.                                                                                                                                                                                                                 |
-| min-erase-size     | string, integer |     optional      | Minimum erase size. Default: `0x8000`.                                                                                                                                                                                                                                                          |
-| image-version      |     string      |     optional      | Image version in the image header. Default: `0.0.0`.                                                                                                                                                                                                                                            |
-| security-counter   | string, integer |     optional      | Value of security counter. Use the `auto` keyword to automatically generate it from the image version. Default: `auto`.                                                                                                                                                                         |
-| align              | string, integer |     optional      | Flash alignment. Default: `8`. Available values: `1`, `2`, `4`, `8`.                                                                                                                                                                                                                            |
-| pubkey-format      |     string      |     optional      | Public key format in the image TLV: full key or hash of the key. Available values: `hash` or `full`. Default: `hash`.                                                                                                                                                                           |
-| pubkey-encoding    |     string      |     optional      | Public key encoding in the image TLV. Applicable values: `der`, or `raw`. Default: `der`.                                                                                                                                                                                                       |
-| signature-encoding |     string      |     optional      | Image signature encoding. Applicable values: `asn1`, or `raw`. Default: `asn1`.                                                                                                                                                                                                                 |
-| pad                |     boolean     |     optional      | Adds padding to the image trailer. Pads the image from the end of the TLV area up to the slot size. boot_magic is always at the very end after the padding.                                                                                                                                     |
-| confirm            |     boolean     |     optional      | Adds image OK status to the trailer. Pads the image from the end of the TLV area up to the slot size and sets the image OK byte to 0x01 (the eighth byte from the end). The padding is required for this feature and is always applied. boot_magic is always at the very end after the padding. |
-| overwrite-only     |     boolean     |     optional      | Use overwrite mode instead of swap.                                                                                                                                                                                                                                                             |
-| boot-record        |     string      |     optional      | Create CBOR encoded boot record TLV. Represents the role of the software component (e.g. CoFM for coprocessor firmware). Maximum 12 characters.                                                                                                                                                 |
-| hex-address        | string, integer |     optional      | Adjust the address in the hex output file.                                                                                                                                                                                                                                                      |
-| load-address       | string, integer |     optional      | Load address for image when it should run from RAM.                                                                                                                                                                                                                                             |
-| rom-fixed          | string, integer |     optional      | Set flash address the image is built for.                                                                                                                                                                                                                                                       |
-| max-sectors        | string, integer |     optional      | When padding allow for this amount of sectors. Default: `128`.                                                                                                                                                                                                                                  |
-| save-enctlv        |     boolean     |     optional      | When upgrading, save encrypted key TLVs instead of plain keys. Enable when BOOT_SWAP_SAVE_ENCTLV config option was set.                                                                                                                                                                         |
-| dependencies       |     string      |     optional      | Add dependency on another image. Format: `(<image_ID>,<image_version>), ... `.                                                                                                                                                                                                                  |
-| encryption-key     |     string      |     optional      | Encrypt image using the provided public key (ECIES schema).                                                                                                                                                                                                                                     |
-| decrypted          |     string      |     optional      | The path where to save decrypted image payload (bin). Specify this option if the image is encrypted and provide the decrypted image to HSM because the signature is calculated on the unsigned data.                                                                                            |
-| protected-tlv      |      list       |     optional      | The custom TLV to be placed into a protected area (the signed part). Add the `0x` prefix for the value to be interpreted as an `integer`, otherwise it will be interpreted as a `string`.                                                                                                       |
-| tlv                |      list       |     optional      | The custom TLV to be placed into a non-protected area. Add the `0x` prefix for the value to be interpreted as an `integer`, otherwise it will be interpreted as a `string`.                                                                                                                     |
+| Name         |      Type       | Optional/Required | Description                                                                                                                                                                                                  |
+|--------------|:---------------:|:-----------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| description  |     string      |     optional      | Description for this field.                                                                                                                                                                                  |
+| file         |     string      |     required      | Path to the signed and/or converted to the MCUboot format image.                                                                                                                                             |
+| format       |     string      |     required      | Format of the output file. Available values: `ihex` or `bin`.                                                                                                                                                |
+| unencrypted  |     string      |     optional      | The path where to save unencrypted image payload (bin). Specify this option if the image is encrypted and provide the unencrypted image to HSM because the signature is calculated on the unencrypted data.  |
+| nonce-output |     string      |     optional      | The path to a file where to save the nonce.                                                                                                                                                                  |
+
 
 Example:
 ```json
@@ -421,7 +432,7 @@ Example:
     "schema-version": 1.0,
     "content": [
         {
-            "name" : "Sign command example",
+            "name" : "sign command example",
             "description": "Signs the input file and converts it to the MCUboot format",
             "enabled": true,
             "commands": [
@@ -430,15 +441,8 @@ Example:
                     "inputs": [
                         {
                             "description": "Secure application",
-                            "file": "./rram_1.hex"
-                        }
-                    ],
-                    "outputs" : [
-                        {
-                            "description": "Signed secured application",
-                            "format" : "ihex",
+                            "file": "./rram_1.hex",
                             "signing-key": "./some-key-ec-p256.pem",
-                            "file": "./rram_1_signed.hex",
                             "overwrite-only": true,
                             "header-size": "0x400",
                             "slot-size": "0x1000",
@@ -452,6 +456,13 @@ Example:
                                     "value": "0x12345678"
                                 }
                             ]
+                        }
+                    ],
+                    "outputs" : [
+                        {
+                            "description": "Signed secured application",
+                            "format" : "ihex",
+                            "file": "./rram_1_signed.hex"
                         }
                     ]
                 }
@@ -491,7 +502,7 @@ Example:
     "schema-version": 1.0,
     "content": [
         {
-            "name": "Extract-payload command example",
+            "name": "extract-payload command example",
             "description": "Adds a signature to the MCUboot formatted image",
             "enabled": true,
             "commands": [
@@ -516,6 +527,67 @@ Example:
 }
 ```
 
+### Encrypt AES
+
+Encrypts binary using AES.
+
+Inputs:
+
+| Name        |  Type   | Optional/Required | Description                                                                                                |
+|-------------|:-------:|:-----------------:|------------------------------------------------------------------------------------------------------------|
+| file        | string  |     required      | The bin file to encrypt.                                                                                   |
+| key         | string  |     required      | The path to the key used to encrypt the image.                                                             |
+| cipher-mode | string  |     required      | Cipher mode for AES encryption. Applicable values: `CTR`, `CBC`, `ECB`.                                    |
+| iv          | string  |     optional      | Initialization vector as a binary file or a hex string starting from `0x`. Use `auto` for auto generation. |
+| nonce       | string  |     optional      | A hex string or a file containing nonce used for encryption.                                               |
+| add-iv      | boolean |     optional      | Indicates whether to add IV at the beginning of the output file.                                           |
+| description | string  |     optional      | Description for this field.                                                                                |
+
+Outputs:
+
+| Name        |  Type  | Optional/Required | Description                           |
+|-------------|:------:|:-----------------:|---------------------------------------|
+| file        | string |     required      | The encrypted file.                   |
+| iv-output   | string |     optional      | The output file for the generated IV. |
+| description | string |     optional      | Description for this field.           |
+
+Example:
+
+```json
+{    
+    "schema-version": 1.0,
+    "content": [
+        {
+            "name": "encrypt-aes command example",
+            "description": "Encrypts binary file",
+            "enabled": true,
+            "commands": [
+                {
+                    "command": "encrypt-aes",
+                    "inputs": [
+                        {
+                            "description": "Binary file",
+                            "file": "file.bin",
+                            "key": "key.bin",
+                            "cipher-mode": "CBC",
+                            "iv": "auto",
+                            "add-iv": true,
+                            "nonce": null
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "description": "Output file",
+                            "file": "output.bin",
+                            "iv-output": null
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+```
 
 ### Add signature
 
@@ -553,7 +625,7 @@ Example:
     "schema-version": 1.0,
     "content": [
         {
-            "name": "Add-signature command example",
+            "name": "add-signature command example",
             "description": "Adds a signature to the MCUboot formatted image",
             "enabled": true,
             "commands": [
@@ -593,12 +665,11 @@ Command name: `custom-script`
 
 Inputs:
 
-| Name         |  Type   | Optional/Required | Description                      |
-|--------------|:-------:|:-----------------:|----------------------------------|
-| command-line | string  |     required      | The command line to be executed. |
-| shell        | boolean |     optional      | Specifies whether the command will be executed through the shell. On POSIX with `shell=True`, the shell defaults to `/bin/sh`. Invoking via the shell does allow you to expand environment variables and file globs according to the shell's usual mechanism. On Windows with `shell=True`, the COMSPEC environment variable specifies the default shell. The only time you need to specify `shell=True` on Windows is when the command you wish to execute is built into the shell (e.g. **dir** or **copy**). You do not need `shell=True` to run a batch file or console-based executable.|
-| description  | string  |     optional      | The command description. |
-
+| Name         |  Type   | Optional/Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+|--------------|:-------:|:-----------------:|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| command-line | string  |     required      | The command line to be executed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| shell        | boolean |     optional      | Specifies whether the command will be executed through the shell. On POSIX with `shell=True`, the shell defaults to `/bin/sh`. Invoking via the shell does allow you to expand environment variables and file globs according to the shell's usual mechanism. On Windows with `shell=True`, the COMSPEC environment variable specifies the default shell. The only time you need to specify `shell=True` on Windows is when the command you wish to execute is built into the shell (e.g. **dir** or **copy**). You do not need `shell=True` to run a batch file or console-based executable. |
+| description  | string  |     optional      | The command description.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 Outputs:
 
@@ -611,7 +682,7 @@ Example:
     "schema-version": 1.0,
     "content": [
         {
-            "name": "Custom-script command example",
+            "name": "custom-script command example",
             "description": "Test template for the custom-script command",
             "enabled": true,
             "commands": [
@@ -622,6 +693,293 @@ Example:
                             "description": "List detailed information about files and directories in the current directory",
                             "command-line": "ls -la",
                             "shell": false
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+```
+
+
+### Bin dump
+
+Creates binary file from the hex string or random bytes.
+
+Command name: `bin-dump`
+
+Inputs:
+
+| Name        |      Type       | Optional/Required | Description                                                           |
+|-------------|:---------------:|:-----------------:|-----------------------------------------------------------------------|
+| data        |     string      |     optional      | The hex string. Either `data` or `random` property must be specified. |
+| random      | string, integer |     optional      | Generate random binary of the specified length.                       |
+| description |     string      |     optional      | Description for this field.                                           |
+
+Outputs:
+
+| Name        |  Type  | Optional/Required | Description                  |
+|-------------|:------:|:-----------------:|------------------------------|
+| file        | string |     required      | Path to the output bin file. |
+| description | string |     optional      | Description for this field.  |
+
+Example:
+
+```json
+{
+    "schema-version": 1.0,
+    "content": [
+        {
+            "name": "bin-dump command example",
+            "description": "Creates binary file",
+            "enabled": true,
+            "commands": [
+                {
+                    "command": "bin-dump",
+                    "inputs": [
+                        {
+                            "description": "Hex string or random value",
+                            "data": "0011223344556677889900AABBCCDDEEFF",
+                            "random": null
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "description": "Output file",
+                            "file": "output.bin"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+```
+
+
+### Hex dump
+
+Extracts data from the hex file and saves it to a binary file.
+
+Command name: `hex-dump`
+
+Inputs:
+
+| Name        |      Type       | Optional/Required | Description                          |
+|-------------|:---------------:|:-----------------:|--------------------------------------|
+| file        |     string      |     required      | The path to the hex file.            |
+| address     | string, integer |     required      | Address of the data in the hex file. |
+| size        | string, integer |     required      | Size of the data.                    |
+| description |     string      |     optional      | Description for this field.          |
+
+Outputs:
+
+| Name        |      Type       | Optional/Required | Description                                                                                   |
+|-------------|:---------------:|:-----------------:|-----------------------------------------------------------------------------------------------|
+| file        |     string      |     required      | Path to the output bin file.                                                                  |
+| fill-value  | string, integer |     optional      | Value to fill the spaces between the segments. Available values: `0x00`-`0xFF`. Default: `0`. |
+| description |     string      |     optional      | Description for this field.                                                                   |
+
+Example:
+
+```json
+{
+    "schema-version": 1.0,
+    "content": [
+        {
+            "name": "hex-dump command example",
+            "description": "Extracts data from the hex file",
+            "enabled": true,
+            "commands": [
+                {
+                    "command": "hex-dump",
+                    "inputs": [
+                        {
+                            "description": "Input hex file",
+                            "file": "input.hex",
+                            "address": "0x00",
+                            "size": "0xFF"
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "description": "Output bin file",
+                            "file": "output.bin",
+                            "fill-value": 0
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+```
+
+
+### Bin to hex
+
+Converts binary file to hex.
+
+Command name: `bin2hex`
+
+Inputs:
+
+| Name        |      Type       | Optional/Required | Description                               |
+|-------------|:---------------:|:-----------------:|-------------------------------------------|
+| file        |     string      |     required      | The path to the bin file.                 |
+| offset      | string, integer |     optional      | Starting address offset for loading bin.  |
+| description |     string      |     optional      | Description for this field.               |
+
+Outputs:
+
+| Name        |  Type  | Optional/Required | Description                  |
+|-------------|:------:|:-----------------:|------------------------------|
+| file        | string |     required      | Path to the output hex file. |
+| description | string |     optional      | Description for this field.  |
+
+Example:
+
+```json
+{    
+    "schema-version": 1.0,
+    "content": [
+        {
+            "name": "bin2hex command example",
+            "description": "Converts binary image to hex",
+            "enabled": true,
+            "commands": [
+                {
+                    "command": "bin2hex",
+                    "inputs": [
+                        {
+                            "description": "Input bin file",
+                            "file": "input.bin",
+                            "offset": 0
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "description": "Output hex file",
+                            "file": "output.hex"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+```
+
+
+### Hex to bin
+
+Converts hex file to binary.
+
+Command name: `hex2bin`
+
+Inputs:
+
+| Name        |      Type       | Optional/Required | Description                     |
+|-------------|:---------------:|:-----------------:|---------------------------------|
+| file        |     string      |     required      | The path to the input hex file. |
+| start       | string, integer |     optional      | Start of address range.         |
+| end         | string, integer |     optional      | End of address range.           |
+| description |     string      |     optional      | Description for this field.     |
+
+Outputs:
+
+| Name        |      Type       | Optional/Required | Description                                                                                      |
+|-------------|:---------------:|:-----------------:|--------------------------------------------------------------------------------------------------|
+| file        |     string      |     required      | The path to the output bin file.                                                                 |
+| size        | string, integer |     optional      | Size of the resulting file in bytes.                                                             |
+| fill-value  | string, integer |     optional      | Value to fill the spaces between the segments. Available values: `0x00`-`0xFF`. Default: `0xFF`. |
+| description |     string      |     optional      | Description for this field.                                                                      |
+
+Example:
+
+```json
+{
+    "schema-version": 1.0,
+    "content": [
+        {
+            "name": "hex2bin command example",
+            "description": "Converts hex file to binary",
+            "enabled": true,
+            "commands": [
+                {
+                    "command": "hex2bin",
+                    "inputs": [
+                        {
+                            "description": "Input hex file",
+                            "file": "input.hex",
+                            "start": "0x32000000",
+                            "end": "0x32000200"
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "description": "Output bin file",
+                            "file": "output.bin",
+                            "size": "0x400",
+                            "fill-value": 0
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+```
+
+
+### Hash
+
+Calculates hash of a file.
+
+Command name: `hash`
+
+Inputs:
+
+| Name        |  Type   | Optional/Required | Description                 |
+|-------------|:-------:|:-----------------:|-----------------------------|
+| file        | string  |     required      | The path to the input file. |
+| algorithm   | string  |     required      | Hash algorithm.             |
+| description | string  |     optional      | Description for this field. |
+
+Outputs:
+
+| Name        |  Type  | Optional/Required | Description                                                                |
+|-------------|:------:|:-----------------:|----------------------------------------------------------------------------|
+| file        | string |     required      | Output binary or text file.                                                |
+| format      | string |     required      | Format of the output file. Available values: `bin`, `txt`. Default: `bin`. |
+| description | string |     optional      | Description for this field.                                                |
+
+Example:
+
+```json
+{
+    "schema-version": 1.0,
+    "content": [
+        {
+            "name": "hash command example",
+            "description": "Calculates hash of a file",
+            "enabled": true,
+            "commands": [
+                {
+                    "command": "hash",
+                    "inputs": [
+                        {
+                            "description": "Calculate hash of binary file",
+                            "file": "output.bin",
+                            "algorithm": "SHA256"
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "description": "Output binary or text file",
+                            "file": "hash.txt",
+                            "format": "txt"
                         }
                     ]
                 }

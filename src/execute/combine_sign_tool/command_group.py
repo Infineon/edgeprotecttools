@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,8 +19,10 @@ from collections import namedtuple
 from typing import List, Union
 
 from .commands import (Command, CommandHexSegment, CommandSign, CommandShift,
-                       CommandMerge, CommandExtractPayload, CommandAddSignature,
-                       CommandSubprocessRunner)
+                       CommandMerge, CommandExtractPayload, CommandEncryptAes,
+                       CommandAddSignature, CommandSubprocessRunner,
+                       CommandBinDump, CommandBin2Hex, CommandHash,
+                       CommandHexDump, CommandHex2Bin)
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +38,14 @@ class CommandGroup:
         'shift': CommandShift,
         'merge': CommandMerge,
         'extract-payload': CommandExtractPayload,
+        'encrypt-aes': CommandEncryptAes,
         'add-signature': CommandAddSignature,
-        'custom-script': CommandSubprocessRunner
+        'custom-script': CommandSubprocessRunner,
+        'bin-dump': CommandBinDump,
+        'bin2hex': CommandBin2Hex,
+        'hash': CommandHash,
+        'hex-dump': CommandHexDump,
+        'hex2bin': CommandHex2Bin
     }
 
     def __init__(self, **kwargs):

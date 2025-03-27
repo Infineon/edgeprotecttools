@@ -1,5 +1,5 @@
 """
-Copyright 2019-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2019-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -176,10 +176,8 @@ class Mxs40sv2API(CommonAPI):
         """
         context = CertificateContext(self.target.certificate_strategy)
         return context.create_certificate(output, None, None,
-                                          cert_format='cbor',
                                           dev_cert='device_integrity',
-                                          target=self.target,
-                                          **kwargs)
+                                          target=self.target, **kwargs)
 
     def integrity_exam(self, probe_id=None, **kwargs):
         """Runs Device Integrity Exam

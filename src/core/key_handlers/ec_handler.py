@@ -1,5 +1,5 @@
 """
-Copyright 2022-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2022-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,7 +38,7 @@ class ECHandler:
         curve=ec.SECP256R1()
     ) -> EllipticCurvePublicKey:
         """ Generates an EC public key from the public numbers """
-        if not isinstance(curve, (ec.SECP256R1, ec.SECP384R1)):
+        if not isinstance(curve, (ec.SECP256R1, ec.SECP384R1, ec.SECP521R1)):
             raise TypeError(f"Unsupported curve '{type(curve)}'")
         pubkey = EllipticCurvePublicKey.from_encoded_point(curve, pub)
         return pubkey
@@ -49,7 +49,7 @@ class ECHandler:
         curve=ec.SECP256R1()
     ) -> EllipticCurvePrivateKey:
         """ Generates an EC private key from the private value """
-        if not isinstance(curve, (ec.SECP256R1, ec.SECP384R1)):
+        if not isinstance(curve, (ec.SECP256R1, ec.SECP384R1, ec.SECP521R1)):
             raise TypeError(f"Unsupported curve '{type(curve)}'")
         key = ec.derive_private_key(value, curve, default_backend())
         return key
@@ -116,6 +116,10 @@ class ECHandler:
             alg = 'ES384'
             crv = 'P-384'
             lth = 48
+        elif isinstance(privkey.curve, ec.SECP521R1):
+            alg = 'ES512'
+            crv = 'P-521'
+            lth = 66
         else:
             raise ValueError('Unsupported elliptic curve')
         return alg, crv, lth
@@ -126,6 +130,8 @@ class ECHandler:
             alg = 'ES256'
         elif isinstance(privkey.curve, ec.SECP384R1):
             alg = 'ES384'
+        elif isinstance(privkey.curve, ec.SECP521R1):
+            alg = 'ES512'
         else:
             raise ValueError('Unsupported elliptic curve')
         return alg
@@ -183,6 +189,8 @@ class ECHandler:
             hash_algorithm = hashes.SHA256()
         elif key.key_size == 384:
             hash_algorithm = hashes.SHA384()
+        elif key.key_size == 521:
+            hash_algorithm = hashes.SHA512()
         else:
             raise ValueError(f'Unsupported key length {key.key_size}')
 
@@ -203,6 +211,9 @@ class ECHandler:
         elif key.key_size == 384:
             hashlib_algorithm = hashlib.sha384
             hash_algorithm = hashes.SHA384
+        elif key.key_size == 521:
+            hashlib_algorithm = hashlib.sha512
+            hash_algorithm = hashes.SHA512
         else:
             raise ValueError(f'Unsupported key length {key.key_size}')
 
@@ -224,6 +235,6 @@ class ECHandler:
     def asn1_to_rs(signature, key_size):
         """Converts ECDSA signature in ASN.1 format to R and S values"""
         r, s = decode_dss_signature(signature)
-        values_size = key_size // 8
+        values_size = key_size // 8 + (key_size % 8 > 0)
         return (r.to_bytes(values_size, byteorder='big'),
                 s.to_bytes(values_size, byteorder='big'))

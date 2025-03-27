@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,7 @@ from typing import Union
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from ....core.key_handlers.rsa_handler import RSAHandler
-from ....core.key_handlers import load_key
+from ....core.key_handlers import load_public_key
 from ...common.policy_parser_primitives import PolicyParserPrimitives
 from ..asset_enums import AssetType, HbkType
 
@@ -121,12 +121,16 @@ class PolicyParserOemProvisioning(PolicyParserPrimitives):
         path = self.field(*keys)
         if path:
             if not os.path.isabs(path):
-                path = os.path.abspath(os.path.join(self.policy_dir, path))
-            key = load_key(path)
-            if not isinstance(key, (rsa.RSAPrivateKey, rsa.RSAPublicKey)):
-                raise ValueError(
-                    f"Unexpected key type: '{path}'. Expected: RSA key"
-                )
+                path = os.path.abspath(str(os.path.join(self.policy_dir, path)))
+
+            try:
+                key = load_public_key(path)
+                if not (isinstance(key,
+                                   rsa.RSAPublicKey) and key.key_size == 3072):
+                    raise TypeError
+            except (ValueError, TypeError) as e:
+                raise ValueError(f"Unexpected key type: '{path}'. Expected: "
+                                 f"RSA public key of the 3072-bit size") from e
         else:
             key = None
         return key

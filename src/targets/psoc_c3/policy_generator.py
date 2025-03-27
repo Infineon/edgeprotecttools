@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,6 +23,8 @@ from ...core.jsonpath import set_node_value
 class PolicyGenerator:
     def __init__(self, policy_parser):
         self.policy_parser = policy_parser
+        self.asset_map_cls = AssetMapPsocC3
+        self.reverse_asset_map_cls = ReverseAssetMap
 
     def populate(self, packets, assets):
         """
@@ -35,7 +37,7 @@ class PolicyGenerator:
         unpacked = self._unpack_binary(packets, assets)
         datadict = replace(self.policy_parser.json, 'value', None)
 
-        reverse_map = ReverseAssetMap(self.policy_parser)
+        reverse_map = self.reverse_asset_map_cls(self.policy_parser)
         for asset_name, asset_value in unpacked.items():
             items = reverse_map.reverse_asset(asset_name, asset_value)
             for path, value in items:
@@ -61,6 +63,6 @@ class PolicyGenerator:
 
     def _struct_format(self, asset_list):
         """ Gets format string based on asset map items size """
-        assets = AssetMapPsocC3.get(self.policy_parser)
+        assets = self.asset_map_cls.get(self.policy_parser)
         fmt = [assets[asset]['size'] for asset in asset_list]
         return fmt

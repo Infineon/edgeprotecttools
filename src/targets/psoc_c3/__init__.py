@@ -1,5 +1,5 @@
 """
-Copyright 2023-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,8 +19,8 @@ from .target_builder import PsocC3Builder
 target_map = {
     'psoc_c3': {
         'class': PsocC3Builder,
-        'family': 'MXS40Sv2 Family',
-        'display_name': 'PSoC C3',
+        'family': 'PSOC™ Control Family',
+        'display_name': 'PSOC™ Control C3',
         'type': 'family',
         'platform': 'mxs40sv2'
     }

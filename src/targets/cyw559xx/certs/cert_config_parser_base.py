@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +17,8 @@ limitations under the License.
 import json
 import os
 from typing import Union
-from cryptography.hazmat.primitives.asymmetric import rsa
+
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 
 from .cert_enums import CertificateType
 from ...common.policy_parser_primitives import PolicyParserPrimitives
@@ -49,8 +50,7 @@ class CertConfigParserBase(PolicyParserPrimitives):
         """Gets a value of certificate.version property"""
         return self.field('certificate', 'version')
 
-    def cert_keypair(self, ret_value=False) -> Union[str, rsa.RSAPrivateKey,
-                                                     None]:
+    def cert_keypair(self, ret_value=False) -> Union[str, RSAPrivateKey, None]:
         """Gets a value of cert_keypair.value property"""
         key = self.field('cert_keypair', 'value')
         if not key:
@@ -60,7 +60,11 @@ class CertConfigParserBase(PolicyParserPrimitives):
                 key = os.path.abspath(os.path.join(self.cert_config_dir, key))
             if ret_value:
                 pwd = self.cert_keypair_pwd() or None
-                return load_private_key(key, password=pwd)
+                key = load_private_key(key, password=pwd)
+                if not isinstance(key, RSAPrivateKey) or key.key_size != 3072:
+                    raise ValueError('The signing key must be an RSA private '
+                                     'key of the 3072-bit size')
+
         return key
 
     def cert_keypair_pwd(self) -> str:

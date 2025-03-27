@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -117,9 +117,9 @@ class CommandAddSignature(Command):
                 logger.error('Field "%s" is required', self.args_map.get(arg))
                 return False
 
-        if not os.path.exists(self.image):
-            logger.error('File not found: "%s"', os.path.abspath(self.image))
-            return False
+            if not os.path.exists(self.image):
+                logger.error('File not found: "%s"', os.path.abspath(self.image))
+                return False
 
         image = Image(self.image)
         if not image.has_metadata:

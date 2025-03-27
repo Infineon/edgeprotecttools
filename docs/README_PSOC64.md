@@ -1,4 +1,6 @@
 # Table of Contents
+- [PSoC 64 HW/SW compatibility](#psoc-64-hwsw-compatibility)
+- [Reference documents](#reference-documents)
 - [Main features](#main-features)
 - [Quick start](#quick-start)
 - [Usage example](#usage-example)
@@ -10,13 +12,12 @@
     - [Create keys](#create-keys)
     - [Create provisioning packet](#create-provisioning-packet)
     - [Provision device](#provision-device)
-    - [Reprovision device](#re-provision-device)
+    - [Reprovision device](#reprovision-device)
     - [Sign image](#sign-image)
     - [Convert bin to hex](#convert-bin-to-hex)
     - [Entrance exam](#entrance-exam)
     - [Create a certificate](#create-a-certificate)
     - [Create image certificate](#create-image-certificate)
-    - [Flash map methods](#flash-map-methods)
     - [Encrypted programming](#encrypted-programming)
        - [Create encrypted image](#create-encrypted-image)
        - [Program encrypted image](#program-encrypted-image)
@@ -42,6 +43,74 @@
     - [Custom Bootloader](#custom-bootloader)
     - [Encrypted Bootloader](#encrypted-bootloader)
 
+# PSoC 64 HW/SW compatibility
+<table>
+  <thead>
+    <tr>
+      <td>Target/Kit</td>
+      <td>Silicon ID, Silicon Rev., Family ID</td>
+      <td>Secure FlashBoot Version</td>
+      <td>CyBootloader Version</td>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td colspan="6" style="text-align: center;">512K</td>
+    </tr>
+    <tr>
+      <td>
+        cyb06xx5<br>
+        cy8cproto&#8209;064b0s3
+      </td>
+      <td>0xE70D, 0x12, 0x105</td>
+      <td>4.0.2.1842</td>
+      <td>2.0.1.6441</td>
+    </tr>
+    <tr>
+      <td colspan="6" style="text-align: center;">2M</td>
+    </tr>
+    <tr>
+      <td>
+        cyb06xxa<br>
+        cy8ckit&#8209;064b0s2&#8209;4343w
+      </td>
+      <td>0xE470, 0x12, 0x102</td>
+      <td>4.0.3.2319</td>
+      <td>2.0.2.8102</td>
+    </tr>
+    <tr>
+      <td>
+        cys06xxa<br>
+        cy8ckit&#8209;064s0s2&#8209;4343w
+      </td>
+      <td>0xE4A0, 0x12, 0x02</td>
+      <td>4.0.3.2319</td>
+      <td>2.0.2.8102</td>
+    </tr>
+    <tr>
+      <td colspan="6" style="text-align: center;">1M</td>
+    </tr>
+    <tr>
+      <td>
+        cyb06xx7<br>
+        cy8cproto&#8209;064s1&#8209;sb<br>
+        cy8cproto&#8209;064b0s1&#8209;ble<br>
+        cy8cproto&#8209;064b0s1&#8209;ssa
+      </td>
+      <td>
+        0xE262, 0x24, 0x100
+        0xE261, 0x24, 0x100
+      </td>
+      <td>4.0.2.1842</td>
+      <td>2.0.0.4041</td>
+    </tr>
+  </tbody>
+</table>
+
+
+# Reference documents
+* [PSoC64 Secure MCU Secure Boot SDK User Guide](https://www.cypress.com/documentation/software-and-drivers/psoc-64-secure-mcu-secure-boot-sdk-user-guide)
+
 
 # Main features
 * [Create keys](#create-keys) - A key is a file used to authorize access to device data. There must be a common key pair between the secure device and user application. A device must be provisioned with a public key and the user application must be signed with a corresponding private key from the same pair.
@@ -50,7 +119,7 @@
 * [Sign a user application](#sign-image) - To run a user application on a secure device, the application must be signed with the key provisioned to the device earlier.
 * [Create a certificate](#create-a-certificate) - Create a certificate in the X.509 format: with the device public key inside and signed with the private key. The certificate can be used when connecting to a cloud service.
 * [Create image certificate](#create-image-certificate) - Based on an image, create a JWT that certifies the image's validity.
-* [Output CyBootloader and Secure Flash Boot version](#output-cybootloader-and-secure-flash-boot-version) - Outputs CyBootloader and Secure Flash Boot version.
+* [Output CyBootloader and Secure Flash Boot version](#cybootloader-and-secure-flash-boot-version) - Outputs CyBootloader and Secure Flash Boot version.
 
 
 # Quick start
@@ -185,20 +254,20 @@ Example:
 }
 ```
 ## Key IDs
-| ID  | Description                 |
-| --- | --------------------------- |
-| 1   | Device Private Key for key derivation |
-| 2   | Device Private Key for signing (Unique per device. This is a copy of Key ID 1.) |
-| 3   | Cypress Public Key |
-| 4   | HSM Public Key. In the context of the PSoC 64 "Secure Boot MCU", the HSM key is a key of a device programming engine placed in a physically secure facility. The HSM key bundled with the package has the example purpose only and must not be used in production |
-| 5   | OEM Public Key |
-| 6   | Custom Key 1 |
-| 7   | Custom Key 2 |
-| 8   | Custom Key 3 |
-| 9   | Custom Key 4 |
-| 10  | Custom Key 5 |
-| 11  | AES 256-bit Key derived from 128-bit UDS for key derivation (Reserved)|
-| 12  | Group Encryption Key |
+| ID | Description                                                                                                                                                                                                                                                       |
+|----|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1  | Device Private Key for key derivation                                                                                                                                                                                                                             |
+| 2  | Device Private Key for signing (Unique per device. This is a copy of Key ID 1.)                                                                                                                                                                                   |
+| 3  | Cypress Public Key                                                                                                                                                                                                                                                |
+| 4  | HSM Public Key. In the context of the PSoC 64 "Secure Boot MCU", the HSM key is a key of a device programming engine placed in a physically secure facility. The HSM key bundled with the package has the example purpose only and must not be used in production |
+| 5  | OEM Public Key                                                                                                                                                                                                                                                    |
+| 6  | Custom Key 1                                                                                                                                                                                                                                                      |
+| 7  | Custom Key 2                                                                                                                                                                                                                                                      |
+| 8  | Custom Key 3                                                                                                                                                                                                                                                      |
+| 9  | Custom Key 4                                                                                                                                                                                                                                                      |
+| 10 | Custom Key 5                                                                                                                                                                                                                                                      |
+| 11 | AES 256-bit Key derived from 128-bit UDS for key derivation (Reserved)                                                                                                                                                                                            |
+| 12 | Group Encryption Key                                                                                                                                                                                                                                              |
 
 ID:
 * 1, 2, 3, 11 – These keys cannot be modified. They are reserved for other purposes.
@@ -220,27 +289,28 @@ $ edgeprotecttools -t <TARGET> <COMMAND> --help
 
 ## Common options
 The interface provides common options. These options are common for all commands and must precede them:
-| Name           | Description                 |
-| -------------- | --------------------------- |
-| -t, --target   | Device name or family.      |
-| -p, --policy   | Provisioning policy file.   |
-| -v, --verbose  | Provides debug-level log.   |
-| -q, --quiet    | Quiet display option.       |
-| --logfile-off  | Avoids logging into file.   |
-| --timestamps   | Enable displaying timestamps in log messages |
+
+| Name          | Description                                  |
+|---------------|----------------------------------------------|
+| -t, --target  | Device name or family.                       |
+| -p, --policy  | Provisioning policy file.                    |
+| -v, --verbose | Provides debug-level log.                    |
+| -q, --quiet   | Quiet display option.                        |
+| --logfile-off | Avoids logging into file.                    |
+| --timestamps  | Enable displaying timestamps in log messages |
 
 
 ## Create keys
 Creates keys specified in the policy file for the image signing.
 ### Command: `create-keys`
 ### Parameters
-| Name                             | Optional/Required  | Description   |
-| -------------------------------- |:------------------:| ------------- |
-| --overwrite / --no-overwrite     | optional           | Indicates whether overwrite the keys in the output directory if they already exist. If omitted, a prompt will ask whether to overwrite the existing keys. |
-| -o, --out                        | optional           | The output directory for generated keys. By default, the keys location will be as specified in the policy file. |
-| --kid                            | optional           | The ID of the key to create. If not specified, all the keys found in the policy file will be generated. |
-| -a, --algorithm [KeyAlgorithm.EC\|KeyAlgorithm.RSA] | optional | Sets algorithm for creating the keys.|
-| --template                       | optional           | A path to a JSON file containing public numbers.|
+| Name                                                | Optional/Required | Description                                                                                                                                               |
+|-----------------------------------------------------|:-----------------:|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --overwrite / --no-overwrite                        |     optional      | Indicates whether overwrite the keys in the output directory if they already exist. If omitted, a prompt will ask whether to overwrite the existing keys. |
+| -o, --out                                           |     optional      | The output directory for generated keys. By default, the keys location will be as specified in the policy file.                                           |
+| --kid                                               |     optional      | The ID of the key to create. If not specified, all the keys found in the policy file will be generated.                                                   |
+| -a, --algorithm [KeyAlgorithm.EC\|KeyAlgorithm.RSA] |     optional      | Sets algorithm for creating the keys.                                                                                                                     |
+| --template                                          |     optional      | A path to a JSON file containing public numbers.                                                                                                          |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap.json create-keys --overwrite
@@ -267,10 +337,10 @@ __NOTE:__ There is a `reprovision` field in the policy file, configuring the abi
 
 ### Command: `provision-device`
 ### Parameters
-| Name              | Optional/Required  | Description   |
-| ----------------- |:------------------:| ------------- |
-| --probe-id        | optional           | The probe serial number. Can be used to specify a probe if more than one device is connected to a computer. |
-| --existing-packet | optional           | Skip the provisioning packet creation and use the existing packet. |
+| Name              | Optional/Required | Description                                                                                                 |
+|-------------------|:-----------------:|-------------------------------------------------------------------------------------------------------------|
+| --probe-id        |     optional      | The probe serial number. Can be used to specify a probe if more than one device is connected to a computer. |
+| --existing-packet |     optional      | Skip the provisioning packet creation and use the existing packet.                                          |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap.json provision-device
@@ -281,12 +351,12 @@ $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap
 Starts a device re-provisioning process.
 ### Command: `re-provision-device`
 ### Parameters
-| Name               | Optional/Required  | Description   |
-| ------------------ |:------------------:| ------------- |
-| --probe-id         | optional           | The probe serial number. Can be used to specify a probe if more than one device is connected to a computer. |
-| --existing-packet  | optional           | Skip the provisioning packet creation and use the existing packet. |
-| --control-dap-cert | optional           | The certificate that provides the access to control DAP. For more information refer to [Open CM0 Access Port](#open-cm0-access-port).|
-| --erase-boot       | optional           | Indicates whether to erase BOOT slot.|
+| Name               | Optional/Required | Description                                                                                                                           |
+|--------------------|:-----------------:|---------------------------------------------------------------------------------------------------------------------------------------|
+| --probe-id         |     optional      | The probe serial number. Can be used to specify a probe if more than one device is connected to a computer.                           |
+| --existing-packet  |     optional      | Skip the provisioning packet creation and use the existing packet.                                                                    |
+| --control-dap-cert |     optional      | The certificate that provides the access to control DAP. For more information refer to [Open CM0 Access Port](#open-cm0-access-port). |
+| --erase-boot       |     optional      | Indicates whether to erase BOOT slot.                                                                                                 |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap.json re-provision-device
@@ -299,19 +369,19 @@ Signs the user application with a key.
 The file specified in the `--image` option will be signed and saved to the file specified in the `--output` option. If the `--output` is not specified, a copy of the original file will be created with the `_unsigned` suffix and the input file will be signed.
 ### Command: `sign-image`
 ### Parameters
-| Name             | Optional/Required  | Description   |
-| ----------------    |:------------------:| ------------- |
-| --image             | required           | User application image (hex or bin). |
-| -i, --image-id      | optional           | The ID of the firmware image in the device. The default value is 1. |
-| --image-type        | optional           | Indicates which type of an image is signed - boot or upgrade. If omitted, both types will be generated. Accepted only **BOOT** or **UPGRADE** values. |
-| -e, --encrypt       | optional           | Public key PEM-file for the image encryption. |
-| -R, --erased-val    | optional           | The value that is read back from erased flash. |
-| --boot-record       | optional           | Creates CBOR-encoded boot record TLV. Represents the role of the software component (e.g. CoFM for coprocessor firmware). Used for measured boot and data sharing. Maximum length is 12 characters. |
-| -o, --output        | optional           | Signed image output file. The option should only be used with _--image-type_. |
-| --protected-tlv     | optional           | Custom TLV that will be placed into a protected area. Add the "0x" prefix if the value should be interpreted as an integer, otherwise it will be interpreted as a string. Specify the option multiple times to add multiple TLVs. |
-| --upgrade-mode [swap\|overwrite] | optional | Image upgrade mode. The default value is overwrite.|
-| --align [1\|2\|4\|8] | optional          | Sets flash alignment. The default value is 8.|
-| --min-erase-size    | optional           | Sets minimum erase size. Note that this parameter is only applicable for external memory.|
+| Name                             | Optional/Required | Description                                                                                                                                                                                                                       |
+|----------------------------------|:-----------------:|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --image                          |     required      | User application image (hex or bin).                                                                                                                                                                                              |
+| -i, --image-id                   |     optional      | The ID of the firmware image in the device. The default value is 1.                                                                                                                                                               |
+| --image-type                     |     optional      | Indicates which type of an image is signed - boot or upgrade. If omitted, both types will be generated. Accepted only **BOOT** or **UPGRADE** values.                                                                             |
+| -e, --encrypt                    |     optional      | Public key PEM-file for the image encryption.                                                                                                                                                                                     |
+| -R, --erased-val                 |     optional      | The value that is read back from erased flash.                                                                                                                                                                                    |
+| --boot-record                    |     optional      | Creates CBOR-encoded boot record TLV. Represents the role of the software component (e.g. CoFM for coprocessor firmware). Used for measured boot and data sharing. Maximum length is 12 characters.                               |
+| -o, --output                     |     optional      | Signed image output file. The option should only be used with _--image-type_.                                                                                                                                                     |
+| --protected-tlv                  |     optional      | Custom TLV that will be placed into a protected area. Add the "0x" prefix if the value should be interpreted as an integer, otherwise it will be interpreted as a string. Specify the option multiple times to add multiple TLVs. |
+| --upgrade-mode [swap\|overwrite] |     optional      | Image upgrade mode. The default value is overwrite.                                                                                                                                                                               |
+| --align [1\|2\|4\|8]             |     optional      | Sets flash alignment. The default value is 8.                                                                                                                                                                                     |
+| --min-erase-size                 |     optional      | Sets minimum erase size. Note that this parameter is only applicable for external memory.                                                                                                                                         |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap.json sign-image --image example-blinky.hex --output example-blinky-signed.hex --image-type BOOT --image-id 1
@@ -322,11 +392,11 @@ $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap
 Converts image of bin format to hex format.
 ### Command: `bin2hex`
 ### Parameters
-| Name          | Optional/Required  | Description     |
-| ------------- |:------------------:| --------------- |
-| --image       | required           | Input bin file  |
-| -o, --output  | required           | Output hex file |
-| --offset      | optional           | Starting address offset for loading bin |
+| Name         | Optional/Required | Description                             |
+|--------------|:-----------------:|-----------------------------------------|
+| --image      |     required      | Input bin file                          |
+| -o, --output |     required      | Output hex file                         |
+| --offset     |     optional      | Starting address offset for loading bin |
 ### Usage example
 ```bash
 $ edgeprotecttools bin2hex --image image.bin --output image.hex --offset 0x20000
@@ -337,9 +407,9 @@ $ edgeprotecttools bin2hex --image image.bin --output image.hex --offset 0x20000
 Checks the device life-cycle, Flashboot firmware, and Flash memory state.
 ### Command: `entrance-exam`
 ### Parameters
-| Name               | Optional/Required  | Description   |
-| ------------------ |:------------------:| ------------- |
-| --probe-id         | optional           | The probe serial number. Can be used to specify a probe if more than one device is connected to a computer. |
+| Name       | Optional/Required | Description                                                                                                 |
+|------------|:-----------------:|-------------------------------------------------------------------------------------------------------------|
+| --probe-id |     optional      | The probe serial number. Can be used to specify a probe if more than one device is connected to a computer. |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap.json entrance-exam
@@ -350,17 +420,17 @@ $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap
 Creates a certificate in the X.509 format based on the device public key.
 ### Command: `create-certificate`
 ### Parameters
-| Name            | Optional/Required  | Description   |
-| --------------- |:------------------:| ------------- |
-| -n, --name      | optional           | The certificate filename. By default 'psoc_cert.pem' |
-| -e , --encoding | optional           | The certificate encoding (PEM, DER). By default 'PEM' |
-| --probe-id      | optional           | The probe serial number. |
-| --subject-name  | optional           | The certificate subject name. By default 'Example Certificate' |
-| --country       | optional           | The certificate country code. By default 'US' |
-| --state         | optional           | The certificate issuer state. By default 'San Jose' |
-| --organization  | optional           | The certificate issuer organization. By default 'Cypress Semiconductor' |
-| --issuer-name   | optional           | The certificate issuer name. By default 'Example Issuer Name' |
-| --private-key   | optional           | The private key to sign the certificate. By default HSM private key |
+| Name            | Optional/Required | Description                                                             |
+|-----------------|:-----------------:|-------------------------------------------------------------------------|
+| -n, --name      |     optional      | The certificate filename. By default 'psoc_cert.pem'                    |
+| -e , --encoding |     optional      | The certificate encoding (PEM, DER). By default 'PEM'                   |
+| --probe-id      |     optional      | The probe serial number.                                                |
+| --subject-name  |     optional      | The certificate subject name. By default 'Example Certificate'          |
+| --country       |     optional      | The certificate country code. By default 'US'                           |
+| --state         |     optional      | The certificate issuer state. By default 'San Jose'                     |
+| --organization  |     optional      | The certificate issuer organization. By default 'Cypress Semiconductor' |
+| --issuer-name   |     optional      | The certificate issuer name. By default 'Example Issuer Name'           |
+| --private-key   |     optional      | The private key to sign the certificate. By default HSM private key     |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap.json create-certificate -e DER --private-key priv_key.json
@@ -371,14 +441,14 @@ $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap
 Creates Bootloader image certificate.
 ### Command: `image-certificate`
 ### Parameters
-| Name           | Optional/Required  | Description   |
-| -------------- |:------------------:| ------------- |
-| -i, --image    | required           | The bootloader image path. |
-| -k, --key      | required           | The private key for certificate signing. |
-| -o, --cert     | optional           | The output certificate file path. |
-| -v, --version  | optional           | The image version. |
-| --image-id     | optional           | The image ID. |
-| -d, --exp-date | optional           | The certificate expiration date. |
+| Name           | Optional/Required | Description                              |
+|----------------|:-----------------:|------------------------------------------|
+| -i, --image    |     required      | The bootloader image path.               |
+| -k, --key      |     required      | The private key for certificate signing. |
+| -o, --cert     |     optional      | The output certificate file path.        |
+| -v, --version  |     optional      | The image version.                       |
+| --image-id     |     optional      | The image ID.                            |
+| -d, --exp-date |     optional      | The certificate expiration date.         |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap.json image-certificate -i CypressBootloader_CM0p.hex --key ../keys/key.json -o CypressBootloader_CM0p.jwt --version "1.0.0.200" --image-id 0 --exp-date "Jan 1 2031"
@@ -394,15 +464,15 @@ The encrypted programming consists of two steps:
 Creates encrypted image for encrypted programming.
 ### Command: `encrypt-image`
 ### Parameters
-| Name                  | Optional/Required  | Description   |
-| --------------------- |:------------------:| ------------- |
-| -i, --image           | required           | The image to encrypt. |
-| -h, --host-key-id     | required           | Host private key ID (4 - HSM, 5 - OEM). |
-| -d, --device-key-id   | required           | Device public key ID (1 - device, 12 - group). |
-| --key-length          | optional           | Derived key length. |
-| -o, --encrypted-image | required           | Output file of encrypted image for encrypted programming. |
-| --padding-value       | optional           | Value for image padding. |
-| --probe-id            | optional           | Probe serial number. Used to read device public key from device. |
+| Name                  | Optional/Required | Description                                                      |
+|-----------------------|:-----------------:|------------------------------------------------------------------|
+| -i, --image           |     required      | The image to encrypt.                                            |
+| -h, --host-key-id     |     required      | Host private key ID (4 - HSM, 5 - OEM).                          |
+| -d, --device-key-id   |     required      | Device public key ID (1 - device, 12 - group).                   |
+| --key-length          |     optional      | Derived key length.                                              |
+| -o, --encrypted-image |     required      | Output file of encrypted image for encrypted programming.        |
+| --padding-value       |     optional      | Value for image padding.                                         |
+| --probe-id            |     optional      | Probe serial number. Used to read device public key from device. |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap.json encrypt-image -i BlinkyApp.hex -h 4 -d 1 -o encrypted_image.txt
@@ -412,10 +482,10 @@ $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap
 Programs encrypted image.
 ### Command: `encrypted-programming`
 ### Parameters
-| Name                  | Optional/Required  | Description   |
-| --------------------- |:------------------:| ------------- |
-| -i, --encrypted-image | required           | The encrypted image to program. |
-| --probe-id            | optional           | Probe serial number. |
+| Name                  | Optional/Required | Description                     |
+|-----------------------|:-----------------:|---------------------------------|
+| -i, --encrypted-image |     required      | The encrypted image to program. |
+| --probe-id            |     optional      | Probe serial number.            |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap.json encrypted-programming -i encrypted_image.txt
@@ -444,7 +514,7 @@ This requires following steps:
 This requires following steps:
 
 1. Encrypt application (refer [Create encrypted image](#create-encrypted-image)).
-3. Update policy with the encrypted bootloader file:
+2. Update policy with the encrypted bootloader file:
 
    In the policy file _pre_build_ field add _user_apps_ field as shown below. To indicate that the image is encrypted, set _encrypted__ field to _true_. If the application is not encrypted, set encrypted field to _false_. Absolute or relative path can be used. Relative path is related to the policy file location.
    ```json
@@ -460,9 +530,9 @@ This requires following steps:
 Outputs CyBootloader version bundled with the package. Outputs CyBootloader and Secure Flash Boot version programmed into device.
 ### Command: `version`
 ### Parameters
-| Name                | Optional/Required  | Description   |
-| ------------------- |:------------------:| ------------- |
-| --probe-id          | optional           | Probe serial number. |
+| Name       | Optional/Required | Description          |
+|------------|:-----------------:|----------------------|
+| --probe-id |     optional      | Probe serial number. |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W version
@@ -473,11 +543,11 @@ $ edgeprotecttools -t CY8CKIT-064B0S2-4343W version
 Signs JSON certificate with the private key.
 ### Command: `sign-cert`
 ### Parameters
-| Name                | Optional/Required  | Description   |
-| ------------------- |:------------------:| ------------- |
-| --template          | required           | Certificate template. |
-| -k, --key-id        | required           | Private Key ID to sign the certificate with (1 - DEVICE, 4 - HSM, 5 - OEM, 12 - GROUP). |
-| -o, --output        | optional           | Filename where to save the JWT. If not specified, the input file name with "jwt" extension will be used. |
+| Name         | Optional/Required | Description                                                                                              |
+|--------------|:-----------------:|----------------------------------------------------------------------------------------------------------|
+| --template   |     required      | Certificate template.                                                                                    |
+| -k, --key-id |     required      | Private Key ID to sign the certificate with (1 - DEVICE, 4 - HSM, 5 - OEM, 12 - GROUP).                  |
+| -o, --output |     optional      | Filename where to save the JWT. If not specified, the input file name with "jwt" extension will be used. |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap.json sign-cert --template packets/control_dap_cert.json --output packets/control_dap_cert.jwt --key-id 5
@@ -490,10 +560,10 @@ Transits device to the RMA lifecycle stage using system AP. See the [RMA](#rma) 
 After each reset ROM boot code will wait on OpenRMA system call to open full access. See RMA usage instructions for the complete flow.
 ### Command `transit-to-rma`
 ### Parameters
-| Name                | Optional/Required  | Description   |
-| ------------------- |:------------------:| ------------- |
-| -c, --cert          | required           | Path to debug certificate. |
-| --probe-id          | optional           | Probe serial number. |
+| Name       | Optional/Required | Description                |
+|------------|:-----------------:|----------------------------|
+| -c, --cert |     required      | Path to debug certificate. |
+| --probe-id |     optional      | Probe serial number.       |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W transit-to-rma --cert packets/control_dap_cert.jwk
@@ -504,10 +574,10 @@ $ edgeprotecttools -t CY8CKIT-064B0S2-4343W transit-to-rma --cert packets/contro
 Enables full access to device in RMA lifecycle stage using system AP. See the [RMA](#rma) section for the complete flow.
 ### Command `open-to-rma`
 ### Parameters
-| Name                | Optional/Required  | Description   |
-| ------------------- |:------------------:| ------------- |
-| -c, --cert          | required           | Path to debug certificate. |
-| --probe-id          | optional           | Probe serial number. |
+| Name       | Optional/Required | Description                |
+|------------|:-----------------:|----------------------------|
+| -c, --cert |     required      | Path to debug certificate. |
+| --probe-id |     optional      | Probe serial number.       |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W open-rma --cert packets/control_dap_cert.jwk
@@ -518,12 +588,12 @@ $ edgeprotecttools -t CY8CKIT-064B0S2-4343W open-rma --cert packets/control_dap_
 Reads public key from device.
 ### Command `read-public-key`
 ### Parameters
-| Name                | Optional/Required  | Description   |
-| ------------------- |:------------------:| ------------- |
-| -k, --key-id        | required           | Key ID to read (1 - DEVICE, 4 - HSM, 5 - OEM, 12 - GROUP). |
-| -f, --key-format    | optional           | Key format (jwk or pem). Default is 'jwk'. |
-| -o, --out-file      | optional           | Filename where to save the key. If not specified, the log file is used for output. |
-| --probe-id          | optional           | Probe serial number. |
+| Name             | Optional/Required | Description                                                                        |
+|------------------|:-----------------:|------------------------------------------------------------------------------------|
+| -k, --key-id     |     required      | Key ID to read (1 - DEVICE, 4 - HSM, 5 - OEM, 12 - GROUP).                         |
+| -f, --key-format |     optional      | Key format (jwk or pem). Default is 'jwk'.                                         |
+| -o, --out-file   |     optional      | Filename where to save the key. If not specified, the log file is used for output. |
+| --probe-id       |     optional      | Probe serial number.                                                               |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W read-public-key --key-id 5 --out-file oem_pub.jwk
@@ -538,10 +608,10 @@ $ edgeprotecttools -t CY8CKIT-064B0S2-4343W read-public-key --key-id 5 --key-for
 Reads die ID from device.
 ### Command: `read-die-id`
 ### Parameters
-| Name            | Optional/Required  | Description   |
-| --------------- |:------------------:| ------------- |
-| -o, --out-file  | optional           | Filename where to save die ID. If not specified, the log file is used for output. |
-| --probe-id      | optional           | Probe serial number. |
+| Name           | Optional/Required | Description                                                                       |
+|----------------|:-----------------:|-----------------------------------------------------------------------------------|
+| -o, --out-file |     optional      | Filename where to save die ID. If not specified, the log file is used for output. |
+| --probe-id     |     optional      | Probe serial number.                                                              |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W read-die-id -o die_id.json
@@ -553,21 +623,21 @@ $ edgeprotecttools -t CY8CKIT-064B0S2-4343W read-die-id -o die_id.json
 Adds metadata to image (header, protected and unprotected TLVs) to convert it into [MCUboot format](https://github.com/mcu-tools/mcuboot/blob/master/docs/design.md#image-format).
 #### Command: `image-metadata`
 #### Parameters
-| Name             | Optional/Required  | Description   |
-| ----------------    |:------------------:| ------------- |
-| --image             | required           | User application image (hex or bin). |
-| -i, --image-id      | optional           | The ID of the firmware image in the device. The default value is 1. |
-| --image-type        | required           | Indicates which type of an image is signed - boot or upgrade. |
-| -e, --encrypt       | optional           | Public key PEM-file for the image encryption. |
-| -R, --erased-val    | optional           | The value that is read back from erased flash. |
-| --upgrade-mode      | optional           | Image upgrade mode (_overwrite_ or _swap_). The default value is _overwrite_. |
-| --align             | optional           | Flash alignment (1, 2, 4, 8). The default value is 8. |
-| --boot-record       | optional           | Represents the role of the software component (e.g. CoFM for coprocessor firmware) [max. 12 characters] |
-| --pubkey            | optional           | Public key for the further image verification (PEM format). If not specified, user custom key from the policy will be used.
-| -o, --output        | required           | Binary (bin) file where to save the image with metadata. |
-| --decrypted         | optional           | A path where to save decrypted image payload (bin). Must be used for signing encrypted images.
-| --tlv               | optional           | Custom TLV that will be placed into an unprotected area. Add the "0x" prefix if the value should be interpreted as an integer, otherwise it will be interpreted as a string. Specify the option multiple times to add multiple TLVs. |
-| --protected-tlv     | optional           | Custom TLV that will be placed into a protected area. Add the "0x" prefix if the value should be interpreted as an integer, otherwise it will be interpreted as a string. Specify the option multiple times to add multiple TLVs. |
+| Name               | Optional/Required | Description                                                                                                                                                                                                                          |
+|--------------------|:-----------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --image            |     required      | User application image (hex or bin).                                                                                                                                                                                                 |
+| -i, --image-id     |     optional      | The ID of the firmware image in the device. The default value is 1.                                                                                                                                                                  |
+| --image-type       |     required      | Indicates which type of an image is signed - boot or upgrade.                                                                                                                                                                        |
+| -e, --encrypt      |     optional      | Public key PEM-file for the image encryption.                                                                                                                                                                                        |
+| -R, --erased-val   |     optional      | The value that is read back from erased flash.                                                                                                                                                                                       |
+| --upgrade-mode     |     optional      | Image upgrade mode (_overwrite_ or _swap_). The default value is _overwrite_.                                                                                                                                                        |
+| --align            |     optional      | Flash alignment (1, 2, 4, 8). The default value is 8.                                                                                                                                                                                |
+| --boot-record      |     optional      | Represents the role of the software component (e.g. CoFM for coprocessor firmware) [max. 12 characters]                                                                                                                              |
+| --pubkey           |     optional      | Public key for the further image verification (PEM format). If not specified, user custom key from the policy will be used.                                                                                                          |           
+| -o, --output       |     required      | Binary (bin) file where to save the image with metadata.                                                                                                                                                                             |
+| --decrypted        |     optional      | A path where to save decrypted image payload (bin). Must be used for signing encrypted images.                                                                                                                                       |                                                                                                                                   
+| --tlv              |     optional      | Custom TLV that will be placed into an unprotected area. Add the "0x" prefix if the value should be interpreted as an integer, otherwise it will be interpreted as a string. Specify the option multiple times to add multiple TLVs. |
+| --protected-tlv    |     optional      | Custom TLV that will be placed into a protected area. Add the "0x" prefix if the value should be interpreted as an integer, otherwise it will be interpreted as a string. Specify the option multiple times to add multiple TLVs.    |
 #### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap.json image-metadata --image BlinkyApp.hex --output BlinkyApp_meta.bin --pubkey keys/USERAPP_CM4_KEY.pem --image-type BOOT --image-id 1
@@ -577,10 +647,10 @@ $ edgeprotecttools -t CY8CKIT-064B0S2-4343W -p policy/policy_single_CM0_CM4_swap
 Extract a part of the image that has to be signed.
 #### Command: `extract-payload`
 #### Parameters
-| Name            | Optional/Required  | Description   |
-| --------------- |:------------------:| ------------- |
-| --image         | required           | Image with MCUboot metadata (bin). |
-| -o, --output    | required           | A path where to save image that has to be signed (bin). |
+| Name         | Optional/Required | Description                                             |
+|--------------|:-----------------:|---------------------------------------------------------|
+| --image      |     required      | Image with MCUboot metadata (bin).                      |
+| -o, --output |     required      | A path where to save image that has to be signed (bin). |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W extract-payload --image BlinkyApp_meta.bin --output BlinkyApp_payload.bin
@@ -590,11 +660,11 @@ $ edgeprotecttools -t CY8CKIT-064B0S2-4343W extract-payload --image BlinkyApp_me
 Adds signature saved to a binary file into existing MCUboot format image.
 #### Command: `add-signature`
 #### Parameters
-| Name            | Optional/Required  | Description   |
-| --------------- |:------------------:| ------------- |
-| --image         | required           | Image with metadata (bin). |
-| -s, --signature | required           | Binary file containing signature.
-| -o, --output    | required           | A path where to save image with the signature (bin). |
+| Name            | Optional/Required | Description                                          |
+|-----------------|:-----------------:|------------------------------------------------------|
+| --image         |     required      | Image with metadata (bin).                           |
+| -s, --signature |     required      | Binary file containing signature.                    |
+| -o, --output    |     required      | A path where to save image with the signature (bin). |
 ### Usage example
 ```bash
 $ edgeprotecttools -t CY8CKIT-064B0S2-4343W add-signature --image BlinkyApp_meta.bin --output BlinkyApp_signed.bin --signature ec_signature_asn.bin

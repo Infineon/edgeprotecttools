@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,8 +41,6 @@ class KeyCertificateGenerator:
         pubkey_np_ext = self.pubkey_np_extension_data()
         cert_body_ext = self.cert_body_extension_data()
         signing_key = self.config_parser.cert_keypair(ret_value=True)
-        if signing_key.key_size != 3072:
-            raise ValueError('Signing key size must be 3072 bits')
 
         self._generator = X509CertificateGenerator(
             {

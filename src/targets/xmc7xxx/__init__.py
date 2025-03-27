@@ -1,5 +1,5 @@
 """
-Copyright 2023-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,14 +19,14 @@ from .target_builder import XMC7xxxBuilder
 target_map = {
     'xmc7100': {
         'class': XMC7xxxBuilder,
-        'family': 'Traveo T2G Family',
+        'family': 'XMC7000 Family',
         'display_name': 'XMC7xxx',
         'type': 'family',
         'platform': 'traveo_t2g'
     },
     'xmc7200': {
         'class': XMC7xxxBuilder,
-        'family': 'Traveo T2G Family',
+        'family': 'XMC7000 Family',
         'display_name': 'XMC7xxx',
         'type': 'family',
         'platform': 'traveo_t2g'

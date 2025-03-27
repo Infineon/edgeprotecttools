@@ -2,7 +2,6 @@
 - [Main features](#main-features)
 - [Quick start](#quick-start)
 - [Usage example](#usage-example)
-- [Keys](#keys)
 - [Command-line interface](#command-line-interface)
     - [Tool help](#tool-help)
     - [Common options](#common-options)
@@ -65,13 +64,13 @@ $ edgeprotecttools -t <TARGET> <COMMAND> --help
 ## Common options
 The interface provides common options. These options are common for all commands and must precede them:
 
-| Name           | Description                 |
-| -------------- | --------------------------- |
-| -t, --target   | Device name or family.      |
-| -v, --verbose  | Provides debug-level log.   |
-| -q, --quiet    | Quiet display option.       |
-| --logfile-off  | Avoids logging into file.   |
-| --timestamps   | Enable displaying timestamps in log messages |
+| Name          | Description                                  |
+|---------------|----------------------------------------------|
+| -t, --target  | Device name or family.                       |
+| -v, --verbose | Provides debug-level log.                    |
+| -q, --quiet   | Quiet display option.                        |
+| --logfile-off | Avoids logging into file.                    |
+| --timestamps  | Enable displaying timestamps in log messages |
 
 
 ## Create keys
@@ -144,9 +143,9 @@ Specify the following symbols and sections in ELF image file to be able to sign 
 ### Parameters
 | Name                      | Optional/Required | Description                                        |
 |---------------------------|:-----------------:|----------------------------------------------------|
-| -i,--image                | required          | User application image in CySAF format (ELF only). |
-| --key-path                | required          | The RSA key used to sign the image.                |
-| -o, --output              | required          | The signed image output file.                      |
+| -i,--image                |     required      | User application image in CySAF format (ELF only). |
+| --key-path                |     required      | The RSA key used to sign the image.                |
+| -o, --output              |     required      | The signed image output file.                      |
 
 
 ### Usage example
@@ -158,11 +157,11 @@ $ edgeprotecttools -t xmc7100 sign-cysaf --image image.elf --output image_signed
 Converts image of bin format to hex format.
 ### Command: `bin2hex`
 ### Parameters
-| Name          | Optional/Required  | Description                             |
-| ------------- |:------------------:|-----------------------------------------|
-| --image       | required           | Input bin file                          |
-| -o, --output  | required           | Output hex file                         |
-| --offset      | optional           | Starting address offset for loading bin |
+| Name         | Optional/Required | Description                             |
+|--------------|:-----------------:|-----------------------------------------|
+| --image      |     required      | Input bin file                          |
+| -o, --output |     required      | Output hex file                         |
+| --offset     |     optional      | Starting address offset for loading bin |
 ### Usage example
 ```bash
 $ edgeprotecttools bin2hex --image image.bin --output image.hex --offset 0x20000

@@ -2,7 +2,7 @@
     "schema-version": 1.0,
     "content": [
         {
-            "name": "Extract-payload command example",
+            "name": "extract-payload command example",
             "description": "Adds a signature to the MCUboot formatted image",
             "enabled": true,
             "commands": [

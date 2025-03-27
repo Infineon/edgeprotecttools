@@ -1,5 +1,5 @@
 """
-Copyright 2022-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2022-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -70,8 +70,7 @@ class Openocd(ProgrammerBase):
         self.sysap_name = None
 
     def connect(self, target_name=None, interface=None, probe_id=None,
-                ap='sysap', acquire=None, power=None, voltage=None,
-                ignore_errors=False, rev=None):
+                ap='sysap', acquire=None, power=None, voltage=None, rev=None):
         """
         Connects to target using default debug interface.
         @param target_name: The target name.
@@ -81,7 +80,6 @@ class Openocd(ProgrammerBase):
         @param acquire: Indicates whether to acquire device on connect
         @param power: Indicates whether to on/off the KitProg3 power
         @param voltage: The KitProg3 voltage level
-        @param ignore_errors: Ignore errors and continue execution
         @param rev: The target revision
         @return: True if connected successfully, otherwise False
         """
@@ -142,7 +140,7 @@ class Openocd(ProgrammerBase):
         self.ocd_server = OpenocdServer(
             self.target, ocd_target_name, interface, probe_id,
             tool_path=self.tool_path, power=power, voltage=voltage,
-            ignore_errors=ignore_errors, tcp_host_port=tcp_host_port)
+            tcp_host_port=tcp_host_port)
         self.probe_id = self.ocd_server.probe_id
         # Start GDB server and check if it is started
         server_started = self.ocd_server.start(ap, acquire)

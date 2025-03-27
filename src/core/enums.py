@@ -1,5 +1,5 @@
 """
-Copyright 2018-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2018-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -60,6 +60,7 @@ class KeyAlgorithm:
     """
     ECDSA_P256 = 'ECDSA-P256'
     ECDSA_P384 = 'ECDSA-P384'
+    ECDSA_P521 = 'ECDSA-P521'
     X25519 = 'X25519'
     RSA2048 = 'RSA2048'
     RSA3072 = 'RSA3072'

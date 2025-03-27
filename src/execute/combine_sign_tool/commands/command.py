@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,12 +50,14 @@ class Command(ABC):
         """Get command name"""
         return self._cmd_name
 
-    def get_arg(self, kwargs, name):
+    def get_arg(self, kwargs, name, default=None):
         """Get argument of args_map
         @param kwargs: dict where JSON value is taken from
         @param name: key of args_map to get according value
+        @param default: default value if key is not found
         """
-        return kwargs.get(self.args_map.get(name))
+        arg = kwargs.get(self.args_map.get(name))
+        return arg if arg is not None else default
 
     @staticmethod
     def format_validation(file_format: Format, out_file: str) -> bool:

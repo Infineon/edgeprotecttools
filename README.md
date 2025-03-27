@@ -1,9 +1,7 @@
 This package contains security tools for creating keys, creating certificates, signing user applications, and provisioning Cypress/Infineon MCUs.
 
 # Table of Contents
-- [HW/SW compatibility](#hwsw-compatibility)
 - [Prerequisites](#prerequisites)
-- [Documentation](#documentation)
 - [Standalone Executable](#standalone-executable)
 - [Installing From Sources](#installing-from-sources)
 - [Supported Devices](#supported-devices)
@@ -13,106 +11,10 @@ This package contains security tools for creating keys, creating certificates, s
 - [Error Handling](#error-handling)
 - [License and Contributions](#license-and-contributions)
 
-# HW/SW compatibility
-## PSoC 64
-<table>
-  <thead>
-    <tr>
-      <td>Target/Kit</td>
-      <td>Silicon ID, Silicon Rev., Family ID</td>
-      <td>Secure FlashBoot Version</td>
-      <td>CyBootloader Version</td>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td colspan="6" style="text-align: center;">512K</td>
-    </tr>
-    <tr>
-      <td>
-        cyb06xx5<br>
-        cy8cproto&#8209;064b0s3
-      </td>
-      <td>0xE70D, 0x12, 0x105</td>
-      <td>4.0.2.1842</td>
-      <td>2.0.1.6441</td>
-    </tr>
-    <tr>
-      <td colspan="6" style="text-align: center;">2M</td>
-    </tr>
-    <tr>
-      <td>
-        cyb06xxa<br>
-        cy8ckit&#8209;064b0s2&#8209;4343w
-      </td>
-      <td>0xE470, 0x12, 0x102</td>
-      <td>4.0.3.2319</td>
-      <td>2.0.2.8102</td>
-    </tr>
-    <tr>
-      <td>
-        cys06xxa<br>
-        cy8ckit&#8209;064s0s2&#8209;4343w
-      </td>
-      <td>0xE4A0, 0x12, 0x02</td>
-      <td>4.0.3.2319</td>
-      <td>2.0.2.8102</td>
-    </tr>
-    <tr>
-      <td colspan="6" style="text-align: center;">1M</td>
-    </tr>
-    <tr>
-      <td>
-        cyb06xx7<br>
-        cy8cproto&#8209;064s1&#8209;sb<br>
-        cy8cproto&#8209;064b0s1&#8209;ble<br>
-        cy8cproto&#8209;064b0s1&#8209;ssa
-      </td>
-      <td>
-        0xE262, 0x24, 0x100
-        0xE261, 0x24, 0x100
-      </td>
-      <td>4.0.2.1842</td>
-      <td>2.0.0.4041</td>
-    </tr>
-  </tbody>
-</table>
-
-## CYW20829 / CYW89829
-<table>
-  <thead>
-    <tr>
-      <td>Target/Kit</td>
-      <td>Silicon ID, Silicon Rev., Family ID</td>
-      <td>ROM Boot Version</td>
-      <td>RAM Applications Version</td>
-    </tr>
-  </thead>
-  <tbody>
-  <tr>
-    <td>cyw20829</td>
-    <td>0xEB43, 0x21, 0x110</td>
-    <td>1.2.0.8334</td>
-    <td>1.2.0.3073</td>
-  </tr>
-  <tr>
-    <td>cyw89829</td>
-    <td>0xEB47, 0x21, 0x110</td>
-    <td>1.2.0.8334</td>
-    <td>1.2.0.3073</td>
-  </tr>
-  </tbody>
-</table>
-
 # Prerequisites
-* Python 3.8 - 3.12
+* Python 3.8 - 3.13 if not using the executable.
 * [Installed Infineon OpenOCD](https://github.com/Infineon/openocd/releases)
 * Ensure the KitProg3 programming mode is **CMSIS-DAP Bulk**
-
-
-# Documentation
-* [PSoC64 Secure MCU Secure Boot SDK User Guide](https://www.cypress.com/documentation/software-and-drivers/psoc-64-secure-mcu-secure-boot-sdk-user-guide)
-* [Changelog](https://github.com/Infineon/edgeprotecttools/blob/master/CHANGELOG.md)
 
 # Standalone Executable
 Edge Protect Tools can be used as a standalone application. The executable can be found in the `tools/edgeprotecttools/bin` directory of the Edge Protect Security Suite or Early Access Pack installation.
@@ -120,7 +22,7 @@ Edge Protect Tools can be used as a standalone application. The executable can b
 # Installing From Sources
 Alternatively Edge Protect Tools can be installed from the sources as a Python package. The source code is located in the `tools/edgeprotecttools/src` directory of the Edge Protect Security Suite or Early Access Pack installation.
 
-Install Python 3.12 on your computer. You can download it from https://www.python.org/downloads/. Set up the appropriate environment variable(s) for your operating system.
+Install Python 3.13 on your computer. You can download it from https://www.python.org/downloads/. Set up the appropriate environment variable(s) for your operating system.
 
 ## Installing Package
 Make sure that you have the latest version of pip installed, use
@@ -146,6 +48,14 @@ $ python -m pip install --upgrade --force-reinstall tools/edgeprotecttools/src
 
 
 # Supported Devices
+| Device                 | Documentation                                 |
+|------------------------|-----------------------------------------------|
+| PSOC™ 64 Secure MCU    | [README_PSOC64.md](docs/README_PSOC64.md)     |
+| XMC7000 Industrial MCU | [README_XMC7XXX.md](docs/README_XMC7XXX.md)   |
+| AIROC™ CYW20829        | [README_CYW20829.md](docs/README_CYW20829.md) |
+| AIROC™ CYW559xx        | [README_CYW559XX.md](docs/README_CYW559XX.md) |
+| PSOC™ Control C3       | [README_PSOCC3.md](docs/README_PSOCC3.md)     |
+
 Use `device-list` command for output of the supported devices list.
 ```bash
 $ edgeprotecttools device-list
@@ -153,9 +63,9 @@ $ edgeprotecttools device-list
 
 
 # Interface and Usage
-For instructions how to use common commands, see [README_GENERAL.md](https://github.com/Infineon/edgeprotecttools/blob/master/docs/README_GENERAL.md).
+For instructions how to use common commands, see [README_GENERAL.md](docs/README_GENERAL.md).
 
-For instructions how to use target-specific commands, see the corresponding readme file in the [docs](https://github.com/Infineon/edgeprotecttools/blob/master/docs) directory.
+For instructions how to use target-specific commands, see the corresponding readme file in the [docs](docs) directory.
 
 
 # Logging
@@ -163,27 +73,9 @@ Every time the tool is invoked, a new log file is created in the _logs_ director
 
 
 # Known Issues
-- Using the policy from CySecureTools 4.0.0 in projects created by CySecureTools 4.1.0 causes the CY_FB_INVALID_IMG_JWT_SIGNATURE error during re-provisioning on PSoC64-2M devices:
-```
-  ...
-  ERROR : SFB status: CY_FB_INVALID_IMG_JWT_SIGNATURE: Invalid image certificate signature. Check the log for details
-```
-_Workaround_:
-1. Open the policy file.
-2. Navigate to section 1 of the `boot_upgrade/firmware`.
-3. Set `boot_auth` and `bootloader_keys` as follows:
-```
-"boot_auth": [
-    3
-],
-"bootloader_keys": [
-    {
-        "kid": 3,
-        "key": "../keys/cy_pub_key.json"
-    }
-]
-```
-- During the installation of the package via _pip_ on Mac OS Big Sur, the following exception is raised:
+## Installation Failure on macOS Big Sur Using `pip`
+### Details
+During the installation of the package via _pip_ on macOS Big Sur, the following exception is raised:
 ```
   ...
   distutils.errors.DistutilsError: Setup script exited with error: SandboxViolation:
@@ -197,10 +89,21 @@ _Workaround_:
   script by hand.  Please inform the package's author and the EasyInstall
   maintainers to find out if a fix or workaround is available.
 ```
-_Solution:_ Upgrade the `pip` package running the following command from the terminal: `python3 -m pip install --upgrade pip`.
+### Resolution 
+Upgrade the `pip` package running the following command from the terminal: `python3 -m pip install --upgrade pip`.
+## LibraryNotFoundError During Runtime on Ubuntu 24.04
+### Details
+During the runtime of the package on Ubuntu 24.04, the following exception is raised:
+```
+  oscrypto.errors.LibraryNotFoundError: Error detecting the version of libcrypto
+```
+### Workaround
+Consider using an executable file. See [Standalone Executable](#standalone-executable).
+### Resolution 
+Upgrade the `oscrypto` package running the following command from the terminal: `pip install --upgrade --force-reinstall git+https://github.com/wbond/oscrypto.git@d5f3437`.
 
 # Error Handling
-Refer to the guidelines on how to [resolve errors](https://github.com/Infineon/edgeprotecttools/blob/master/docs/README_ERRORS.md).
+Refer to the guidelines on how to [resolve errors](docs/README_ERRORS.md).
 
 # License and Contributions
 The software is provided under the Apache-2.0 license. Contributions to this project are accepted under the same license.

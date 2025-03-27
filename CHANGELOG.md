@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 1.4.0
+### Added
+- Support for AIROC™ CYW20829 revision B1
+- Application encryption for AIROC™ CYW559xx
+- OTA image generation for AIROC™ CYW559xx
+
+### Changed
+- PSOC™ Control C3 integrity exam certificate
+- Replaced lief package with pyelftools
+
 ## 1.3.0
 ### Added
 - X.509 certificates generation and verification

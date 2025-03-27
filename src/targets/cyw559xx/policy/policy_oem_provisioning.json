@@ -5,7 +5,7 @@
     "type": "oem_provisioning"
   },
   "oem_public_key": {
-    "description": "Path to RSA public key",
+    "description": "The path to the RSA public key of the 3072-bit size",
     "value": "../keys/first_oem_pubkey.pem"
   },
   "provisioning_key": {

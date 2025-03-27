@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -60,6 +60,9 @@ class ChipLoadRunner:
 
             if os_name not in ['Windows', 'Linux', 'Darwin']:
                 raise ValueError(f'Unsupported OS platform: {os_name}')
+
+            if os.path.basename(self.tool_path) != 'bin':
+                self.tool_path = os.path.join(self.tool_path, 'bin')
 
             if os_name == 'Windows':
                 f_name = self.executable + '.exe'

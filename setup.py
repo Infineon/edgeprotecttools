@@ -1,5 +1,5 @@
 """
-Copyright 2019-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2019-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,7 +46,7 @@ setup(
         'cbor==1.0.0',
         'cwt==2.7.5',
         'packaging==24.1',
-        'lief==0.14.1',
+        'pyelftools==0.31',
         'pyserial==3.5'
         ],
     description='Python tools for provisioning Cypress/Infineon MCUs',

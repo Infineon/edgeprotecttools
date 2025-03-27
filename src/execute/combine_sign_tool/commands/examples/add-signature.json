@@ -2,7 +2,7 @@
     "schema-version": 1.0,
     "content": [
         {
-            "name": "Add-signature command example",
+            "name": "add-signature command example",
             "description": "Adds a signature to the MCUboot formatted image",
             "enabled": true,
             "commands": [

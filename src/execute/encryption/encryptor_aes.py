@@ -1,5 +1,5 @@
 """
-Copyright 2023-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,35 +30,39 @@ class EncryptorAES:
     xip_nonce_size = 12
 
     @staticmethod
-    def encrypt(payload, key, iv, mode, nonce=None):
+    def encrypt(payload, key, iv, mode, nonce=None, pad=True):
         """Encrypts payload with AES cipher and PKCS7 padding
         @param payload: Bytes to encrypt
         @param key: Key bytes
         @param iv: Input vector or nonce bytes
-        @param nonce: Nonce value
         @param mode: Cipher mode (ECB, CBC or CTR)
+        @param nonce: Nonce value
+        @param pad: Indicates if padding is required
         @return: bytes
         """
         if mode == 'ECB':
             return EncryptorAES.encrypt_ecb(payload, key, iv, nonce)
 
-        padder = padding.PKCS7(len(key) * 8).padder()
-        padded = padder.update(payload) + padder.finalize()
+        if pad:
+            padder = padding.PKCS7(len(key) * 8).padder()
+            payload = padder.update(payload) + padder.finalize()
 
         cipher = Cipher(algorithms.AES(key), EncryptorAES._mode(mode)(iv))
         encryptor = cipher.encryptor()
-        ct = encryptor.update(padded) + encryptor.finalize()
+        ct = encryptor.update(payload) + encryptor.finalize()
 
         return ct
 
     @staticmethod
-    def decrypt(ct, key, iv, mode, nonce=None):
+    def decrypt(ct, key, iv, mode, nonce=None, unpad=True):
         """Decrypts payload with AES cipher and PKCS7 padding
-        @param ct: Bytes to decrypt
+        @param ct: Cipher text (bytes to decrypt)
         @param key: Key bytes
         @param iv: Input vector or nonce bytes
-        @param nonce: Nonce value
         @param mode: Cipher mode (CBC or CTR)
+        @param nonce: Nonce value
+        @param unpad: Indicates whether to remove padding from the
+                      decrypted data
         @return: bytes
         """
         if mode == 'ECB':
@@ -66,12 +70,13 @@ class EncryptorAES:
 
         cipher = Cipher(algorithms.AES(key), EncryptorAES._mode(mode)(iv))
         decryptor = cipher.decryptor()
-        padded = decryptor.update(ct) + decryptor.finalize()
+        dt = decryptor.update(ct) + decryptor.finalize()
 
-        unpadder = padding.PKCS7(len(key) * 8).unpadder()
-        payload = unpadder.update(padded) + unpadder.finalize()
+        if unpad:
+            unpadder = padding.PKCS7(len(key) * 8).unpadder()
+            dt = unpadder.update(dt) + unpadder.finalize()
 
-        return payload
+        return dt
 
     @staticmethod
     def encrypt_ecb(data, key, initial_counter, nonce):

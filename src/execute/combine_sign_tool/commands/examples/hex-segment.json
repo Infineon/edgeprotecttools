@@ -2,7 +2,7 @@
     "schema-version": 1.0,
     "content": [
         {
-            "name" : "Hex-segment example",
+            "name" : "hex-segment command example",
             "description": "Extracts a segment from the hex and saves it to a file",
             "enabled": true,
             "commands": [

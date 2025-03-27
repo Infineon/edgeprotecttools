@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,5 +20,11 @@ from .command_sign import CommandSign
 from .command_hex_segment import CommandHexSegment
 from .command_shift import CommandShift
 from .command_extract_payload import CommandExtractPayload
+from .command_encrypt_aes import CommandEncryptAes
 from .command_add_signature import CommandAddSignature
 from .command_subprocess_runner import CommandSubprocessRunner
+from .command_bin_dump import CommandBinDump
+from .command_bin2hex import CommandBin2Hex
+from .command_hash import CommandHash
+from .command_hex_dump import CommandHexDump
+from .command_hex2bin import CommandHex2Bin

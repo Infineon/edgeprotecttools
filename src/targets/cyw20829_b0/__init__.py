@@ -1,5 +1,5 @@
 """
-Copyright 2019-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2019-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,16 +18,9 @@ from .target_builder import CYW20829B0Builder
 
 target_map = {
     'cyw20829': {
-        'default': {
-            'class': CYW20829B0Builder,
-            'family': 'MXS40Sv2 Family',
-            'display_name': 'CYW20829',
-            'type': 'family',
-            'platform': 'mxs40sv2'
-        },
         'b0': {
             'class': CYW20829B0Builder,
-            'family': 'MXS40Sv2 Family',
+            'family': 'AIROC™ Bluetooth LE Family',
             'display_name': 'CYW20829',
             'type': 'family',
             'platform': 'mxs40sv2'

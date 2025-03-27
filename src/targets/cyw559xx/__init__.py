@@ -1,5 +1,5 @@
 """
-Copyright 2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,7 @@ from .target_builder import CYW559xxBuilder
 target_map = {
     'cyw559xx': {
         'class': CYW559xxBuilder,
-        'family': 'CYW559xx Family',
+        'family': 'AIROC™ CYW559xx Family',
         'display_name': 'CYW559xx',
         'type': 'family',
         'platform': 'cyw559xx'

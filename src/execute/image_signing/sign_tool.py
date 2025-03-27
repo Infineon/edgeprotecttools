@@ -1,5 +1,5 @@
 """
-Copyright 2023-2024 Cypress Semiconductor Corporation (an Infineon company)
+Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
 or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -329,7 +329,7 @@ class SignTool(SignToolBase):
             with open(signature, 'rb') as f:
                 sig_bytes = f.read()
 
-        if alg in ('ECDSA-P256', 'ECDSA-P384'):
+        if alg in ('ECDSA-P256', 'ECDSA-P384', 'ECDSA-P521'):
             tag = TLV_VALUES['ECDSASIG']
         elif alg == 'RSA2048':
             tag = TLV_VALUES['RSA2048']
@@ -534,6 +534,8 @@ class SignTool(SignToolBase):
                     sha = hashlib.sha256()
                 elif key.key_size == 384:
                     sha = hashlib.sha384()
+                elif key.key_size == 521:
+                    sha = hashlib.sha512()
                 else:
                     raise ValueError(f'Unsupported key length {key.key_size}')
                 sha.update(pub)
