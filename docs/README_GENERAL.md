@@ -172,6 +172,7 @@ Signs a user application with a key. Optionally encrypts the signed application.
 | --enckey               |     optional      | Encryption key.                                                                                                                                                                                                                                                                                   |
 | --encrypt_addr         |     optional      | Starting address for data encryption.                                                                                                                                                                                                                                                             |
 | --nonce_output         |     optional      | The path where to save the nonce.                                                                                                                                                                                                                                                                 |
+| --kdf                  |     optional      | Key derivation function name. Default: `HKDF`. Available values: `HKDF`, `KBKDFCMAC`.                                                                                                                                                                                                             |
 ### Usage example
 ```bash
 # Sign binary and save to a binary
@@ -221,6 +222,8 @@ Adds MCUboot metadata to a firmware image ([mcuboot header](https://github.com/m
 | --enckey               |     optional      | Encryption key.                                                                                                                                                                                                                                                              |
 | --encrypt_addr         |     optional      | Starting address for data encryption.                                                                                                                                                                                                                                        |
 | --nonce_output         |     optional      | The path where to save the nonce.                                                                                                                                                                                                                                            |
+| --kdf                  |     optional      | Key derivation function name. Default: `HKDF`. Available values: `HKDF`, `KBKDFCMAC`.                                                                                                                                                                                        |
+
 ### Usage example
 ```bash
 # Add MCUboot metadata with custom TLVs

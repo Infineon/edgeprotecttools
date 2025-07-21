@@ -366,15 +366,16 @@ class CommonAPI:
         return cose_signed
 
     @staticmethod
-    def cose_verify(input_path, key):
+    def cose_verify(input_path, key, kid=None):
         """A COSE message verification
         @param input_path: The payload path to sign
         @param key: Public key path
+        @param kid: Key ID
         @return: True if verification pass
         """
         with open(os.path.abspath(input_path), 'rb') as f:
             payload = f.read()
-        status = Cose.verify(payload, key)
+        status = Cose.verify(payload, key, kid=kid)
         if not status:
             logger.error('COSE sign verification failed')
         else:
@@ -992,6 +993,23 @@ class CommonAPI:
             cert = self.target.debug_certificate.create(template, key, output,
                                                         sign_cert, **kwargs)
         return cert
+
+    def get_extended_boot_info(self, probe_id=None, ap='sysap', acquire=True):
+        """Get extended boot info
+        @param probe_id: Probe serial number
+        @param ap: The access port used to read the data
+        @param acquire: Enable acquire device
+        @return: Int. data of the extended boot mode and status.
+        """
+        connected = ConnectHelper.connect(self.tool, self.target,
+                                          probe_id=probe_id, ap=ap,
+                                          acquire=acquire)
+        mode = None
+        status = None
+        if connected:
+            mode, status = self.target.silicon_data_reader.read_extended_boot_info(self.tool)
+            ConnectHelper.disconnect(self.tool)
+        return mode, status
 
     @staticmethod
     def device_list():

@@ -74,6 +74,7 @@ class SignTool(SignToolBase):
         self.encrypt_addr = None
         self.nonce = None
         self.nonce_output = None
+        self.kdf = None
 
     def initialize(self, kwargs):
         """Initializes class attributes with the keyword arguments"""
@@ -146,6 +147,7 @@ class SignTool(SignToolBase):
             self.encrypt_addr = int(str(kwargs.get('encrypt_addr')), 0)
         if kwargs.get('nonce_output'):
             self.nonce_output = kwargs.get('nonce_output')
+        self.kdf = kwargs.get('kdf')
 
     def sign_image(self, image: str, **kwargs) -> Union[str, Image]:
         """Signs image. Optionally encrypts the image
@@ -182,6 +184,7 @@ class SignTool(SignToolBase):
             :enckey: Encryption key
             :encrypt_addr: Starting address for data encryption
             :nonce_output: The path where to save the nonce
+            :kdf: Key derivation function name
         @return: Either path to the signed file if 'output' argument is
         specified, otherwise the image object
         """
@@ -422,7 +425,8 @@ class SignTool(SignToolBase):
             'use_random_iv': self.encrypt is not None or encryptor is not None,
             'encrypt': self.load_key(self.encrypt) if self.encrypt else None,
             'image_addr': self.encrypt_addr or 0,
-            'encryptor': encryptor
+            'encryptor': encryptor,
+            'kdf': self.kdf
         }
 
         try:

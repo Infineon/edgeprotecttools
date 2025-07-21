@@ -23,9 +23,9 @@ Use the current Edge Protect Security Suite version in the `ModusToolbox-Edge-Pr
 
 This manual supports only macOS 12, 13, and 14. The other versions have not been tested.
 
-1. Download and install Python version 3.8 - 3.12 from the official [Python download page](https://www.python.org/downloads)
+1. Download and install Python version 3.9 - 3.13 from the official [Python download page](https://www.python.org/downloads)
 
-Note: If Python version 3.8 - 3.12 is already installed on the system, you can skip this step.
+Note: If Python version 3.9 - 3.13 is already installed on the system, you can skip this step.
 
 2. Create a working directory wherever you prefer, for example, `workdir` in your home folder:
 
@@ -108,13 +108,13 @@ Note: The `~/workdir/edgeprotecttools/_internal` folder is also necessary for th
 
 This manual supports Ubuntu Linux 20.04, 22.04, and 24.04.
 
-1. Install Python version 3.8 - 3.12 depending on Ubuntu version:
+1. Install Python version 3.9 - 3.13 depending on Ubuntu version:
 
 ```bash
 sudo apt install -y python3-dev
 ```
 
-Note: If Python version 3.8 - 3.12 is already installed on the system, you can skip this step.
+Note: If Python version 3.9 - 3.13 is already installed on the system, you can skip this step.
 
 2. Create a working directory wherever you prefer, for example, `workdir` in your home folder:
 
@@ -191,9 +191,9 @@ Note: The `~/workdir/edgeprotecttools/_internal` folder is also necessary for th
 
 This manual supports Windows 10 and Windows 11.
 
-1. Download and install Python version 3.8 - 3.12 from the official [Python download page](https://www.python.org/downloads)
+1. Download and install Python version 3.9 - 3.13 from the official [Python download page](https://www.python.org/downloads)
 
-Note: If Python version 3.8 - 3.12 is already installed on the system, you can skip this step.
+Note: If Python version 3.9 - 3.13 is already installed on the system, you can skip this step.
 
 Set the "Add Python.exe to PATH" checkbox at the bottom in the first (initial) installation window.
 

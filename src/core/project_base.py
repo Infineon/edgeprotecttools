@@ -23,6 +23,7 @@ from shutil import copyfile
 from abc import ABC, abstractmethod
 
 from ..pkg_globals import PkgData
+from .enums import Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -191,6 +192,14 @@ class ProjectInitializerBase(ABC):
             spi_mode - The mode for the SPI protocol in binary
             spi_lsb_first - Indicates whether the least-significant bit
                 should be sent first for the SPI protocol
+            canfd_bitrate - the communication bitrate for CAN-FD protocol
+            canfd_data_bitrate - the data communication bitrate
+                for CAN-FD protocol
+            canfd_output_frame_id - the output frame ID for CAN-FD protocol
+            canfd_input_frame_id - the input frame ID for CAN-FD protocol
+            canfd_enable_bitrate_switch - the switching between default and
+                data bitrates is enabled for CAN-FD protocol
+            canfd_ext_frame - the extended frame support  for CAN-FD protocol
         """
         if filename:
             metadata_file = filename
@@ -199,39 +208,67 @@ class ProjectInitializerBase(ABC):
         with open(metadata_file, 'r+', encoding='utf-8') as f:
             data = json.load(f)
             serial = data.get('serial_interface', {})
-            uart = serial.get('uart', {})
-            i2c = serial.get('i2c', {})
-            spi = serial.get('spi', {})
+            uart = serial.get(Protocol.UART, {})
+            i2c = serial.get(Protocol.I2C, {})
+            spi = serial.get(Protocol.SPI, {})
+            can = serial.get(Protocol.CAN_FD, {})
+            protocol = kwargs.get('protocol', '').replace('-', '_').lower()
 
-            if kwargs.get('protocol'):
-                serial['protocol'] = kwargs.get('protocol').lower()
+            if protocol:
+                serial['protocol'] = protocol
             if kwargs.get('hwid'):
                 serial['hwid'] = kwargs.get('hwid')
 
-            if kwargs.get('uart_baudrate'):
-                uart['baudrate'] = int(kwargs.get('uart_baudrate'))
-            if kwargs.get('uart_paritytype'):
-                uart['paritytype'] = kwargs.get('uart_paritytype').capitalize()
-            if kwargs.get('uart_stopbits'):
-                uart['stopbits'] = float(kwargs.get('uart_stopbits'))
-            if kwargs.get('uart_databits'):
-                uart['databits'] = int(kwargs.get('uart_databits'))
+            if protocol == Protocol.UART:
+                if kwargs.get('uart_baudrate'):
+                    uart['baudrate'] = int(kwargs.get('uart_baudrate'))
+                if kwargs.get('uart_paritytype'):
+                    uart['paritytype'] = kwargs.get(
+                        'uart_paritytype'
+                    ).capitalize()
+                if kwargs.get('uart_stopbits'):
+                    uart['stopbits'] = float(kwargs.get('uart_stopbits'))
+                if kwargs.get('uart_databits'):
+                    uart['databits'] = int(kwargs.get('uart_databits'))
+            elif protocol == Protocol.I2C:
+                if kwargs.get('i2c_address'):
+                    i2c['address'] = int(kwargs.get('i2c_address'))
+                if kwargs.get('i2c_speed'):
+                    i2c['speed'] = int(kwargs.get('i2c_speed'))
+            elif protocol == Protocol.SPI:
+                if kwargs.get('spi_clockspeed'):
+                    spi['clockspeed'] = float(kwargs.get('spi_clockspeed'))
+                if kwargs.get('spi_mode'):
+                    spi['mode'] = kwargs.get('spi_mode')
+                if kwargs.get('spi_lsb_first'):
+                    spi['lsb_first'] = kwargs.get('spi_lsb_first')
+            elif protocol == Protocol.CAN_FD:
+                if kwargs.get('canfd_bitrate'):
+                    can['bitrate'] = int(kwargs.get('canfd_bitrate'))
+                if kwargs.get('canfd_data_bitrate'):
+                    can['data_bitrate'] = int(kwargs.get('canfd_data_bitrate'))
+                if kwargs.get('canfd_output_frame_id'):
+                    can['output_frame_id'] = int(kwargs.get(
+                        'canfd_output_frame_id'
+                    ))
+                if kwargs.get('canfd_input_frame_id'):
+                    can['input_frame_id'] = int(
+                        kwargs.get('canfd_input_frame_id')
+                    )
+                else:
+                    can['input_frame_id'] = None
+                if kwargs.get('canfd_enable_bitrate_switch'):
+                    can['enable_bitrate_switch'] = kwargs.get(
+                        'canfd_enable_bitrate_switch'
+                    )
+                if kwargs.get('canfd_ext_frame'):
+                    can['ext_frame'] = kwargs.get('canfd_ext_frame')
 
-            if kwargs.get('i2c_address'):
-                i2c['address'] = int(kwargs.get('i2c_address'))
-            if kwargs.get('i2c_speed'):
-                i2c['speed'] = int(kwargs.get('i2c_speed'))
+            serial[Protocol.UART] = uart
+            serial[Protocol.I2C] = i2c
+            serial[Protocol.SPI] = spi
+            serial[Protocol.CAN_FD] = can
 
-            if kwargs.get('spi_clockspeed'):
-                spi['clockspeed'] = float(kwargs.get('spi_clockspeed'))
-            if kwargs.get('spi_mode'):
-                spi['mode'] = kwargs.get('spi_mode')
-            if kwargs.get('spi_lsb_first'):
-                spi['lsb_first'] = kwargs.get('spi_lsb_first')
-
-            serial['uart'] = uart
-            serial['i2c'] = i2c
-            serial['spi'] = spi
             data['serial_interface'] = serial
             f.seek(0)
             json.dump(data, f, indent=4)

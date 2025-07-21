@@ -21,6 +21,8 @@ import logging
 import platform
 from subprocess import Popen, PIPE
 
+from ...core.enums import Protocol
+
 logger = logging.getLogger(__name__)
 
 
@@ -177,19 +179,19 @@ class DfuhtRunner:
         the settings or project file
         @return: List of protocol configuration arguments
         """
-        if self.protocol == 'uart':
+        if self.protocol == Protocol.UART:
             return self.uart_args()
-        if self.protocol == 'i2c':
+        if self.protocol == Protocol.I2C:
             return self.i2c_args()
-        if self.protocol == 'spi':
+        if self.protocol == Protocol.SPI:
             return self.spi_args()
-        if self.protocol == 'usb_cdc':
-            return self.uart_args()
+        if self.protocol == Protocol.CAN_FD:
+            return self.canfd_args()
         raise ValueError(f"Invalid serial interface protocol '{self.protocol}'")
 
     def uart_args(self):
         """Gets dfuht-cli arguments for UART protocol"""
-        uart = self.serial_config.get('uart')
+        uart = self.serial_config.get(Protocol.UART)
         if not uart:
             raise ValueError('UART configuration not defined')
         try:
@@ -204,7 +206,7 @@ class DfuhtRunner:
 
     def i2c_args(self):
         """Gets dfuht-cli arguments for I2C protocol"""
-        i2c = self.serial_config.get('i2c')
+        i2c = self.serial_config.get(Protocol.I2C)
         if not i2c:
             raise ValueError('I2C configuration not defined')
         try:
@@ -217,9 +219,9 @@ class DfuhtRunner:
 
     def spi_args(self):
         """Gets dfuht-cli arguments for SPI protocol"""
-        spi = self.serial_config.get('spi')
+        spi = self.serial_config.get(Protocol.SPI)
         if not spi:
-            raise ValueError('I2C configuration not defined')
+            raise ValueError('SPI configuration not defined')
         try:
             args = [
                 '--spi-clockspeed', str(spi['clockspeed']),
@@ -229,6 +231,27 @@ class DfuhtRunner:
             raise KeyError(f'SPI parameter {e} not specified') from e
         if spi.get('lsb_first'):
             args.append('--spi-lsb-first')
+        return args
+
+    def canfd_args(self):
+        """Gets dfuht-cli arguments for CAN-FD protocol"""
+        can = self.serial_config.get(Protocol.CAN_FD)
+        if not can:
+            raise ValueError('CAN-FD configuration not defined')
+        try:
+            args = [
+                '--canfd-bitrate', str(can['bitrate']),
+                '--canfd-data-bitrate', str(can['data_bitrate']),
+                '--canfd-output-frame-id', str(can['output_frame_id']),
+                '--canfd-input-frame-id', str(can['input_frame_id']),
+                '--canfd-enable-bitrate-switch'
+                if can['enable_bitrate_switch'] else
+                '--canfd-disable-bitrate-switch',
+            ]
+        except KeyError as e:
+            raise KeyError(f'CAN-FD parameter {e} not specified') from e
+        if can.get('ext-frame'):
+            args.append('--canfd-ext-frame')
         return args
 
     def stop(self):

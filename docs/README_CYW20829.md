@@ -49,13 +49,13 @@
     <td>cyw20829</td>
     <td>0xEB43, 0x21 (B0), 0x110</td>
     <td>1.2.0.8334</td>
-    <td>1.2.0.3073</td>
+    <td>1.2.1.4804</td>
   </tr>
   <tr>
     <td>cyw20829</td>
     <td>0xEB40, 0x22 (B1), 0x110</td>
     <td>1.3.0.12044</td>
-    <td>1.3.0.4574</td>
+    <td>1.3.1.4803</td>
   </tr>
   <tr>
     <td>cyw89829</td>
@@ -695,11 +695,44 @@ The below sections show how to create an encryption key, provision it to the dev
 ## Create encryption key
 This example creates a binary file containing a 128-bit encryption key in the _keys_ directory of the project.
 ```bash
-$ edgeprotecttools -t cyw20829 -p policy/policy_secure.json create-key --aes --key-path keys/encrypt_key.bin
+$ edgeprotecttools create-key --key-type AES128 --output keys/encrypt_key.bin
 ```
 ## Program encryption key
 The device must be able to decrypt the image. Therefore, the encryption key must be specified in the provisioning policy. The entire encryption key is provisioned to a device unlike the OEM key, where only a hash of the key is provisioned.
 
+### Non-secure device
+In the NO_SECURE policy, enable the encryption and provide the path to the encryption key.
+```json
+"smif_config":
+{
+    ...
+
+    "encryption": {
+        "description": "Enables SMIF encryption",
+        "value": true
+    }
+}
+```
+```json
+"pre_build":
+{
+    "keys":
+    {
+        ...
+
+        "encrypt_key": {
+            "description": "Path to the AES-128 key for image encryption in external memory",
+            "value": "../keys/encrypt_key.bin"
+        }
+    }
+}
+```
+Then run a device provisioning.
+```bash
+$ edgeprotecttools -t cyw20829 -p policy/policy_no_secure.json provision-device
+```
+
+### Secure device
 In the secure policy, enable the encryption and provide the path to the encryption key. The encryption key will be placed at the _oem_key_1_hash_ location, so, programming _oem_key_1_hash_ must be disabled.
 ```json
 "flow_control":
@@ -743,6 +776,46 @@ $ edgeprotecttools -t cyw20829 -p policy/policy_secure.json provision-device
 ```
 
 ## Sign and encrypt an image
+
+### Non-secure device
+The first 48 bytes of the L1 application binary include the TOC2 and L1 application descriptor, used to determine the image start address. These 48 bytes must remain unencrypted. Within this section, the first 32 bytes remain unchanged, while the next 16 bytes are replaced with a 12-byte nonce and 4 bytes of padding. The rest of the binary is encrypted.
+
+Export TOC2 + first 16 bytes of L1 descriptor to a separate file, for example using `head` command:
+```bash
+$ head -c 32 image.bin > head.bin 
+```
+
+Export user application to a separate file, for example using `tail` command: 
+```bash
+$ tail -c +49 image.bin > tail.bin 
+```
+
+Generate random 12-byte nonce for encryption
+```bash
+$ edgeprotecttools bin-dump --random 12 --output nonce_12.bin
+```
+
+Generate 4-byte zero padding
+```bash
+$ edgeprotecttools bin-dump --data "00000000" --output padding_4.bin 
+```
+
+Encrypt your application. IV should be equal to the start address of the application.
+```bash
+$ edgeprotecttools encrypt-aes -i tail.bin -o tail_encrypted.bin --key keys/encrypt_key.bin --iv 0x08000030 --nonce nonce_12.bin --cipher-mode ECB   
+```
+
+Merge binaries
+```bash
+$ edgeprotecttools merge-bin --image head.bin --image nonce_12.bin --image padding_4.bin --image tail_encrypted.bin --output app_encrypted.bin 
+```
+
+Convert BIN to HEX
+```bash
+$ edgeprotecttools bin2hex --image app_encrypted.bin -o app_encrypted.hex --offset 0x60000000
+```
+
+### Secure device
 The image encryption process is similar to signing but with the additional option _--encrypt_. Another important option that needs to be specified is _--app-addr_. This is the image base address in the external memory. Points to the address from where the image needs to be encrypted:
  - for L1 application ([MCUBoot](#https://docs.mcuboot.com/)) - TOC2 address + TOC2 size + L1 application descriptor size.
  - for the next user applications - user application base address

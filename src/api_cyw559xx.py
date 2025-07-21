@@ -199,14 +199,23 @@ class CYW559xxAPI(CommonAPI):
                 iv = bytes.fromhex(iv)
                 if len(iv) != 16:
                     raise ValueError
+                logger.info('IV: %s', iv.hex())
             except ValueError:
                 logger.error("Invalid IV. It must be a 16-byte binary file "
                              "or a hex string")
                 return None
 
+        # IV is stored as another MDH section and cannot contain zeros at
+        # the end because this will be considered as a zero address of the
+        # section, and the header fails to parse
+        if b'\x00\x00\x00' in iv:
+            logger.error('The IV must not contain three consecutive zero bytes')
+            return None
+
         dl_img = DlImage()
         dl_img.load(image)
         dl_img.mdh.sub_ds_app.encrypted = True
+        dl_img.mdh.iv = iv
         app = bytes(dl_img.sub_ds_app.tobinarray())
         enc = EncryptorAES.encrypt(app, key, iv, 'CTR', pad=False)
         dl_img.sub_ds_app = enc
@@ -230,3 +239,11 @@ class CYW559xxAPI(CommonAPI):
             info = DeviceData(self.tool)
             return info.read_soc_id(output)
         return False
+
+    def erase_flash(self) -> bool:
+        """Erases flash memory of the device"""
+        status = False
+        if ConnectHelper.connect(self.tool, self.target):
+            context = ProvisioningContext(self.target.provisioning_strategy)
+            status = context.erase_flash(self.tool, self.target)
+        return status

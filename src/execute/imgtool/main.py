@@ -346,11 +346,14 @@ def extend(align, version, header_size, slot_size, infile, outfile,
 @click.command(help='''Create a signed or unsigned image\n
                INFILE and OUTFILE are parsed as Intel HEX if the params have
                .hex extension, otherwise binary format is used''')
+@click.option('--kdf', default='HKDF',
+              type=click.Choice(['HKDF', 'KBKDFCMAC'], case_sensitive=False),
+              help='Use HKDF or KBKDFCMAC for key derivation')
 def sign(key, public_key_format, align, version, pad_sig, header_size,
          pad_header, slot_size, pad, confirm, max_sectors, overwrite_only,
          endian, encrypt, infile, outfile, dependencies, load_addr, hex_addr,
          erased_val, save_enctlv, security_counter, boot_record, custom_tlv,
-         custom_tlv_unprotected, rom_fixed, use_random_iv, image_addr,
+         custom_tlv_unprotected, rom_fixed, use_random_iv, image_addr, kdf=None,
          encryptor=None):
 
     if confirm:
@@ -363,7 +366,8 @@ def sign(key, public_key_format, align, version, pad_sig, header_size,
                       max_sectors=max_sectors, overwrite_only=overwrite_only,
                       endian=endian, load_addr=load_addr, rom_fixed=rom_fixed,
                       erased_val=erased_val, save_enctlv=save_enctlv,
-                      security_counter=security_counter, image_addr=image_addr)
+                      security_counter=security_counter, image_addr=image_addr,
+                      kdf=kdf)
     img.load(infile)
     key = load_key(key) if key else None
     enckey = load_key(encrypt) if encrypt else None

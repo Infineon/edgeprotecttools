@@ -56,6 +56,8 @@ class CommandSign(Command):
         'encrypt': 'encryption-public-key',
         'enckey': 'encryption-secret-key',
         'encrypt_addr': 'encryption-address',
+        'remove_tlv': 'remove-tlv',
+        'kdf': 'kdf',
         'prot_tlv': 'protected-tlv',
         'tlv': 'tlv'
     }

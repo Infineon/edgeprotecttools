@@ -1,6 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 1.5.0
+### Changed
+- Dropped support for Python 3.8
+
+### Added
+- CYW559xx device erase command
+- CYW559xx custom encryption IV
+- CYW20829 encryption in NORMAL_NO_SECURE LCS
+
 ## 1.4.0
 ### Added
 - Support for AIROC™ CYW20829 revision B1

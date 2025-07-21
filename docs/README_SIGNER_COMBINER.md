@@ -413,6 +413,8 @@ Inputs:
 | encryption-address    |     string      |     optional      | Starting address for data encryption.                                                                                                                                                                                                                                                           |
 | protected-tlv         |      list       |     optional      | The custom TLV to be placed into a protected area (the signed part). Add the `0x` prefix for the value to be interpreted as an `integer`, otherwise it will be interpreted as a `string`.                                                                                                       |
 | tlv                   |      list       |     optional      | The custom TLV to be placed into a non-protected area. Add the `0x` prefix for the value to be interpreted as an `integer`, otherwise it will be interpreted as a `string`.                                                                                                                     |
+| kdf                   |     string      |     optional      | Key derivation function name. Default: `HKDF`. Available values: `HKDF`, `KBKDFCMAC`.                                                                                                                                                                                                           |
+| remove-tlv            |      list       |     optional      | Removes TLV with the specified ID.                                                                                                                                                                                                                                                              |
 
 
 Outputs:
@@ -604,11 +606,11 @@ The command requires two input files, where one is the [MCUboot formatted image]
 | file        | string |     required      | Path to the image with MCUboot metadata                                             |
 | description | string |     optional      | Description for this field.                                                         |
 
-| Name        |  Type  | Optional/Required | Description                                                                |
-|-------------|:------:|:-----------------:|----------------------------------------------------------------------------|
-| file        | string |     required      | Binary file containing signature.                                          |
-| algorithm   | string |     required      | Signature algorithm. Available values: `ECDSA-P256`, `RSA2048`, `RSA4096`. |
-| description | string |     optional      | Description for this field.                                                |
+| Name        |  Type  | Optional/Required | Description                                                                                            |
+|-------------|:------:|:-----------------:|--------------------------------------------------------------------------------------------------------|
+| file        | string |     required      | Binary file containing signature.                                                                      |
+| algorithm   | string |     required      | Signature algorithm. Available values: `ECDSA-P256`, `ECDSA-P384`, `ECDSA-P521`, `RSA2048`, `RSA4096`. |
+| description | string |     optional      | Description for this field.                                                                            |
 
 Outputs:
 

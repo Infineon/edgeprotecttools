@@ -339,35 +339,45 @@ $ edgeprotecttools merge-bin --image rma_token_unsigned.bin --image signature_hs
 
 
 # Return Merchandise Authorization (RMA)
-The flow for the transition device to the RMA lifecycle stage and open DAP.
+The flow for the transition device to the `RMA` lifecycle stage and open DAP.
 ## RMA token
-For the transition of the device into the RMA lifecycle stage you need to create a token, which contains the device DIE_ID and is signed with the OEM key.
-The token template is located in the _packets_ directory of the project. _debug_token.json_ defines the DIE_ID of the devices the token can be applied to. The default template min and max values are applicable for all devices. Modify it for specific devices only if needed. Set "rma" property to `Enable`.
-This token is used to transit the device to the RMA LCS.
+For the transition of the device into the `RMA` lifecycle stage you need to create a token, which contains the device DIE_ID and is signed with the OEM RoT key.
+
+There are two types of RMA tokens - "Transit to RMA" and "Open RMA". The tokens can be created with the `debug-token` command and the enabled `rma` property in the token template.
+
+The token template is located in the _packets_ directory of the project. _debug_token.json_ defines the DIE_ID of the devices the token can be applied to. The default template min and max values are applicable for all devices. Modify it for specific devices only if needed. Set `rma` property to `Enable`.
+
+"Transit to RMA" token is used to transit the device to the `RMA` LCS.
 ### Command: `debug-token`
 ### Parameters
-| Name              | Optional/Required  | Description   |
-| ----------------- |:------------------:| ------------- |
-| -T, --template    | optional           | The path to the token template. The template can be found in the _packets_ directory of the project (_debug_token.json_). |
-| --key, --key-path | optional           | The path to the private key to sign the token. If the token to be signed by HSM, do not specify the option. |
-| -o, --output      | required           | The file where to save the RMA token. |
+| Name              | Optional/Required | Description                                                                                                               |
+|-------------------|:-----------------:|---------------------------------------------------------------------------------------------------------------------------|
+| -T, --template    |     required      | The path to the token template. The template can be found in the _packets_ directory of the project (_debug_token.json_). |
+| --key, --key-path |     optional      | The path to the private key to sign the token. If the token to be signed by HSM, do not specify the option.               |
+| -o, --output      |     required      | The file where to save the "Transit to RMA" token.                                                                        |
 ### Usage example
 ```bash
-$ edgeprotecttools -t psoc_c3 debug-token --template packets/debug_token.json -o debug_token.bin --key keys/oem_rot_priv_key_0.pem
+$ edgeprotecttools -t psoc_c3 debug-token --template packets/debug_token.json -o packets/rma_token.bin --key keys/oem_rot_priv_key_0.pem
 ```
 
 ## Transition to RMA
-The command advances the device lifecycle stage to RMA. The token must be signed with the OEM key.
+The command advances the device lifecycle stage to `RMA`. The token must be signed with the OEM key. 
+
+For the device in `NORMAL_PROVISIONED` LCS, the DLM package does not need to be signed, and specifying the `--key` option is unnecessary. 
+
+For the device in `SECURE` LCS, the DLM package must be signed with OEM RoT private key, and specifying the `--key` option is mandatory.
 ### Command: `transit-to-rma`
 ### Parameters
-| Name          | Optional/Required  | Description   |
-| ------------- |:------------------:| ------------- |
-| --token       | optional           | Path to the "Transit to RMA" token. |
-| --probe-id    | optional           | Probe serial number. |
+| Name              | Optional/Required | Description                                                  |
+|-------------------|:-----------------:|--------------------------------------------------------------|
+| --token           |     required      | Path to the "Transit to RMA" token.                          |
+| --key, --key-path |     optional      | The path to the OEM RoT private key to sign the DLM package. |
+| --probe-id        |     optional      | Probe serial number.                                         |
 
 ### Usage example
 ```bash
 $ edgeprotecttools -t psoc_c3 transit-to-rma --token packets/rma_token.bin
+$ edgeprotecttools -t psoc_c3 transit-to-rma --token packets/rma_token.bin --key keys/oem_rot_priv_key_0.pem
 ```
 
 # Protected Firmware Update

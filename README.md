@@ -12,7 +12,7 @@ This package contains security tools for creating keys, creating certificates, s
 - [License and Contributions](#license-and-contributions)
 
 # Prerequisites
-* Python 3.8 - 3.13 if not using the executable.
+* Python 3.9 - 3.13 if not using the executable.
 * [Installed Infineon OpenOCD](https://github.com/Infineon/openocd/releases)
 * Ensure the KitProg3 programming mode is **CMSIS-DAP Bulk**
 

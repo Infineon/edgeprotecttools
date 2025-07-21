@@ -332,7 +332,7 @@ def cmd_set_ocd(_ctx, name, path, config):
 
 @main.command('serial-config', help='Configures serial interface')
 @click.option('--protocol', help='Serial communication protocol',
-              type=click.Choice(['uart', 'i2c', 'spi', 'usb_cdc'],
+              type=click.Choice(['uart', 'i2c', 'spi', 'can-fd'],
                                 case_sensitive=False))
 @click.option('--hwid', help='Specifies the ID of the hardware. If this option '
                              'is skipped, the first appropriate device found '
@@ -358,10 +358,26 @@ def cmd_set_ocd(_ctx, name, path, config):
               help='Specifies that the least-significant bit should be sent '
                    'first for the SPI protocol. Otherwise, the '
                    'most-significant bit will be sent first')
+@click.option('--canfd-bitrate', type=click.INT,
+              help='Sets the communication bitrate for CAN-FD protocol')
+@click.option('--canfd-data-bitrate', type=click.INT,
+              help='Sets the data communication bitrate for CAN-FD protocol')
+@click.option('--canfd-output-frame-id', type=click.INT,
+              help='Sets output frame ID for CAN-FD protocol')
+@click.option('--canfd-input-frame-id', type=click.INT,
+              help='Sets input frame ID for CAN-FD protocol (optional)')
+@click.option('--canfd-enable-bitrate-switch', is_flag=True,
+              help='Enables switching between default and data bitrates '
+                   'for CAN-FD protocol')
+@click.option('--canfd-ext-frame', is_flag=True,
+              help='Enables extended frame support for CAN-FD protocol')
 @click.pass_context
 def cmd_serial_config(_ctx, protocol, hwid, uart_baudrate, uart_paritytype,
                       uart_databits, uart_stopbits, i2c_address, i2c_speed,
-                      spi_clockspeed, spi_mode, spi_lsb_first):
+                      spi_clockspeed, spi_mode, spi_lsb_first,
+                      canfd_bitrate, canfd_data_bitrate, canfd_output_frame_id,
+                      canfd_input_frame_id, canfd_enable_bitrate_switch,
+                      canfd_ext_frame):
     """Configures serial interface"""
     @process_handler()
     def process():
@@ -372,7 +388,14 @@ def cmd_serial_config(_ctx, protocol, hwid, uart_baudrate, uart_paritytype,
                 uart_stopbits=uart_stopbits, uart_databits=uart_databits,
                 i2c_address=i2c_address, i2c_speed=i2c_speed,
                 spi_clockspeed=spi_clockspeed, spi_mode=spi_mode,
-                spi_lsb_first=spi_lsb_first)
+                spi_lsb_first=spi_lsb_first,
+                canfd_bitrate=canfd_bitrate,
+                canfd_data_bitrate=canfd_data_bitrate,
+                canfd_output_frame_id=canfd_output_frame_id,
+                canfd_input_frame_id=canfd_input_frame_id,
+                canfd_enable_bitrate_switch=canfd_enable_bitrate_switch,
+                canfd_ext_frame=canfd_ext_frame
+            )
 
         if not os.path.isfile(PkgData.pkg_settings()):
             os.makedirs(PkgData.pkg_user_data_dir(), exist_ok=True)
@@ -554,7 +577,7 @@ def cmd_cbor2json(_ctx, image, output, offset):
               case_sensitive=False), default='ES256',
               help='Primary signature algorithm')
 @click.option('--algorithm-1', type=click.Choice(
-              ['ES256', 'ES384', 'RS256', 'RS384'],
+              ['ES256', 'ES384', 'ES512', 'RS256', 'RS384'],
               case_sensitive=False), default='ES256',
               help='Secondary signature algorithm')
 @click.option('-o', '--output', type=click.Path(), required=True,
@@ -591,7 +614,7 @@ def cose_sign(ctx, input_path, output, key_0, key_1, kid_0,
 @click.option('--signature', type=click.Path(),
               help='Signature path to add to the message')
 @click.option('--algorithm', type=click.Choice(
-              ['ES256', 'ES384', 'RS256', 'RS384'],
+              ['ES256', 'ES384', 'ES512', 'RS256', 'RS384'],
               case_sensitive=False), default='ES256', help='Signature algorithm'
               )
 @click.option('-o', '--output', type=click.Path(), required=True,
@@ -620,12 +643,13 @@ def cose_sign1(ctx, output, input_path, key, kid, signature, algorithm):
               help='Path to the data to be verified')
 @click.option('--key', '--key-path', 'key', type=click.Path(),
               required=True, help='Public key path to verify COSE signed')
+@click.option('--kid', help='Key ID')
 @click.pass_context
-def cose_verify(ctx, input_path, key):
+def cose_verify(ctx, input_path, key, kid):
     """Verifies a COSE signed packet"""
     @process_handler()
     def process():
-        return ctx.obj['TOOL'].cose_verify(input_path, key)
+        return ctx.obj['TOOL'].cose_verify(input_path, key, kid=kid)
 
     return process
 
@@ -839,8 +863,9 @@ def cmd_hex_segment(_ctx, image, addr, output):
 @click.option('--key', '--key-path', 'key', type=click.Path(),
               help='Private key path to sign message')
 @click.option('--kid', help='Key ID')
-@click.option('--algorithm', type=click.Choice(
-              ['ES256', 'ES384', 'RS256', 'RS384'], case_sensitive=False),
+@click.option('--algorithm',
+              type=click.Choice(['ES256', 'ES384', 'ES512', 'RS256', 'RS384'],
+                                case_sensitive=False),
               help='Signature algorithm')
 @click.option('--signature', type=click.Path(),
               help='Signature path to add to the message')
@@ -996,6 +1021,9 @@ def cmd_encrypt_aes(_ctx, cbor_input, output, key, iv, nonce, add_iv, iv_output,
 @click.option('--encrypt-addr', help='Starting address for data encryption')
 @click.option('--nonce-output', type=click.Path(),
               help='The path to a file where to save the nonce')
+@click.option('--kdf', default='HKDF',
+              type=click.Choice(['HKDF', 'KBKDFCMAC'], case_sensitive=False),
+              help='Key derivation function name')
 @click.pass_context
 def cmd_sign_image(ctx, image, output, key, image_config, erased_val,
                    header_size, slot_size, min_erase_size, image_version,
@@ -1004,7 +1032,7 @@ def cmd_sign_image(ctx, image, output, key, image_config, erased_val,
                    boot_record, hex_addr, load_addr, rom_fixed, max_sectors,
                    save_enctlv, dependencies, encrypt,
                    protected_tlv, tlv, remove_tlv, enckey, encrypt_addr,
-                   nonce_output):
+                   nonce_output, kdf):
     """Signs application image"""
     @process_handler()
     def process():
@@ -1041,7 +1069,8 @@ def cmd_sign_image(ctx, image, output, key, image_config, erased_val,
             remove_tlv=remove_tlv,
             enckey=enckey,
             encrypt_addr=encrypt_addr,
-            nonce_output=nonce_output
+            nonce_output=nonce_output,
+            kdf=kdf
         )
         return result is not None
 
@@ -1127,6 +1156,9 @@ def cmd_sign_image(ctx, image, output, key, image_config, erased_val,
 @click.option('--encrypt-addr', help='Starting address for data encryption')
 @click.option('--nonce-output', type=click.Path(),
               help='The path to a file where to save the nonce')
+@click.option('--kdf', default='HKDF',
+              type=click.Choice(['HKDF', 'KBKDFCMAC'], case_sensitive=False),
+              help='Key derivation function name')
 @click.pass_context
 def cmd_image_metadata(ctx, image, output, decrypted, pubkey, image_config,
                        erased_val, header_size, slot_size, min_erase_size,
@@ -1135,7 +1167,7 @@ def cmd_image_metadata(ctx, image, output, decrypted, pubkey, image_config,
                        pad, confirm, overwrite_only, boot_record, hex_addr,
                        load_addr, rom_fixed, max_sectors, save_enctlv,
                        dependencies, encrypt, protected_tlv, tlv, remove_tlv,
-                       enckey, encrypt_addr, nonce_output):
+                       enckey, encrypt_addr, nonce_output, kdf):
     """Adds MCUboot metadata to a firmware image"""
     @process_handler()
     def process():
@@ -1173,7 +1205,8 @@ def cmd_image_metadata(ctx, image, output, decrypted, pubkey, image_config,
             remove_tlv=remove_tlv,
             enckey=enckey,
             encrypt_addr=encrypt_addr,
-            nonce_output=nonce_output
+            nonce_output=nonce_output,
+            kdf=kdf
         )
         return result is not None
 

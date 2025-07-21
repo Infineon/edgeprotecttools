@@ -99,3 +99,13 @@ class ImageType(Enum):
 
 
 KeyPair = namedtuple('KeyPair', 'private public')
+
+
+class Protocol:
+    """
+    Supported DFU protocols.
+    """
+    UART = 'uart'
+    I2C = 'i2c'
+    SPI = 'spi'
+    CAN_FD = 'can_fd'

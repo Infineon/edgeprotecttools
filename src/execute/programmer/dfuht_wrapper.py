@@ -16,6 +16,7 @@ limitations under the License.
 """
 import logging
 import os
+import re
 import tempfile
 from collections import namedtuple
 
@@ -50,7 +51,8 @@ class Dfuht(ProgrammerBase):
         protocol = self.runner.protocol
 
         for probe in self.get_probe_list():
-            if protocol.lower() in probe.lower() and probe_id in probe:
+            if protocol.replace('_', '-').lower() in probe.lower() \
+                    and probe_id in probe:
                 logger.info("Target connected %s", probe)
                 return True
 
@@ -226,7 +228,10 @@ class Dfuht(ProgrammerBase):
             cmd = dfu_command.create_packet(DfuhtMeta(), read_cmd, cmd_name)
             stdout, _ = self.runner.run(['--custom-command', cmd.filename])
             if self._result_check(stdout):
-                value += bytes.fromhex(''.join(stdout[1:-1]))
+                value += bytes.fromhex(''.join(
+                    ['' if re.match(r'\[\w+\].+', s) else s
+                     for s in stdout[:-1]]
+                ))
             else:
                 raise RuntimeError('Failed to read data')
         if not array:

@@ -49,7 +49,8 @@ class PsocC3Builder(TargetBuilder):
     def get_ocd_config(self):
         return {
             'openocd': {
-                'before_init': 'set ENABLE_CM33 0; psc3.cm33 configure -defer-examine',
+                'variables': 'set ENABLE_CM33 0',
+                'before_init': '',
                 'after_init': 'targets psc3.sys'
             }
         }

@@ -299,6 +299,16 @@
                                     "enum": ["3-byte", "4-byte"]
                                 }
                             }
+                        },
+                        "encryption": {
+                            "id": "encryption",
+                            "required": false,
+                            "description": "Enables SMIF encryption",
+                            "properties": {
+                                "value": {
+                                    "type": "boolean"
+                                }
+                            }
                         }
                     }
                 },
@@ -445,8 +455,8 @@
                                 }
                             }
                         },
-                        "smif_aes_key": {
-                            "id": "smif_aes_key",
+                        "encrypt_key": {
+                            "id": "encrypt_key",
                             "required": false,
                             "description": "Path to the AES-128 key for image encryption",
                             "properties": {
