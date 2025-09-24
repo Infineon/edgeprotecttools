@@ -25,6 +25,7 @@ import sys
 from cryptography.hazmat.primitives.asymmetric import ec, rsa, x25519
 from intelhex import IntelHex, HexRecordError
 
+from .core.certificate_strategy import CertAdapterV1
 from .core.connect_helper import ConnectHelper
 from .core.cose import Cose
 from .core.deprecated import deprecated
@@ -36,7 +37,9 @@ from .core.ocd_settings import OcdSettings
 from .core.project_base import ProjectInitializerBase
 from .core.logging_configurator import LoggingConfigurator
 from .core.signtool_base import SignToolBase
-from .core.strategy_context import ProvisioningPacketCtx, ProvisioningContext
+from .core.strategy_context import (
+    ProvisioningPacketCtx, ProvisioningContext, CertificateContext
+)
 from .core.enums import (
     ValidationStatus, ProvisioningStatus, KeyAlgorithm, KeyPair
 )
@@ -48,11 +51,15 @@ from .execute.combine_sign_tool import (CommandJsonValidator,
 from .execute.ihex2hcd import hex2hcd
 from .execute.image_signing import MergeTool, SplitTool, SignTool, MultiImage
 from .execute.keygens import ec_keygen, rsa_keygen, aes_keygen, x25519_keygen
+from .execute.programmer.dfuht_wrapper import Dfuht
 from .execute.programmer.programmer import ProgrammingTool
 from .execute.encryption import EncryptorAES, XipEncryptor
 from .execute.cbor_parser import CborParser
 from .execute import dump
 from .execute.x509 import X509CertificateGenerator
+from .execute.combine_sign_tool.symbol_adapter import SymbolAdapter
+from .execute.combine_sign_tool.symbol_file_finder import SymbolFileFinder
+from .execute.hex_relocator import HexRelocator
 from .pkg_globals import PkgData
 from .targets import get_target_builder, print_targets, is_mxs40v1, is_mxs40sv2
 
@@ -155,8 +162,121 @@ class CommonAPI:
                          'for the selected target')
             return False
 
-    def run_config(self, infile, variable):
-        """Executes commands specified in JSON file"""
+    def create_cert(self, output, **kwargs):
+        """Creates certificate from JSON template
+        @param output: Path where to save the created CBOR certificate
+        @param kwargs:
+            :template: Certificate template path
+            :csr: Path where to save the certificate
+            :key_path: Private key path to sign certificate
+            :json_cert: Path where to save JSON certificate
+        @return: Certificate object
+        """
+        if not self.target or not self.target.certificate_strategy:
+            logger.error('Creating certificates is not supported '
+                         'for the selected target')
+            return False
+
+        context = CertificateContext(self.target.certificate_strategy)
+        return context.create_certificate(output, None, None, dev_cert='cert',
+                                          **kwargs)
+
+    def oem_csr(self, output, key_path, **kwargs):
+        """Creates certificate signing request
+        @param output: Path where to save the created OEM CSR
+        @param key_path: The key path tuple with the private key_0, key_1 paths
+        @param kwargs:
+            :certificate_name: The name of the certificate
+            :oem: The OEM name
+            :project: The OEM project name
+            :project_number: The OEM project number
+            :issuer: The issuer name
+            :signer_id: Signer unique ID
+            :pub_key_0: Public key 0 path or HEX value
+            :pub_key_1: Public key 1 path or HEX value
+            :date: The date of the OEM certificate creation (auto-generated if not provided)
+            :cert_type: Defines the "LCS" of the project development or production
+            :cert_id: A unique S/N for this certificate (b0 applicable)
+            :rev: Device revision value
+            :algorithm: Key algorithm. Applicable values: ES256, ES384, ES512
+            :use_adapter: Use the certificate adapter to convert CLI arguments to dictionary
+        @return CSR object
+        """
+        if not self.target or not self.target.certificate_strategy:
+            logger.error('Creating certificates is not supported '
+                         'for the selected target')
+            return False
+
+        template = None
+        if kwargs.get('use_adapter'):
+            create = CertAdapterV1()
+            template = create.oem_csr(key_path=key_path, **kwargs)
+        context = CertificateContext(self.target.certificate_strategy)
+        return context.create_csr(output, key_path, template=template, **kwargs)
+
+    def ifx_oem_cert(self, output, **kwargs):
+        """Creates certificate
+        @param output: Path where to save the created IFX OEM certificate
+        @param kwargs:
+            :certificate_name: The name of the certificate
+            :csr: Path where to save the certificate
+            :issuer: The issuer name
+            :signer_id: Signer unique ID
+            :date: The date of the OEM certificate creation
+            (auto-generated if not provided)
+            :cert_id: A unique S/N for this certificate
+            :rev: Device revision value
+            :algorithm: Key algorithm. Applicable values: ES256, ES384, ES512
+            :key_path: Private key path to sign certificate
+            :signer_id: Signer unique ID
+            :use_adapter: Use the certificate adapter to convert CLI arguments to dictionary
+        @return: Certificate object
+        """
+        if not self.target or not self.target.certificate_strategy:
+            logger.error('Creating certificates is not supported '
+                         'for the selected target')
+            return False
+
+        template = None
+        if kwargs.get('use_adapter'):
+            create = CertAdapterV1()
+            template = create.oem_cert(**kwargs)
+        context = CertificateContext(self.target.certificate_strategy)
+        return context.create_certificate(output, None, None, dev_cert='oem',
+                                          template=template, **kwargs)
+
+    def run_config(self, infile, variable=None, symbol=None, symbol_search=None):
+        """
+        Executes commands specified in a JSON file with variable
+        interpolation.
+
+        Parameters:
+            infile (str): Path to the JSON file containing commands.
+            variable (tuple, optional): Tuple of (name, value) pairs
+                for variable interpolation.
+            symbol (str, list, optional): Path(s) to symbol file(s)
+                providing additional variables for interpolation.
+            symbol_search (str, list, optional): Path(s) to a directory
+                to search for symbol files.
+
+        Variable sources (variable, symbol, symbol_search) are merged for
+        interpolation. Variable names must be unique across all sources;
+        duplicates will raise an error.
+
+        Returns:
+            bool: True if all commands executed successfully, False
+                otherwise.
+        """
+        if variable is None:
+            variable = ()
+
+        symbols = []
+        symbols.extend(SymbolFileFinder.discover_symbol_files(symbol))
+        symbols.extend(SymbolFileFinder.discover_symbol_files(symbol_search))
+        if symbols:
+            adapted = SymbolAdapter.adapt(symbols)
+            variable = SymbolAdapter.merge(variable, adapted)
+
         command_group_parser = CommandGroupParser(infile)
         json_validator = CommandJsonValidator(command_group_parser)
 
@@ -766,6 +886,20 @@ class CommonAPI:
         return False
 
     @staticmethod
+    def hex_relocate(input_file, output_file, regions):
+        """
+        Relocate segments in a hex file to new address regions.
+        :param input_file: Path to input HEX file.
+        :param output_file: Path to output HEX file.
+        :param regions: List of (start, size, dest) tuples.
+        :return: Value returned by relocate_file (usually None).
+        """
+        result = HexRelocator.relocate_file(input_file, output_file, regions)
+        if result:
+            logger.info("Saved file to '%s'", output_file)
+        return result
+
+    @staticmethod
     def multi_image_cbor(input_path, output, key, **kwargs):
         """Creates a multi-image COSE packet
         @param input_path: The path to the hex image
@@ -1006,9 +1140,9 @@ class CommonAPI:
                                           acquire=acquire)
         mode = None
         status = None
-        if connected:
+        if connected and not isinstance(self.tool, Dfuht):
             mode, status = self.target.silicon_data_reader.read_extended_boot_info(self.tool)
-            ConnectHelper.disconnect(self.tool)
+        ConnectHelper.disconnect(self.tool)
         return mode, status
 
     @staticmethod

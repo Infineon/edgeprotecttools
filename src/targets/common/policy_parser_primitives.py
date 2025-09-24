@@ -115,3 +115,13 @@ class PolicyParserPrimitives:
                     f"Error parsing data: '{'.'.join(keys)}'"
                 ) from e
         return data
+
+    def int_field(self, *keys):
+        """Gets an integer field"""
+        value = self.field(*keys)
+        if value is not None:
+            try:
+                value = int(str(value), 0)
+            except ValueError as e:
+                raise ValueError(f"Invalid integer value '{value}'") from e
+        return value if value else 0

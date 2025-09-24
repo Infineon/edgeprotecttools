@@ -1,6 +1,7 @@
 # Table of Contents
 - [CYW20829/CYW89829 HW/SW compatibility](#cyw20829cyw89829-hwsw-compatibility)
 - [Main features](#main-features)
+- [Important notes](#important-notes)
 - [Quick start](#quick-start)
 - [Usage example](#usage-example)
 - [Policy](#policy)
@@ -63,6 +64,12 @@
     <td>1.2.0.8334</td>
     <td>1.2.0.3073</td>
   </tr>
+  <tr>
+    <td>cyw89829</td>
+    <td>0xEB51, 0x22 (B1), 0x110</td>
+    <td>1.3.0.12044</td>
+    <td>1.3.1.4803</td>
+  </tr>
   </tbody>
 </table>
 
@@ -74,6 +81,8 @@
 * [Encrypt a user application](#encrypt-the-user-application) - Signs and encrypts a user application.
 * [Create a debug certificate](#create-debug-certificate) - The debug certificate is used by ROM boot code to enable CM33-AP and/or Sys-AP when it is temporarily disabled.
 
+# Important notes
+All examples in this document are provided for the CYW20829 MCU. For CYW89829 MCU, use the `-t cyw89829` option. Ensure you specify the correct device revision using the `--rev` option. If not specified, the tool will default to the latest revision. Latest MCU revision can be found in the [CYW20829/CYW89829 HW/SW compatibility](#cyw20829cyw89829-hwsw-compatibility) table.
 
 # Quick start
 ## 1. Set a path to the On-Chip debugger
@@ -91,7 +100,7 @@ $ edgeprotecttools set-ocd --name openocd --path /Users/username/tools/openocd
 ## 2. Define a target
 Run the following command and find the name of your target in the list of supported targets (**cyw20829** or **cyw89829**).
 
-**IMPORTANT**: Make sure to use the correct device revision by specifying the `--rev` option. If the option is not specified, the tool will use the latest revision (`B1`).
+> **IMPORTANT**: Make sure to use the correct device revision by specifying the `--rev` option. If the option is not specified, the tool will use the latest revision.
 ```bash
 $ edgeprotecttools device-list
 ```
@@ -99,11 +108,11 @@ This target name will be used as a `-t` option value with each command.
 
 _Example_:
 ```bash
-$ edgeprotecttools -t cyw20829 -p <POLICY> <COMMAND> [OPTIONS]
+$ edgeprotecttools -t cyw20829 --rev b1 -p <POLICY> <COMMAND> [OPTIONS]
 # or
-$ edgeprotecttools -t cyw89829 -p <POLICY> <COMMAND> [OPTIONS]
+$ edgeprotecttools -t cyw89829 --rev b1 -p <POLICY> <COMMAND> [OPTIONS]
 ```
-**Note**: All examples are provided for the CYW20829 device. For CYW89829 devices use `-t cyw89829`.
+> **IMPORTANT**: All examples are provided for the CYW20829 device. For CYW89829 devices use `-t cyw89829`.
 
 ## 3. Create a new project
 This copies the list of files required to start using the tool to the current working directory.
@@ -668,7 +677,7 @@ Now, you can run the _reprovision-device_ command and the _--existing-packet_ op
 ```bash
 $ edgeprotecttools -t cyw20829 -p policy/policy_reprovisioning_secure.json reprovision-device --existing-packet
 ```
-__IMPORTANT:__ Make sure not to add the signature more than one time for further reprovisioning.
+> **IMPORTANT**: Make sure not to add the signature more than one time for further reprovisioning.
 
 
 ## Converting RSA key public numbers to PEM

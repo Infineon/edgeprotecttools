@@ -37,7 +37,7 @@ setup(
     packages=[package_name],
     package_dir={package_name: 'src'},
     install_requires=[
-        'setuptools>=78.1.0,<81.0.0',
+        'setuptools>=80.9.0,<81.0.0',
         'cryptography>=44.0.2',
         'click>=8.0.4',
         'intelhex>=2.3.0',

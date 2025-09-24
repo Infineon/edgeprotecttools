@@ -55,6 +55,7 @@ class CommandSign(Command):
         'dependencies': 'dependencies',
         'encrypt': 'encryption-public-key',
         'enckey': 'encryption-secret-key',
+        'enckey_role': 'encryption-key-role',
         'encrypt_addr': 'encryption-address',
         'remove_tlv': 'remove-tlv',
         'kdf': 'kdf',

@@ -171,6 +171,14 @@
                         "title": "Symmetric key used to encrypt the image (AES)",
                         "type": "string"
                     },
+                    "encryption-key-role": {
+                        "title": "An encryption key role",
+                        "type": "string",
+                        "enum": [
+                            "XIP",
+                            "AES-KW"
+                        ]
+                    },
                     "encryption-address": {
                         "title": "Starting address for data encryption",
                         "type": "string"

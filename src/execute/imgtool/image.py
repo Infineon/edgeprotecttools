@@ -51,6 +51,7 @@ from cryptography.hazmat.primitives.kdf.kbkdf import (
     KBKDFCMAC, Mode, CounterLocation
 )
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from cryptography.hazmat.primitives import keywrap
 
 from . import keys
 from .keys import rsa, ecdsa, x25519
@@ -613,6 +614,10 @@ class Image():
                     tlv.add('ENCEC256', enctlv)
                 else:
                     tlv.add('ENCX25519', enctlv)
+            elif isinstance(enckey, bytes):
+                wrapped = keywrap.aes_key_wrap(enckey, plainkey)
+                self.enctlv_len = len(wrapped)
+                tlv.add('ENCKW128', wrapped)
 
             nonce = self.enc_nonce
             img = bytes(self.payload[self.header_size:])

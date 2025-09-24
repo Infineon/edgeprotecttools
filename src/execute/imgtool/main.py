@@ -370,19 +370,22 @@ def sign(key, public_key_format, align, version, pad_sig, header_size,
                       kdf=kdf)
     img.load(infile)
     key = load_key(key) if key else None
-    enckey = load_key(encrypt) if encrypt else None
-    if enckey and key:
-        if ((isinstance(key, keys.ECDSA256P1) and
-             not isinstance(enckey, keys.ECDSA256P1Public))
-           or (isinstance(key, keys.ECDSA384P1) and
-               not isinstance(enckey, keys.ECDSA384P1Public))
-           or (isinstance(key, keys.ECDSA521P1) and
-               not isinstance(enckey, keys.ECDSA521P1Public))
-           or (isinstance(key, keys.RSA) and
-               not isinstance(enckey, keys.RSAPublic))):
-            # FIXME
-            raise click.UsageError("Signing and encryption must use the same "
-                                   "type of key")
+    if isinstance(encrypt, bytes):
+        enckey = encrypt
+    else:
+        enckey = load_key(encrypt) if encrypt else None
+        if enckey and key:
+            if ((isinstance(key, keys.ECDSA256P1) and
+                 not isinstance(enckey, keys.ECDSA256P1Public))
+               or (isinstance(key, keys.ECDSA384P1) and
+                   not isinstance(enckey, keys.ECDSA384P1Public))
+               or (isinstance(key, keys.ECDSA521P1) and
+                   not isinstance(enckey, keys.ECDSA521P1Public))
+               or (isinstance(key, keys.RSA) and
+                   not isinstance(enckey, keys.RSAPublic))):
+                # FIXME
+                raise click.UsageError(
+                    "Signing and encryption must use the same type of key")
 
     if pad_sig and hasattr(key, 'pad_sig'):
         key.pad_sig = True

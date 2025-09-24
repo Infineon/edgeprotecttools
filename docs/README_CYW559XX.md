@@ -151,15 +151,14 @@ If the application has to be encrypted, run the following command.
 $ edgeprotecttools -t cyw559xx encrypt --image ./HAL_Blinky_LED/build/APP_CYW955913EVK-01/Debug/mtb-example-threadx-blinky-led_download_APPCERT.hex --key keys/enckey.bin --iv 3f45a2c7b8e66d9f4a1b3c2e8d5f9a01 --output ./HAL_Blinky_LED/build/APP_CYW955913EVK-01/Debug/mtb-example-threadx-blinky-led_download_APPCERT_ENCRYPTED.hex
 ```
 
-## 9. Generate HCD Image
-Convert IntelHex file to HCD (hardware configuration data). HCD is required by the Chipload tool to program the device.
+## 9. Generate HCD Image (optional)
+Convert an IntelHex file to HCD (Hardware Configuration Data). HCD is a format used by Chipload. Latest Chipload versions support HEX files, so this step is optional.
 ```bash
 $ edgeprotecttools hex2hcd --input ./HAL_Blinky_LED/build/APP_CYW955913EVK-01/Debug/mtb-example-threadx-blinky-led_download_APPCERT_ENCRYPTED.hex --output ./HAL_Blinky_LED/build/APP_CYW955913EVK-01/Debug/mtb-example-threadx-blinky-led_download_APPCERT_ENCRYPTED.hcd
 ```
 
 ## 10. Create OTA Image (optional)
 The OTA image is a BIN file that is intended to be run by the OTA driver.
-### For Unencrypted Application
 ```bash
 # Create an OTA image
 $ edgeprotecttools -t cyw559xx ota-image --image ./HAL_Blinky_LED/build/APP_CYW955913EVK-01/Debug/mtb-example-threadx-blinky-led_download_APPCERT_ENCRYPTED.hex --output ./HAL_Blinky_LED/build/APP_CYW955913EVK-01/Debug/mtb-example-threadx-blinky-led_APP_CYW955913EVK-01_APPCERT_ENCRYPTED.ota.bin

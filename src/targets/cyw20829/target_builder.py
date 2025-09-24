@@ -53,7 +53,7 @@ class CYW20829B1Builder(CYW20829B0Builder):
     def get_silicon_id(self):
         """Gets the target silicon ID"""
         return {
-            'id': [0xEB40],
+            'id': [0xEB4B, 0xEB4C, 0xEB4F, 0xEB50],
             'rev': [0x22],
             'family': 0x110
         }
