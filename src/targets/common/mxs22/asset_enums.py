@@ -136,6 +136,8 @@ KeyAlgorithm = Enum(
         ('ECDSA', PsaKeyAlgorithms.ECDSA),
         ('RSA', PsaKeyAlgorithms.RSA_PKCS1),
         ('AES-CTR', PsaKeyAlgorithms.CTR),
+        ('AES-CFB', PsaKeyAlgorithms.CBF),
+        ('AES-OFB', PsaKeyAlgorithms.OFB),
         ('AES-CBC', PsaKeyAlgorithms.CBC_NO_PADDING),
         ('AES-ECB', PsaKeyAlgorithms.ECB_NO_PADDING),
         ('ECDH', PsaKeyAlgorithms.ECDH),

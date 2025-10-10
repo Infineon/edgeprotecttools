@@ -71,7 +71,19 @@ $ edgeprotecttools create-key --key-type ECDSA-P256 --template keys/ec_key_tmpl.
 # Create ECDSA-P256 key from the binary file containing public numbers
 $ edgeprotecttools create-key --key-type ECDSA-P256 --template ec_public_numbers.bin -o public.pem
 ```
-
+## Create LMS key
+Creates an Leighton-Micali Signature (LMS) key.
+### Command: `create-key-lms`
+### Parameters
+| Name          | Optional/Required | Description                                                                                                                                                                                                                    |
+|---------------|:-----------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --lms-type    |     required      | A key lms type. One of the following: `LMS-SHA256-M24-H5`, `LMS-SHA256-M24-H10`, `LMS-SHA256-M24-H15`, `LMS-SHA256-M32-H5`, `LMS-SHA256-M32-H10`, `LMS-SHA256-M32-H15`.                                                        |
+| --lmots-type  |     required      | A key lmots type. One of the following: `LMOTS-SHA256-N24-W1`, `LMOTS-SHA256-N24-W2`, `LMOTS-SHA256-N24-W4`, `LMOTS-SHA256-N24-W8`, `LMOTS-SHA256-N32-W1`, `LMOTS-SHA256-N32-W2`,`LMOTS-SHA256-N32-W4`, `LMOTS-SHA256-N32-W8`. |
+| --o, --output |     required      | Private and public key paths, separated by space `[private] [public]`.                                                                                                                                                         |
+## Usage example
+```bash
+$ edgeprotecttools create-key-lms --lms-type lms-sha256-m32-h5 --lmots-type lmots-sha256-n32-W8 private.prv public.pub
+```
 
 ## Convert key
 Converts an asymmetric key to a different encoding or/and format.

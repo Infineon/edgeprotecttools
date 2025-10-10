@@ -33,17 +33,16 @@ class CertAdapterV1:
 
     def oem_csr(self, **kwargs):
         """Creates OEM CSR template"""
-        if not kwargs.get('algorithm', ''):
-            algorithm = None
-            algorithms = kwargs.get('algorithms', '')
-            sign_keys = kwargs.get('key_path', '')
+        algorithms = kwargs.get('algorithms', (None, None))
+        sign_keys = kwargs.get('key_path', (None, None))
 
-            if algorithms and all(algorithms):
-                algorithm = algorithms[0]
-            elif sign_keys:
-                algorithm = ECHandler.alg(load_key(sign_keys[0]))
+        if algorithms[0]:
+            kwargs['algorithm'] = algorithms[0]
+        elif sign_keys[0]:
+            kwargs['algorithm'] = ECHandler.alg(load_key(sign_keys[0]))
+        else:
+            raise ValueError('Signing key(s) or algorithm(s) must be specified')
 
-            kwargs['algorithm'] = algorithm
         return self.create_template('OEM_CSR', **kwargs)
 
     def oem_cert(self, **kwargs):

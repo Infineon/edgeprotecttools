@@ -47,7 +47,8 @@ setup(
         'cwt>=2.7.5',
         'packaging>=24.1',
         'pyelftools>=0.31',
-        'pyserial>=3.5'
+        'pyserial>=3.5',
+        'pyhsslms>=2.0.0,<3.0.0'
         ],
     description='Python tools for provisioning Cypress/Infineon MCUs',
     long_description=readme + '\n\n' + changelog,

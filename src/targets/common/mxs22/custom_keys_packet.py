@@ -23,7 +23,7 @@ from cryptography.hazmat.primitives.asymmetric.ec import (
 )
 from cryptography.hazmat.primitives import serialization
 
-from .psa_constants import PsaKeyTypes
+from .psa_constants import PsaKeyTypes, PsaKeyLifetime
 from .asset_enums import KeyUsage, KeyAlgorithm
 from ....core.key_handlers import load_public_key, load_private_key
 from ....core.bitops import number_size
@@ -63,7 +63,10 @@ class CustomKeysPacket:
             kid = CustomKeysPacket.key_id(data['kid']['value'])
             alg = CustomKeysPacket.key_algorithm(data['alg']['value'])
             use = CustomKeysPacket.key_usage(data['use']['value'])
-            kty = CustomKeysPacket.key_type(key, data['alg']['value'])
+            if data.get('kty') and data['kty'].get('value'):
+                kty = CustomKeysPacket.key_type(key, data['kty']['value'])
+            else:
+                kty = CustomKeysPacket.key_type_auto(key, data['alg']['value'])
             kda = CustomKeysPacket.key_data(key)
             kbt = CustomKeysPacket.key_bits(key)
             user_key = {
@@ -80,6 +83,15 @@ class CustomKeysPacket:
                 user_key.update({KEY_OWNER_ID: kwn})
             cbor_data.append(user_key)
         return cbor_data
+
+    @staticmethod
+    def key_lifetime(lifetime: str) -> int:
+        """Gets key lifetime value for PSA import"""
+        lifetime = lifetime.upper().strip()
+        try:
+            return PsaKeyLifetime[lifetime].value
+        except KeyError as e:
+            raise ValueError(f"Unknown key lifetime '{lifetime}'") from e
 
     @staticmethod
     def key_id(kid: Union[int, str]) -> int:
@@ -112,7 +124,32 @@ class CustomKeysPacket:
         return psa_value
 
     @staticmethod
-    def key_type(key: KeyTypes, alg: str = None) -> int:
+    def key_type(key: KeyTypes, kty: str = None) -> int:
+        """Gets key type value for PSA import"""
+        kty_map = {
+            'DERIVE': PsaKeyTypes.DERIVE,
+            'NONE': PsaKeyTypes.RAW_DATA,
+            'ECC_KEY_PAIR': PsaKeyTypes.ECC_KEY_PAIR,
+            'ECC_PUBLIC_KEY': PsaKeyTypes.ECC_PUBLIC_KEY,
+            'RSA_KEY_PAIR': PsaKeyTypes.RSA_KEY_PAIR,
+            'RSA_PUBLIC_KEY': PsaKeyTypes.RSA_PUBLIC_KEY,
+            'AES': PsaKeyTypes.AES,
+            'AES-CTR': PsaKeyTypes.AES,
+            'AES-CBC': PsaKeyTypes.AES,
+            'AES-ECB': PsaKeyTypes.AES
+        }
+
+        if kty not in kty_map:
+            raise ValueError(f'Invalid key type: "{kty}"')
+
+        if key and kty in ('ECC_KEY_PAIR', 'ECC_PUBLIC_KEY',
+                           'RSA_KEY_PAIR', 'RSA_PUBLIC_KEY'):
+            CustomKeysPacket._verify_asymmetric_key_size(key)
+
+        return kty_map[kty]
+
+    @staticmethod
+    def key_type_auto(key: KeyTypes, alg: str = None) -> int:
         """Gets key type value for PSA import"""
         if key:
             CustomKeysPacket._verify_asymmetric_key_size(key)
@@ -131,6 +168,13 @@ class CustomKeysPacket:
             return PsaKeyTypes.AES
         if alg == 'NONE':
             return PsaKeyTypes.RAW_DATA
+        raise ValueError('Invalid key type')
+
+    @staticmethod
+    def key_type_field(psa_key_type: str) -> int:
+        """Gets type value for PSA key attribute"""
+        if psa_key_type in ('AES', 'ECC_PUBLIC_KEY'):
+            return PsaKeyTypes[psa_key_type].value
         raise ValueError('Invalid key type')
 
     @staticmethod

@@ -20,6 +20,7 @@ from enum import IntEnum
 class PsaKeyTypes(IntEnum):
     """Identifies the type of key"""
     AES = 0x2400
+    DERIVE = 0x1200
     RAW_DATA = 0x1001
     RSA_KEY_PAIR = 0x7001
     RSA_PUBLIC_KEY = 0x4001
@@ -45,8 +46,10 @@ class PsaKeyAlgorithms(IntEnum):
     RSA_PKCS1 = RSA_PKCS1_BASE | (PSA_ALG_SHA_256 & HASH_MASK)
     ECDSA_BASE = 0x06000600
     ECDSA_ANY = ECDSA_BASE
-    ECDSA = (ECDSA_BASE | (PSA_ALG_ANY_HASH & HASH_MASK))
+    ECDSA = ECDSA_BASE | (PSA_ALG_ANY_HASH & HASH_MASK)
     CTR = 0x04c01000
+    CBF = 0x04C01100
+    OFB = 0x04C01200
     CBC_NO_PADDING = 0x04404000
     ECB_NO_PADDING = 0x04404400
     ECDH = 0x09020000
@@ -68,3 +71,9 @@ class PsaKeyUsage(IntEnum):
     VERIFY_HASH = 0x00002000
     DERIVE = 0x00004000
     VERIFY_DERIVATION = 0x00008000
+
+
+class PsaKeyLifetime(IntEnum):
+    """The key lifetime determines how long the key will persist"""
+    VOLATILE = 0x00000000
+    PERSISTENT = 0x00000001

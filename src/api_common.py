@@ -50,7 +50,8 @@ from .execute.combine_sign_tool import (CommandJsonValidator,
                                         CommandGroupParser)
 from .execute.ihex2hcd import hex2hcd
 from .execute.image_signing import MergeTool, SplitTool, SignTool, MultiImage
-from .execute.keygens import ec_keygen, rsa_keygen, aes_keygen, x25519_keygen
+from .execute.keygens import (ec_keygen, rsa_keygen, aes_keygen,
+                              x25519_keygen, lms_keygen)
 from .execute.programmer.dfuht_wrapper import Dfuht
 from .execute.programmer.programmer import ProgrammingTool
 from .execute.encryption import EncryptorAES, XipEncryptor
@@ -602,6 +603,54 @@ class CommonAPI:
             logger.info("Created a key '%s'", os.path.abspath(keys.public))
         return True
 
+    def create_keys_lms(self, lms_type, lmots_type, output):
+        """Creates LMS key pair
+        @param lms_type: LMS key type
+        @param lmots_type: LM-OTS key type
+        @param output: Tuple or list with private and public key paths"""
+        if not isinstance(output, (tuple, list)):
+            raise ValueError('Incorrect output path data format')
+        if len(output) != 2:
+            raise ValueError('No path for private or public keys')
+
+        keys_exist = False
+        for key_path in output:
+            keys_exist = os.path.isfile(key_path)
+            if keys_exist:
+                logger.warning("Key already exists '%s'",
+                               os.path.abspath(key_path))
+        if keys_exist and (not self.skip_prompts):
+            answer = input('Overwrite ? (y/n): ')
+            if answer.lower() != 'y':
+                logger.info('Terminated by user')
+                return True
+
+        private_path, public_path = output
+
+        if private_path == public_path:
+            raise ValueError('Same path for private and public keys')
+
+        try:
+            private, public = lms_keygen.generate_key(lms_type, lmots_type)
+        except ValueError as e:
+            raise ValueError(f'Failed to create LMS key: {e}') from e
+
+        if private and public:
+            try:
+                lms_keygen.save_key(private, private_path)
+                lms_keygen.save_key(public, public_path)
+            except (ValueError, OSError) as e:
+                raise ValueError(f"Unable to save keys: {e}") from e
+
+            logger.info("Created an LMS private key '%s'",
+                        os.path.abspath(private_path))
+            logger.info("Created an LMS public key '%s'",
+                        os.path.abspath(public_path))
+        else:
+            raise ValueError('Missing data for key generation')
+
+        return True
+
     @staticmethod
     def convert_key(key, enc_fmt, **kwargs):
         """Converts key to other formats
@@ -627,7 +676,9 @@ class CommonAPI:
                     ec.EllipticCurvePrivateKey, ec.EllipticCurvePublicKey,
                     rsa.RSAPrivateKey, rsa.RSAPublicKey,
                     x25519.X25519PrivateKey, x25519.X25519PublicKey)):
-                result = emit_c(key, key_format, password=password, var_name=var_name)
+                result = emit_c(
+                    key, key_format, password=password, var_name=var_name
+                )
             else:
                 raise ValueError('The expected key types are: '
                                  'RSA, ECDSA, or X25519')

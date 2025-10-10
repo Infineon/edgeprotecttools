@@ -478,13 +478,15 @@ def cmd_transit_to_rma(
 @click.option('--key', '--key-path', 'key', type=click.Path(), required=True,
               help='Private key path to sign message')
 @click.option('--kid', help='Key ID')
+@click.option('--add-size/--no-add-size', default=True)
 @click.pass_context
-def multi_image_cbor(ctx, output, input_path, key, template, kid):
+def multi_image_cbor(ctx, output, input_path, key, template, kid, add_size):
     """Creates a multiple images COSE packet"""
     @process_handler()
     def process():
         return ctx.obj['TOOL'].multi_image_cose(
-            input_path, output, key, template=template, kid=kid)
+            input_path, output, key,
+            template=template, kid=kid, add_size=add_size)
 
     return process
 
@@ -504,15 +506,17 @@ def multi_image_cbor(ctx, output, input_path, key, template, kid):
 @click.option('--signature', type=click.Path(),
               help='Signature path to add to the message')
 @click.option('--kid', help='Key ID')
+@click.option('--add-size/--no-add-size', default=True)
 @click.pass_context
 def multi_image_cbor_hsm(ctx, output, input_path, template, algorithm,
-                         signature, kid):
+                         signature, kid, add_size):
     """Creates a multiple images COSE packet for signing with HSM or
     adds the signature to packet"""
     @process_handler()
     def process():
         return ctx.obj['TOOL'].multi_image_cose(
             input_path, output, None, template=template,
-            algorithm=algorithm, signature=signature, kid=kid)
+            algorithm=algorithm, signature=signature, kid=kid,
+            add_size=add_size)
 
     return process

@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 1.6.1
+### Changed
+- Optimized encryption algorithm for faster processing of large images using ECB cipher mode
+
 ## 1.6.0
 ### Added
 - Support for PSOC™ Edge E81, E82, E83, E84 series

@@ -268,7 +268,6 @@ def cmd_create_oem_csr(
                                          cert_type=cert_type, date=date,
                                          cert_id=cert_id, output=output,
                                          key_path=sign_keys,
-                                         algorithm=None,
                                          algorithms=algorithms,
                                          use_adapter=True)
         return result
@@ -924,6 +923,33 @@ def cmd_export_public_key(_ctx, key_path, output, fmt):
     def process():
         return CommonAPI.export_public_key(key_path, fmt, output=output)
 
+    return process
+
+
+@main.command('create-key-lms', help='Creates LMS private and public key pair')
+@click.option('--lms-type', type=click.Choice(
+    ['LMS-SHA256-M24-H5', 'LMS-SHA256-M24-H10', 'LMS-SHA256-M24-H15',
+     'LMS-SHA256-M32-H5', 'LMS-SHA256-M32-H10', 'LMS-SHA256-M32-H15'
+     ],
+    case_sensitive=False), required=True, help='LM-OTS key type')
+@click.option('--lmots-type', type=click.Choice(
+    ['LMOTS-SHA256-N24-W1', 'LMOTS-SHA256-N24-W2', 'LMOTS-SHA256-N24-W4',
+     'LMOTS-SHA256-N24-W8', 'LMOTS-SHA256-N32-W1', 'LMOTS-SHA256-N32-W2',
+     'LMOTS-SHA256-N32-W4', 'LMOTS-SHA256-N32-W8'
+     ],
+    case_sensitive=False), required=True, help='Key LMS type')
+@click.option('-o', '--output', type=click.Path(), nargs=2,
+              metavar='[private] [public]',
+              required=True,
+              help='Private and public key paths')
+@click.pass_context
+def cmd_create_lms_key(ctx, lms_type, lmots_type, output):
+    """Creates LMS key pair"""
+    @process_handler()
+    def process():
+        if 'TOOL' not in ctx.obj:
+            return False
+        return ctx.obj['TOOL'].create_keys_lms(lms_type, lmots_type, output)
     return process
 
 
