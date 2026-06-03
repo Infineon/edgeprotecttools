@@ -32,6 +32,17 @@
                         "title": "ECDSA or RSA private key used to sign the image",
                         "type": "string"
                     },
+                    "sha": {
+                        "title": "The hash algorithm used to calculate the image digest. Applicable values: 'auto', 'sha256', 'sha384', 'sha512'",
+                        "type": "string",
+                        "enum": [
+                            "auto",
+                            "sha256",
+                            "sha384",
+                            "sha512"
+                        ],
+                        "default": "auto"
+                    },
                     "header-size": {
                         "title": "MCUboot header size",
                         "type": [
@@ -176,7 +187,8 @@
                         "type": "string",
                         "enum": [
                             "XIP",
-                            "AES-KW"
+                            "AES-KW",
+                            "CMAC-KDF"
                         ]
                     },
                     "encryption-address": {

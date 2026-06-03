@@ -1,19 +1,18 @@
-"""
-Copyright 2022-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2022-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+import hashlib
 import pathlib
 import struct
 import logging
@@ -23,6 +22,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, rsa, padding, utils
 from intelhex import IntelHex
+from pyhsslms import LmsPublicKey
 
 from ..imgtool.image import (
     Image as ImgtoolImage,
@@ -35,6 +35,9 @@ from ..imgtool.image import (
     TLV_INFO_SIZE
 )
 from ..imgtool.version import SemiSemVersion
+from ...core.dilithium.ml_dsa import ML_DSA_44, ML_DSA_65, ML_DSA_87
+from ...core.xmss.xmss import XMSSPublicKey
+from ...core.key_handlers.ml_dsa_handler import MLDSAPublicKey
 
 logger = logging.getLogger(__name__)
 
@@ -126,6 +129,7 @@ class Image:
         self.body_size = 0
         self.magic = 0
         self.base_addr = 0
+        self.linear_addr = None
         self.header = Header()
         self._load()
 
@@ -141,7 +145,12 @@ class Image:
             if tlv.tag in [TLV_VALUES['RSA2048'],
                            TLV_VALUES['RSA3072'],
                            TLV_VALUES['RSA4096'],
-                           TLV_VALUES['ECDSASIG']]:
+                           TLV_VALUES['ECDSASIG'],
+                           TLV_VALUES['LMS_SIG'],
+                           TLV_VALUES['XMSS_SIG'],
+                           TLV_VALUES['ML_DSA_44_SIG'],
+                           TLV_VALUES['ML_DSA_65_SIG'],
+                           TLV_VALUES['ML_DSA_87_SIG']]:
                 return True
         return False
 
@@ -237,6 +246,20 @@ class Image:
              0x35, 0x52, 0x50, 0x0F, 0x2C, 0xB6, 0x79, 0x80])
         return self.data[-len(upgrade_img_magic):] == upgrade_img_magic
 
+    def save(self, path, hex_addr=None):
+        """Save an image from a given file"""
+        if path.endswith('.hex'):
+            h = IntelHex()
+            h.frombytes(
+                bytes=self.data,
+                offset=hex_addr if hex_addr is not None else self.base_addr
+            )
+            h.start_addr = self.linear_addr
+            h.tofile(path, 'hex')
+        else:
+            with open(path, 'wb') as f:
+                f.write(self.data)
+
     def _load(self):
         if isinstance(self.image_path, (bytearray, bytes)):
             self._data = self.image_path
@@ -245,6 +268,7 @@ class Image:
             if ext == ".hex":
                 ih = IntelHex(self.image_path)
                 self.base_addr = ih.minaddr()
+                self.linear_addr = ih.start_addr
                 self._data = bytes(ih.tobinarray())
             else:
                 with open(self.image_path, 'rb') as f:
@@ -318,6 +342,15 @@ class Image:
             elif isinstance(key, rsa.RSAPublicKey):
                 logger.debug('Using public key of type RSA')
                 self._verify_rsa_signature(key)
+            elif isinstance(key, LmsPublicKey):
+                logger.debug('Using public key of type LMS')
+                self._verify_lms_signature(key)
+            elif isinstance(key, XMSSPublicKey):
+                logger.debug('Using public key of type XMSS')
+                self._verify_xmss_signature(key)
+            elif isinstance(key, MLDSAPublicKey):
+                logger.debug('Using public key of type ML-DSA')
+                self._verify_ml_dsa_signature(key)
             else:
                 raise ValueError('Unsupported key algorithm')
         except InvalidSignature:
@@ -363,3 +396,66 @@ class Image:
                        salt_length=32
                    ),
                    hashes.SHA256())
+
+    def _verify_lms_signature(self, key):
+        """Verifies image with the LMS key"""
+        try:
+            sig = [x for x in self.tlv if x.tag == TLV_VALUES['LMS_SIG']][0]
+        except IndexError as e:
+            raise LookupError(
+                f"Cannot find LMS signature in '{self.image_path}'") from e
+        sig = bytes(sig.value)
+        sha = hashlib.sha256()
+        sha.update(self.payload)
+        payload_hash = sha.digest()
+        if not key.verify(message=payload_hash, sig=sig):
+            raise InvalidSignature('Invalid image signature')
+
+    def _verify_xmss_signature(self, key):
+        """Verifies image with the XMSS key"""
+        try:
+            sig = [x for x in self.tlv if x.tag == TLV_VALUES['XMSS_SIG']][0]
+        except IndexError as e:
+            raise LookupError(
+                f"Cannot find XMSS signature in '{self.image_path}'") from e
+        sig = bytes(sig.value)
+        sha = hashlib.sha256()
+        sha.update(self.payload)
+        payload_hash = sha.digest()
+        if not key.verify(signature=sig, message=payload_hash):
+            raise InvalidSignature('Invalid image signature')
+
+    def _verify_ml_dsa_signature(self, key):
+        sig_tlv_map = {
+            ML_DSA_44: "ML_DSA_44_SIG",
+            ML_DSA_65: "ML_DSA_65_SIG",
+            ML_DSA_87: "ML_DSA_87_SIG",
+        }
+
+        try:
+            idx, sig = [(i, x) for i, x in enumerate(self.tlv)
+                        if x.tag == TLV_VALUES[sig_tlv_map[key.type]]][0]
+        except IndexError as e:
+            raise LookupError(
+                f"Cannot find ML-DSA signature in '{self.image_path}'") from e
+
+        sig = bytes(sig.value)
+
+        hash_map = {
+            TLV_VALUES['SHA256']: "SHA256",
+            TLV_VALUES['SHA384']: "SHA384",
+            TLV_VALUES['SHA512']: "SHA512",
+        }
+
+        for tlv in reversed(self.tlv[:idx]):
+            if tlv.tag in hash_map:
+                hash_name = hash_map[tlv.tag]
+                break
+        else:
+            raise LookupError(
+                f"Cannot find hash TLV for ML-DSA signature "
+                f"in '{self.image_path}'"
+            )
+
+        if not key.verify(self.payload, sig, hash_name=hash_name):
+            raise InvalidSignature('Invalid image signature')

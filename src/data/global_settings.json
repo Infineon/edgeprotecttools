@@ -2,7 +2,8 @@
     "programming_tool": {
         "name": "openocd",
         "path": "",
-        "config": ""
+        "config": "",
+        "probe_type": "kitprog3"
     },
     "serial_interface": {
         "protocol": "",
@@ -18,7 +19,7 @@
             "speed": 400
         },
         "spi": {
-            "clockspeed": 8000,
+            "clockspeed": 1.0,
             "mode": "00",
             "lsb_first": false
         },

@@ -27,6 +27,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey, Ed25519PublicKey)
 from cryptography.hazmat.primitives.asymmetric.x25519 import (
     X25519PrivateKey, X25519PublicKey)
+from pyhsslms import LmsPrivateKey, LmsPublicKey
 
 from .rsa import RSA, RSAPublic, RSAUsageError, RSA_KEY_SIZES
 from .ecdsa import (ECDSA256P1, ECDSA256P1Public,
@@ -35,6 +36,11 @@ from .ecdsa import (ECDSA256P1, ECDSA256P1Public,
                     ECDSAUsageError)
 from .ed25519 import Ed25519, Ed25519Public, Ed25519UsageError
 from .x25519 import X25519, X25519Public, X25519UsageError
+from .lms import LMS, LMSPublic
+from .xmss import XMSSPrivate, XMSSPublic
+from .ml_dsa import MLDSAPrivate, MLDSAPublic
+from ....core.xmss.xmss import XMSSPrivateKey, XMSSPublicKey
+from ....core.key_handlers.ml_dsa_handler import MLDSAPrivateKey, MLDSAPublicKey
 
 
 class PasswordRequired(Exception):
@@ -45,7 +51,6 @@ class PasswordRequired(Exception):
 
 def load(key, passwd=None):
     """Try loading a key from the given path.  Returns None if the password wasn't specified."""
-
     if isinstance(key, str):
         with open(key, 'rb') as f:
             raw_pem = f.read()
@@ -68,7 +73,6 @@ def load(key, passwd=None):
                 raw_pem, backend=default_backend())
     else:
         pk = key
-
     if isinstance(pk, RSAPrivateKey):
         if pk.key_size not in RSA_KEY_SIZES:
             raise Exception("Unsupported RSA key size: " + pk.key_size)
@@ -107,5 +111,17 @@ def load(key, passwd=None):
         return X25519(pk)
     elif isinstance(pk, X25519PublicKey):
         return X25519Public(pk)
+    elif isinstance(pk, LmsPrivateKey):
+        return LMS(pk)
+    elif isinstance(pk, LmsPublicKey):
+        return LMSPublic(pk)
+    elif isinstance(pk, XMSSPrivateKey):
+        return XMSSPrivate(pk)
+    elif isinstance(pk, XMSSPublicKey):
+        return XMSSPublic(pk)
+    elif isinstance(pk, MLDSAPrivateKey):
+        return MLDSAPrivate(pk)
+    elif isinstance(pk, MLDSAPublicKey):
+        return MLDSAPublic(pk)
     else:
         raise Exception("Unknown key type: " + str(type(pk)))

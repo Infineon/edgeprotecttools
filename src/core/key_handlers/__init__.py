@@ -1,20 +1,19 @@
-"""
-Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import json
+import logging
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec, rsa, x25519
@@ -24,13 +23,22 @@ from cryptography.hazmat.primitives.serialization import (
     load_der_public_key,
     load_pem_public_key
 )
+from pyhsslms import LmsPrivateKey, LmsPublicKey
 
 from .pem_key import PemKey
+from .pqc_handler import PQCHandler
+from .ml_dsa_handler import MLDSAHandler, MLDSAPrivateKey, MLDSAPublicKey
 from ..enums import KeyFormat, KeyEncoding
+from ..xmss.xmss import XMSSPrivateKey, XMSSPublicKey
+
+
+logger = logging.getLogger(__name__)
 
 
 def load_private_key(key_path, password=None):
-    """Loads private key any of the following formats: JWK, PEM, DER"""
+    """
+    Loads private key any of the following formats: JWK, PEM, DER, LMS, XMSS
+    """
     password = password.encode() if password else None
     try:
         with open(key_path, 'r', encoding='utf-8') as f:
@@ -38,12 +46,21 @@ def load_private_key(key_path, password=None):
     except UnicodeDecodeError:
         with open(key_path, 'rb') as f:
             der_data = f.read()
-        key = load_der_private_key(der_data, password=password)
+        try:
+            key = load_der_private_key(der_data, password=password)
+        except ValueError:
+            try:
+                key = MLDSAHandler.load_der_private_key(der_data)
+            except Exception: # pylint: disable=broad-except
+                key = PQCHandler.load_private_key(der_data)
     else:
         try:
             json.loads(data)
         except json.decoder.JSONDecodeError:
-            key = load_pem_private_key(data.encode(), password=password)
+            try:
+                key = load_pem_private_key(data.encode(), password=password)
+            except ValueError:
+                key = MLDSAHandler.load_pem_private_key(data.encode())
         else:
             pem_data = jwk_to_pem(key_path, private_key=True)
             key = load_pem_private_key(pem_data, password=password)
@@ -51,19 +68,31 @@ def load_private_key(key_path, password=None):
 
 
 def load_public_key(key_path):
-    """Loads public key any of the following formats: JWK, PEM, DER"""
+    """
+    Loads public key any of the following formats: JWK, PEM, DER, LMS, XMSS
+    """
     try:
         with open(key_path, 'r', encoding='utf-8') as f:
             data = f.read()
     except UnicodeDecodeError:
         with open(key_path, 'rb') as f:
             der_data = f.read()
-        key = load_der_public_key(der_data)
+        try:
+            key = load_der_public_key(der_data)
+        except ValueError:
+            try:
+                key = MLDSAHandler.load_der_public_key(der_data)
+            except Exception: # pylint: disable=broad-except
+                key = PQCHandler.load_public_key(der_data)
+
     else:
         try:
             json.loads(data)
         except json.decoder.JSONDecodeError:
-            key = load_pem_public_key(data.encode())
+            try:
+                key = load_pem_public_key(data.encode())
+            except ValueError:
+                key = MLDSAHandler.load_pem_public_key(data.encode())
         else:
             pem_data = jwk_to_pem(key_path, private_key=False)
             key = load_pem_public_key(pem_data)
@@ -124,7 +153,13 @@ def emit_c(key, key_format, password=None, var_name=None):
         rsa.RSAPrivateKey: 'rsa_priv_key',
         rsa.RSAPublicKey: 'rsa_pub_key',
         x25519.X25519PrivateKey: 'x25519_priv_key',
-        x25519.X25519PublicKey: 'x25519_pub_key'
+        x25519.X25519PublicKey: 'x25519_pub_key',
+        LmsPrivateKey: 'lms_priv_key',
+        LmsPublicKey: 'lms_pub_key',
+        XMSSPrivateKey: 'xmss_priv_key',
+        XMSSPublicKey: 'xmss_pub_key',
+        MLDSAPrivateKey: 'ml_dsa_priv_key',
+        MLDSAPublicKey: 'ml_dsa_pub_key'
     }
 
     try:
@@ -170,6 +205,11 @@ def emit_c(key, key_format, password=None, var_name=None):
             raise ValueError(f"Invalid format for public key '{key_format}'")
         encoded_bytes = key.public_bytes(encoding=serialization.Encoding.DER,
                                          format=key_format)
+    elif isinstance(key, (XMSSPrivateKey, XMSSPublicKey,
+                          LmsPrivateKey, LmsPublicKey)):
+        encoded_bytes = key.serialize()
+    elif isinstance(key, (MLDSAPrivateKey, MLDSAPublicKey)):
+        encoded_bytes = key.key
     else:
         raise ValueError('Serialization of unsupported key')
 

@@ -1,19 +1,17 @@
-"""
-Copyright 2020-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2020-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import os
 import logging
 import enum
@@ -40,6 +38,7 @@ class OcdProbeInterface(enum.Enum):
     """ Enum with supported debug probes in OpenOCD """
     KITPROG3 = 'kitprog3'
     CMSIS_DAP = 'cmsis-dap'
+    JLINK = 'jlink'
 
 
 class OcdAcquire(enum.IntEnum):
@@ -138,6 +137,7 @@ class OpenocdServer(OcdConfig):
             raise NotImplementedError
 
         super().__init__()
+        settings = OcdSettings()
         self.inited = True
         self.server_proc = None  # TCL RPC server process
         self.openocd_cmd = ''    # command for OpenOCD configuration
@@ -146,6 +146,10 @@ class OpenocdServer(OcdConfig):
         self.power = power
         self.voltage = voltage
         self.tcp_host_port = tcp_host_port
+
+        if settings.probe_type:
+            self.probe_interface = settings.probe_type
+
         if self.custom_config['interface']:
             self.probe_interface = self.custom_config['interface']
 
@@ -163,7 +167,6 @@ class OpenocdServer(OcdConfig):
         else:
             self.openocd_exec_file = 'openocd'
 
-        settings = OcdSettings()
         # Get OpenOCD directory path
         if tool_path is None:
             self.ocd_root_path = settings.ocd_path
@@ -184,8 +187,21 @@ class OpenocdServer(OcdConfig):
         # Only SWD interface supported by now
         self.transport_select = OcdTransport.SWD.value
 
+    def _ocd_paths(self):
+        """Gets OpenOCD executable file path and scripts directory path"""
+        if os.path.isfile(self.ocd_root_path):
+            openocd_exec_file = os.path.abspath(self.ocd_root_path)
+            bin_dir = os.path.dirname(openocd_exec_file)
+            openocd_scripts_dir = os.path.join(bin_dir, '..', 'scripts')
+        else:
+            openocd_exec_file = os.path.abspath(os.path.join(
+                self.ocd_root_path, 'bin', self.openocd_exec_file))
+            openocd_scripts_dir = os.path.join(self.ocd_root_path, 'scripts')
+        return openocd_exec_file, openocd_scripts_dir
+
     @staticmethod
     def _ocd_custom_config(target):
+        """Gets custom target-specific OpenOCD configuration"""
         try:
             variables = target.ocd_config['openocd']['variables']
         except KeyError:
@@ -210,9 +226,7 @@ class OpenocdServer(OcdConfig):
         This command configure the local OpenOCD server.
         :return: None
         """
-        openocd_exec_file = os.path.abspath(os.path.join(
-            self.ocd_root_path, 'bin', self.openocd_exec_file))
-        openocd_scripts_dir = os.path.join(self.ocd_root_path, 'scripts')
+        openocd_exec_file, openocd_scripts_dir = self._ocd_paths()
 
         if self.probe_id is None:
             set_probe_id_command = ''

@@ -1,19 +1,17 @@
-"""
-Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import logging
 import os
 import time
@@ -21,8 +19,9 @@ import time
 from intelhex import IntelHex
 
 from .app_result_validator import AppResultsValidator
-from ..dlm_package import DLMPackage
+from ...dlm_package import DLMPackage
 from ..asset_enums import ApPermission
+from ..dlm_policy import DLMPolicy
 from .....core.enums import ProvisioningStatus
 
 logger = logging.getLogger(__name__)
@@ -45,7 +44,7 @@ class SwdLoaderMXS22:
     INPUT_AVAIL_MSK = 0x20000000
     INPUT_PARAMS_ADDR = 0x3400D000
     OUT_FILE_SIZE_MAX = 16384
-    DLM_VALIDATE_SLEEP_MS = 3000
+    DLM_VALIDATE_SLEEP_MS = 100
     DLM_VALIDATE_TIMEOUT_S = 10
     DLM_EXECUTE_SLEEP_MS = 200
     DLM_EXECUTE_TIMEOUT_S = 60
@@ -61,6 +60,7 @@ class SwdLoaderMXS22:
         self.app_status_codes = app_status_codes
         self.lcs = lcs
         self.flow_name = flow_name
+        self.dlm_policy = DLMPolicy
 
     def load(self):
         """Loads applications"""
@@ -90,24 +90,23 @@ class SwdLoaderMXS22:
                     status = self.check_ap_config(self.app.dlm_path, self.lcs)
         return status
 
-    @staticmethod
-    def check_ap_config(dlm_path, lcs):
+    def check_ap_config(self, dlm_path, lcs):
         """Deserialize RAM app input parameters and check AP configuration"""
         status = ProvisioningStatus.OK
         ihex = IntelHex(dlm_path)
         dlm = ihex.tobinarray().tobytes()
         dlm_data = DLMPackage(dlm)
-        if dlm_data.prov_packet.oem_packet:
-            oem_cert = dlm_data.prov_packet.oem_cert
+        dlm_data.load_in_params()
+        prov_packet = self.dlm_policy(dlm_data.in_params)
+        if prov_packet.oem_packet:
+            oem_cert = prov_packet.oem_cert
             if oem_cert:
                 lcs = oem_cert.cert_type
             if lcs in ('PRODUCTION', 'SECURE'):
                 ap_enable = ApPermission.Enabled.value
-                if dlm_data.prov_packet.debug_system_ap != ap_enable:
+                if prov_packet.debug_system_ap != ap_enable:
                     logger.info('System AP disabled')
                     status = ProvisioningStatus.SKIPPED
-                if dlm_data.prov_packet.debug_cm33_ap != ap_enable:
-                    logger.info('CM33 AP disabled')
         return status
 
     def reset(self):
@@ -144,6 +143,7 @@ class SwdLoaderMXS22:
                                   self.REQUEST_PKG_LOAD)
                 break
             except RuntimeError:
+                time.sleep(0.001 * self.BOOTROM_READY_SLEEP_MS)
                 logger.debug('Failed to write REQUEST_PKG_LOAD')
         else:
             raise TimeoutError('REQUEST_PKG_LOAD writing timeout')
@@ -151,11 +151,15 @@ class SwdLoaderMXS22:
         self.reset()
         timeout = time.time() + self.BOOTROM_READY_TIMEOUT_S
         while time.time() < timeout:
-            status = self.tool.read32(self.target.register_map.boot_dlm_status)
+            try:
+                status = self.tool.read32(
+                    self.target.register_map.boot_dlm_status)
+            except RuntimeError:
+                time.sleep(0.001 * self.BOOTROM_READY_SLEEP_MS)
+                continue
             if status == self.CYBOOT_DLM_LOAD:
                 logger.info('ROM Boot is ready for DLM package upload')
                 break
-            time.sleep(0.001 * self.BOOTROM_READY_SLEEP_MS)
         else:
             self._error_report()
             raise TimeoutError('BOOT_ROM readiness timeout')
@@ -180,12 +184,17 @@ class SwdLoaderMXS22:
             self.tool.write32(self.target.register_map.boot_dlm_ctl, 0)
         except RuntimeError:
             time.sleep(0.001 * self.DLM_VALIDATE_SLEEP_MS)
+
         timeout = time.time() + self.DLM_VALIDATE_TIMEOUT_S
         while time.time() < timeout:
-            status = self.tool.read32(self.target.register_map.boot_dlm_status)
+            try:
+                status = self.tool.read32(
+                    self.target.register_map.boot_dlm_status)
+            except RuntimeError:
+                time.sleep(0.001 * self.DLM_VALIDATE_SLEEP_MS)
+                continue
             if status != self.CYBOOT_DLM_VERIFY:
                 break
-            time.sleep(0.001 * self.DLM_VALIDATE_SLEEP_MS)
         else:
             self._error_report()
             raise TimeoutError('DLM validation timeout')

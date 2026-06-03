@@ -1,19 +1,17 @@
-"""
-Copyright 2019-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2019-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import os
 import logging
 
@@ -314,6 +312,39 @@ class Mxs40sv2API(CommonAPI):
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo
             )
+
+        if output:
+            with open(output, 'wb') as f:
+                f.write(key_data)
+            logger.info('Key saved to %s', os.path.abspath(output))
+
+        return True
+
+    @staticmethod
+    def extract_public_key(infile, output):
+        """Extracts public key from the results of prot_fw_enc_key application"""
+
+        app_completion_status = b'\x01\x00\xa0\xf2'
+        packet_size = 72
+
+        with open(infile, 'rb') as f:
+            data = f.read()
+
+        assert len(data) >= packet_size
+        assert data[0:4] == app_completion_status
+
+        key_bytes = data[4:4+65]
+        curve = ec.SECP256R1()
+
+        try:
+            public_key = ECHandler.populate_public_key(key_bytes, curve=curve)
+        except ValueError as e:
+            logger.error('Failed to create public key: %s', e)
+            return False
+        key_data = public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
 
         if output:
             with open(output, 'wb') as f:

@@ -35,7 +35,7 @@
             "properties": {
                 "value": {
                     "type": "string",
-                    "enum": ["ES256", "ES384"]
+                    "enum": ["ES256", "ES384", "ES512"]
                 }
             }
         },

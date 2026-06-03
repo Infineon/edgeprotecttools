@@ -1,4 +1,4 @@
-This package contains security tools for creating keys, creating certificates, signing user applications, and provisioning Cypress/Infineon MCUs.
+This package contains security tools for creating keys, creating certificates, signing user applications, and provisioning Infineon MCUs.
 
 # Table of Contents
 - [Prerequisites](#prerequisites)
@@ -12,7 +12,7 @@ This package contains security tools for creating keys, creating certificates, s
 - [License and Contributions](#license-and-contributions)
 
 # Prerequisites
-* Python 3.9 - 3.13 if not using the executable.
+* Python 3.9 - 3.14 if not using the executable.
 * [Installed Infineon OpenOCD](https://github.com/Infineon/openocd/releases)
 * Ensure the KitProg3 programming mode is **CMSIS-DAP Bulk**
 
@@ -22,7 +22,7 @@ Edge Protect Tools can be used as a standalone application. The executable can b
 # Installing From Sources
 Alternatively Edge Protect Tools can be installed from the sources as a Python package. The source code is located in the `tools/edgeprotecttools/src` directory of the Edge Protect Security Suite or Early Access Pack installation.
 
-Install Python 3.13 on your computer. You can download it from https://www.python.org/downloads/. Set up the appropriate environment variable(s) for your operating system.
+Install Python on your computer. You can download it from https://www.python.org/downloads/. Set up the appropriate environment variable(s) for your operating system.
 
 ## Installing Package
 Make sure that you have the latest version of pip installed, use

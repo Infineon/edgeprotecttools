@@ -1,19 +1,17 @@
-"""
-Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import os
 import logging
 
@@ -49,9 +47,28 @@ class ProvisioningPacketMXS22(ProvisioningPacketStrategy):
         if kwargs.get('integrity_cert'):
             kwargs.update({'flow_name': 'device_integrity_exam'})
         flow_name = kwargs.get('flow_name')
+        algorithm = kwargs.get('algorithm')
         key_path = kwargs.get('key_path')
         signature = kwargs.get('signature')
         output = kwargs.get('output')
+
+        if not flow_name:
+            policy_type = self.policy_parser.policy_type()
+        else:
+            policy_type = flow_name
+
+        if key_path and signature:
+            raise ValueError(
+                "'key_path' and 'signature' are mutually exclusive"
+            )
+
+        if not key_path and not algorithm:
+            if policy_type not in ('device_identity', 'device_identity_images',
+                                   'device_integrity_exam', 'img_update_cpuss'):
+                raise ValueError(
+                    f"'key_path' is required to create '{policy_type}' packet"
+                )
+
         if output:
             output = os.path.abspath(output)
         else:
@@ -59,16 +76,8 @@ class ProvisioningPacketMXS22(ProvisioningPacketStrategy):
             app = self._get_app_data(target, test_pkg_type, flow_name)
             output = app.in_params_path
 
-        if key_path and signature:
-            raise ValueError(
-                "'key_path' and 'signature' are mutually exclusive")
-        if not flow_name:
-            policy_type = self.policy_parser.policy_type()
-        else:
-            policy_type = flow_name
         if policy_type in ('device_identity', 'device_identity_images',
-                           'device_integrity_exam',
-                           'img_update_cpuss'):
+                           'device_integrity_exam', 'img_update_cpuss'):
             packet = self.packet_builder.build_unsigned_packet(**kwargs)
             info = f'{policy_type} packet created'
             packet = len(packet).to_bytes(4, byteorder='little') + packet

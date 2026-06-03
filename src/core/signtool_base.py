@@ -1,27 +1,29 @@
-"""
-Copyright 2022-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2022-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from inspect import getmembers
 from abc import ABC, abstractmethod
 
 import click
 from intelhex import hex2bin, bin2hex, IntelHex
+from cryptography.hazmat.primitives.asymmetric import ec, rsa, x25519, ed25519
+from pyhsslms import LmsPrivateKey
 
+from .key_handlers.ml_dsa_handler import MLDSAPrivateKey
 from ..execute.imgtool import main as imgtool
 from .key_handlers import load_private_key, load_public_key
+from .xmss.xmss import XMSSPrivateKey
 
 
 class SignToolBase(ABC):
@@ -66,14 +68,26 @@ class SignToolBase(ABC):
         """Loads key from specified path"""
         try:
             key = load_private_key(key_path, password=password)
-        except ValueError:
+        except Exception: # pylint: disable=broad-except
             try:
                 key = load_public_key(key_path)
-            except ValueError as e:
+            except Exception as e: # pylint: disable=broad-except
                 raise ValueError(
                     f"Failed to open the key '{key_path}'. "
-                    "The data may be in an incorrect format") from e
+                    f"The data may be in an incorrect format") from e
         return key
+
+    def load_private_key(self, key_path, password=None):
+        """Loads key from specified path"""
+        try:
+            key = load_private_key(key_path, password=password)
+        except ValueError as e:
+            raise ValueError(
+                f"Failed to open private key '{key_path}'. "
+                f"The data may be in an incorrect format") from e
+        if self.is_supported_private_key(key):
+            return key
+        return None
 
     @staticmethod
     def load_public_key(key_path):
@@ -87,14 +101,20 @@ class SignToolBase(ABC):
                 return None
 
     @staticmethod
-    def is_private_key(key_path):
-        """Gets a value indicating whether the key is a private"""
-        key = SignToolBase.load_key(key_path)
-        try:
-            key.private_numbers()
-        except AttributeError:
-            return False
-        return True
+    def is_supported_private_key(key):
+        """Checks if the private key is of a supported type"""
+        return isinstance(
+            key,
+            (
+                rsa.RSAPrivateKey,
+                ec.EllipticCurvePrivateKey,
+                ed25519.Ed25519PrivateKey,
+                x25519.X25519PrivateKey,
+                LmsPrivateKey,
+                XMSSPrivateKey,
+                MLDSAPrivateKey,
+            )
+        )
 
     @staticmethod
     def replace_image_body(orig, repl, header_size, erased_val=0, output=None):

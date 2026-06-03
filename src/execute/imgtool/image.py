@@ -1,9 +1,22 @@
 # Copyright 2018 Nordic Semiconductor ASA
 # Copyright 2017-2020 Linaro Limited
 # Copyright 2019-2020 Arm Limited
-# Copyright 2022-2025 Cypress Semiconductor Corporation (an Infineon company)
-# or an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
-#     Changes made to the original file:
+# (c) 2022-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Changes made to the original file:
 #     [Oct 6 2021]
 #         - Added image encryption scheme with random salt and AES
 #           initial vectors from HKDF tag
@@ -13,20 +26,6 @@
 #         - Added custom encryptor support
 #         - Added image_addr argument necessary for XIP encryption.
 #           Consider image_addr value in HKDF salt calculation
-#
-# SPDX-License-Identifier: Apache-2.0
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
 """
 Image signing and management.
@@ -52,9 +51,10 @@ from cryptography.hazmat.primitives.kdf.kbkdf import (
 )
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives import keywrap
+#from dilithium_py.ml_dsa import ML_DSA_87
 
 from . import keys
-from .keys import rsa, ecdsa, x25519
+from .keys import rsa, ecdsa, x25519, ml_dsa
 
 IMAGE_MAGIC = 0x96f3b83d
 IMAGE_HEADER_SIZE = 32
@@ -93,6 +93,12 @@ TLV_VALUES = {
         'DEPENDENCY': 0x40,
         'SEC_CNT': 0x50,
         'BOOT_RECORD': 0x60,
+        'LMS_SIG': 0x100,
+        'XMSS_SIG': 0x101,
+        'CMAC_KDF_SALT_IV': 0x102,
+        'ML_DSA_44_SIG': 0x103,
+        'ML_DSA_65_SIG': 0x104,
+        'ML_DSA_87_SIG': 0x105,
 }
 
 TLV_SIZE = 4
@@ -133,9 +139,9 @@ class TLV():
         """
         e = STRUCT_ENDIAN_DICT[self.endian]
         if isinstance(kind, int):
-            buf = struct.pack(e + 'BBH', kind, 0, len(payload))
+            buf = struct.pack(e + 'HH', kind, len(payload))
         else:
-            buf = struct.pack(e + 'BBH', TLV_VALUES[kind], 0, len(payload))
+            buf = struct.pack(e + 'HH', TLV_VALUES[kind],  len(payload))
         self.buf += buf
         self.buf += payload
 
@@ -151,7 +157,7 @@ USER_SHA_TO_ALG_AND_TLV = {
     'auto'   : (hashlib.sha256, 'SHA256'),
     '256'    : (hashlib.sha256, 'SHA256'),
     '384'    : (hashlib.sha384, 'SHA384'),
-    '512'    : (hashlib.sha512, 'SHA512')
+    '512'    : (hashlib.sha512, 'SHA512'),
 }
 
 
@@ -167,18 +173,25 @@ ALLOWED_KEY_SHA = {
     keys.RSAPublic          : ['256'],
     # This two are set to 256 for compatibility, the right would be 512
     keys.Ed25519            : ['256', '512'],
-    keys.X25519             : ['256', '512']
+    keys.X25519             : ['256', '512'],
+    keys.LMS                : ['256'],
+    keys.XMSSPrivate        : ['256'],
+    keys.MLDSAPrivate       : ['256', '384', '512'],
+    keys.MLDSAPublic        : ['256', '384', '512'],
 }
 
 
 def key_and_user_sha_to_alg_and_tlv(key, user_sha, is_pure=False):
     """Matches key and user requested sha to sha algorithm and TLV name.
 
-       The returned tuple will contain hash functions and TVL name.
+       The returned tuple will contain hash functions and TLV name.
        The function is designed to succeed or completely fail execution,
        as providing incorrect pair here basically prevents doing
        any more work.
     """
+    if user_sha.lower() in ('sha256', 'sha384', 'sha512'):
+        user_sha = user_sha[3:]
+
     if key is None:
         # If key is none, we allow whatever user has selected for sha
         return USER_SHA_TO_ALG_AND_TLV[user_sha]
@@ -190,7 +203,7 @@ def key_and_user_sha_to_alg_and_tlv(key, user_sha, is_pure=False):
         allowed = allowed_key_ssh[type(key)]
 
     except KeyError:
-        raise click.UsageError("Colud not find allowed hash algorithms for {}"
+        raise click.UsageError("Could not find allowed hash algorithms for {}"
                                .format(type(key)))
 
     # Pure enforces auto, and user selection is ignored
@@ -211,7 +224,8 @@ class Image():
                  slot_size=0, max_sectors=DEFAULT_MAX_SECTORS,
                  overwrite_only=False, endian="little", load_addr=0,
                  rom_fixed=None, erased_val=None, save_enctlv=False,
-                 security_counter=None, image_addr=0, kdf=None):
+                 security_counter=None, image_addr=0, kdf=None,
+                 enckey_role=None):
 
         if load_addr and rom_fixed:
             raise click.UsageError("Can not set rom_fixed and load_addr at the same time")
@@ -239,6 +253,8 @@ class Image():
         self.enc_nonce = bytes([0] * 16)
         self.image_addr = image_addr
         self.kdf = kdf.upper() if kdf else 'HKDF'
+        self.enckey_role = enckey_role.upper() if enckey_role else enckey_role
+        self.linear_addr = None
 
         if security_counter == 'auto':
             # Security counter has not been explicitly provided,
@@ -289,6 +305,7 @@ class Image():
                 ih = IntelHex(path)
                 self.payload = ih.tobinarray()
                 self.base_addr = ih.minaddr()
+                self.linear_addr = ih.start_addr
             else:
                 with open(path, 'rb') as f:
                     self.payload = f.read()
@@ -330,6 +347,7 @@ class Image():
                     padding[-MAX_ALIGN] = 0x01  # image_ok = 0x01
                 padding += boot_magic
                 h.puts(trailer_addr - padding_size, bytes(padding))
+            h.start_addr = self.linear_addr
             h.tofile(path, 'hex')
         else:
             if self.pad:
@@ -392,8 +410,11 @@ class Image():
             raise ValueError(f"Invalid MAC type: {name}")
 
     def ecies_hkdf(self, enckey, plainkey):
-        if isinstance(enckey, ecdsa.ECDSA256P1Public):
-            newpk = ec.generate_private_key(ec.SECP256R1(), default_backend())
+        if isinstance(enckey,
+                      (ecdsa.ECDSA256P1Public,
+                       ecdsa.ECDSA384P1Public,
+                       ecdsa.ECDSA521P1Public)):
+            newpk = ec.generate_private_key(enckey.key.curve, default_backend())
             shared = newpk.exchange(ec.ECDH(), enckey._get_public())
         else:
             newpk = X25519PrivateKey.generate()
@@ -420,7 +441,9 @@ class Image():
         mac.update(cipherkey)
         ciphermac = mac.finalize()
 
-        if isinstance(enckey, ecdsa.ECDSA256P1Public):
+        if isinstance(enckey, (ecdsa.ECDSA256P1Public,
+                               ecdsa.ECDSA384P1Public,
+                               ecdsa.ECDSA521P1Public)):
             pubk = newpk.public_key().public_bytes(
                 encoding=Encoding.X962,
                 format=PublicFormat.UncompressedPoint)
@@ -433,12 +456,14 @@ class Image():
 
     def create(self, key, public_key_format, enckey, dependencies=None,
                sw_type=None, custom_tlvs=None, use_random_iv=False,
-               skip_tlv_info=False, encryptor=None):
+               skip_tlv_info=False, encryptor=None, user_sha='auto'):
         self.enckey = enckey
 
         # Check what hashing algorithm should be used
         if key is not None:
-            hash_algorithm, hash_tlv = key_and_user_sha_to_alg_and_tlv(key, 'auto', is_pure=False)
+            hash_algorithm, hash_tlv = key_and_user_sha_to_alg_and_tlv(
+                key, user_sha, is_pure=False
+            )
         else:
             hash_algorithm = hashlib.sha256
             hash_tlv = "SHA256"
@@ -449,10 +474,13 @@ class Image():
 
         # Calculate the hash of the public key
         if key is not None:
-            pub = key.get_public_bytes()
-            sha = hash_algorithm()
-            sha.update(pub)
-            pubbytes = sha.digest()
+            if isinstance(key, bytes):
+                pubbytes = None
+            else:
+                pub = key.get_public_bytes()
+                sha = hash_algorithm()
+                sha.update(pub)
+                pubbytes = sha.digest()
         else:
             pubbytes = bytes(hash_algorithm().digest_size)
 
@@ -559,10 +587,11 @@ class Image():
 
         # Note that ecdsa wants to do the hashing itself, which means
         # we get to hash it twice.
-        sha = hash_algorithm()
-        sha.update(self.payload)
-        digest = sha.digest()
-        tlv.add(hash_tlv, digest)
+        if hash_algorithm:
+            sha = hash_algorithm()
+            sha.update(self.payload)
+            digest = sha.digest()
+            tlv.add(hash_tlv, digest)
 
         if key is not None:
             if public_key_format == 'hash':
@@ -578,6 +607,14 @@ class Image():
                 tlv.add(key.sig_tlv(), sig)
             elif hasattr(key, 'sign_digest'):
                 sig = key.sign_digest(digest)
+                tlv.add(key.sig_tlv(), sig)
+            elif hasattr(key, 'sign_with_pre_hash'):
+                if user_sha == 'auto':
+                    raise click.UsageError(
+                        "Please specify the SHA algorithm explicitly "
+                        "using --sha option."
+                    )
+                sig = key.sign_with_pre_hash(bytes(self.payload), user_sha)
                 tlv.add(key.sig_tlv(), sig)
             else:
                 tlv.add(key.sig_tlv(), bytes(key.sig_len()))
@@ -603,21 +640,52 @@ class Image():
                         label=None))
                 self.enctlv_len = len(cipherkey)
                 tlv.add('ENCRSA2048', cipherkey)
-            elif isinstance(enckey, (ecdsa.ECDSA256P1Public,
-                                     x25519.X25519Public)):
+            elif isinstance(enckey, (
+                    ecdsa.ECDSA256P1Public,
+                    ecdsa.ECDSA384P1Public,
+                    ecdsa.ECDSA521P1Public,
+                    x25519.X25519Public
+            )):
                 cipherkey, mac, pubk = self.ecies_hkdf(enckey, plainkey)
                 enctlv = pubk + mac + cipherkey
                 if self.kdf_salt is not None:
                     enctlv += self.kdf_salt
                 self.enctlv_len = len(enctlv)
-                if isinstance(enckey, ecdsa.ECDSA256P1Public):
+                if isinstance(enckey,
+                              (ecdsa.ECDSA256P1Public,
+                               ecdsa.ECDSA384P1Public,
+                               ecdsa.ECDSA521P1Public)):
                     tlv.add('ENCEC256', enctlv)
                 else:
                     tlv.add('ENCX25519', enctlv)
+
             elif isinstance(enckey, bytes):
-                wrapped = keywrap.aes_key_wrap(enckey, plainkey)
-                self.enctlv_len = len(wrapped)
-                tlv.add('ENCKW128', wrapped)
+                if self.enckey_role == "CMAC-KDF":
+                    salt = os.urandom(16)
+                    self.enc_nonce = os.urandom(16)
+                    kdf = KBKDFCMAC(
+                        algorithm=algorithms.AES,
+                        mode=Mode.CounterMode,
+                        length=16,
+                        rlen=4,
+                        llen=4,
+                        location=CounterLocation.BeforeFixed,
+                        label=b'KBKDF_AESCMAC_v1',
+                        context=salt,
+                        fixed=None
+                    )
+                    plainkey = kdf.derive(enckey)
+                    tlv.add('CMAC_KDF_SALT_IV', salt + self.enc_nonce)
+
+                elif self.enckey_role == "AES-KW":
+                    wrapped = keywrap.aes_key_wrap(enckey, plainkey)
+                    self.enctlv_len = len(wrapped)
+                    tlv.add('ENCKW128', wrapped)
+
+                else:
+                    raise ValueError(
+                        f"Invalid Encryption Key Role: {self.enckey_role}"
+                    )
 
             nonce = self.enc_nonce
             img = bytes(self.payload[self.header_size:])

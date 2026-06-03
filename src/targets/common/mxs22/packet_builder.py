@@ -1,22 +1,21 @@
-"""
-Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import os
 
 import cbor
+from cwt.utils import to_cose_header
 
 from .enums import CoseSign1Packet
 from ....core.cose import Cose
@@ -62,11 +61,13 @@ class PacketBuilder:
     def build_unsigned(self, **kwargs):
         """Builds a packet to be signed manually
         @param kwargs:
+            :alg: Signature algorithm
             :kid: Key ID
         @return: Data to be signed manually
         """
         _, _, b_payload = self._cose_headers(**kwargs)
-        b_protected = cbor.dumps({1: -7})
+        alg = kwargs.get('algorithm')
+        b_protected = cbor.dumps(to_cose_header({'alg': alg.upper()}))
         kid = kwargs.get('kid')
         b_kid = str(kid).encode(encoding='utf-8') if kid else b''
         sig_structure = ['Signature1', b_protected, b_kid, b_payload]
@@ -77,13 +78,15 @@ class PacketBuilder:
         a signature to its COSE_Sign1 structure
         @param signature: Path to file or hex string containing signature
         @param kwargs:
+            :alg: Signature algorithm
             :kid: Key ID
         @return: CBOR packet with unprotected and protected parts
         """
         map_id, unprotected, b_payload = self._cose_headers(**kwargs)
-        b_protected = cbor.dumps({1: -7})
+        alg = kwargs.get('algorithm')
+        b_protected = cbor.dumps(to_cose_header({'alg': alg.upper()}))
         kid = kwargs.get('kid')
-        b_kid = str(kid).encode(encoding='utf-8') if kid else {}
+        b_kid = {0x4: str(kid).encode(encoding='utf-8')} if kid else {}
         b_signature = self._signature_bytes(signature)
         tag = cbor.Tag(18, [b_protected, b_kid, b_payload, b_signature])
         packet = {map_id: unprotected}
@@ -100,11 +103,13 @@ class PacketBuilder:
         a signature to its COSE_Sign1 structure
         @param signature: Path to file or hex string containing signature
         @param kwargs:
+            :alg: Signature algorithm
             :kid: Key ID
         @return: CBOR packet with unprotected and protected parts
         """
         _, _, b_payload = self._cose_headers(**kwargs)
-        b_protected = cbor.dumps({1: -7})
+        alg = kwargs.get('algorithm')
+        b_protected = cbor.dumps(to_cose_header({'alg': alg.upper()}))
         kid = kwargs.get('kid')
         b_kid = str(kid).encode(encoding='utf-8') if kid else {}
         b_signature = self._signature_bytes(signature)
@@ -124,7 +129,7 @@ class PacketBuilder:
     def verify_map(self, data, key_path, kid=None):
         """Verifies CBOR map COSE_Sign1 signature
         @param data: COSE_Sign1 data
-        @param key_path: Verification ke path
+        @param key_path: Verification key path
         @param kid: Key ID
         @return: True if verified, otherwise False
         """

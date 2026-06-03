@@ -1,19 +1,17 @@
-"""
-Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from ...common.mxs40sv2.data import RamAppStatusMXS40Sv2
 
 
@@ -26,6 +24,10 @@ class RamAppStatusPsocC3(RamAppStatusMXS40Sv2):
         """
         codes = super().status_codes()
         new_codes = {
+            0x45000009: {
+                "status": "CYAPP_FI_DETECTED",
+                "desc": "Code detected a possible fault injection attack"
+            },
             0x45000025: {
                 "status": "CYAPP_OTP_BOOTROW_CORRUPTED",
                 "desc": "BOOTROW corrupted."
@@ -92,6 +94,42 @@ class RamAppStatusPsocC3(RamAppStatusMXS40Sv2):
             0x4500010B: {
                 "status": "CYAPP_EFUSE_CHECK_FAILED",
                 "desc": "EFUSE data check failed"
+            },
+            0x4500010C: {
+                "status": "CYAPP_CBOR_INVALID",
+                "desc": "CBOR packet invalid"
+            },
+            0x4500010D: {
+                "status": "CYAPP_PROT_FW_POLICY_INVALID",
+                "desc": "PROT_FW_POLICY is invalid after a decryption"
+            },
+            0x45000200: {
+                "status": "CYAPP_ECDH_KEYGEN_FAILED",
+                "desc": "ECDH key generation failed"
+            },
+            0x45000201: {
+                "status": "CYAPP_ECDH_SHARED_SECRET_FAILED",
+                "desc": "ECDH shared secret computation failed"
+            },
+            0x45000202: {
+                "status": "CYAPP_KEY_DECRYPT_FAILED",
+                "desc": "Key decryption failed"
+            },
+            0x45000203: {
+                "status": "CYAPP_KEY_STORE_FAILED",
+                "desc": "Key store operation failed"
+            },
+            0x45000204: {
+                "status": "CYAPP_PRIVKEY_READ_FAILED",
+                "desc": "Private key read failed"
+            },
+            0x45000205: {
+                "status": "CYAPP_INVALID_OP_MODE",
+                "desc": "Invalid operation mode"
+            },
+            0x45000206: {
+                "status": "CYAPP_KEY_VERIFY_FAILED",
+                "desc": "Key verification failed"
             }
         }
         codes.update(new_codes)

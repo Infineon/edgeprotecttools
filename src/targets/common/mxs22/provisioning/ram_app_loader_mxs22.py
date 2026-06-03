@@ -1,19 +1,17 @@
-"""
-Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import logging
 
 from .serial_loader import SerialLoader
@@ -33,6 +31,8 @@ class RamAppLoaderMXS22(RamAppLoader):
         self.target = None
         self.app = None
         self.app_status_codes = app_status_codes
+        self.swd_loader = SwdLoaderMXS22
+        self.serial_loader = SerialLoader
 
     def load(self, tool, target, app, flow_name=None):
         """ Loads application and its input parameters into RAM """
@@ -40,13 +40,15 @@ class RamAppLoaderMXS22(RamAppLoader):
         self.target = target
         self.app = app
         lcs = self.target.version_provider.get_lifecycle_stage(self.tool)
-        if isinstance(self.tool, Dfuht):
-            loader = SerialLoader(
-                self.tool, self.target, self.app, self.app_status_codes)
+        if isinstance(self.tool, Dfuht) and self.serial_loader is not None:
+            loader = self.serial_loader(
+                self.tool, self.target, self.app, self.app_status_codes
+            )
         else:
-            loader = SwdLoaderMXS22(
+            loader = self.swd_loader(
                 self.tool, self.target, self.app, self.app_status_codes,
-                lcs=lcs, flow_name=flow_name)
+                lcs=lcs, flow_name=flow_name
+            )
 
         if self._lcs_compatibility_check(self.app, lcs):
             logger.error('The RAM application cannot be executed due to '

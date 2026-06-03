@@ -167,10 +167,6 @@
       "applicable_conf": "48 MHz, 100 MHz, 180 MHz",
       "value": "180 MHz"
     },
-    "pc1_ctl_valid": {
-      "description": "True when 'pc1_handler' is valid",
-      "value": false
-    },
     "pc2_ctl_valid": {
       "description": "True when 'pc2_handler' is valid",
       "value": false
@@ -178,10 +174,6 @@
     "pc3_ctl_valid": {
       "description": "True when 'pc3_handler' is valid",
       "value": false
-    },
-    "pc1_handler": {
-      "description": "Used to switch to PC1 when it is a 'Special' PC",
-      "value": "0xFFFFFFFF"
     },
     "pc2_handler": {
       "description": "Used to switch to PC2 when it is a 'Special' PC",

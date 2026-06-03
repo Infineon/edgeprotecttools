@@ -1,19 +1,17 @@
-"""
-Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import os
 import logging
 
@@ -37,7 +35,18 @@ class ProvisioningPacketPsocC3(ProvisioningPacketStrategy):
     """ Provisioning packet generator for PSoC C3 family """
 
     ASSETS_DIR = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), 'flows'))
+        os.path.join(os.path.dirname(__file__), 'flows')
+    )
+
+    ASSETS_FILE = {
+        'provisioned': 'device_identity_assets.json',
+        'normal_provisioned': 'prov_icv_assets.json',
+        'oem_provisioning': 'oem_assets.json',
+        'prot_fw_policy': 'prot_fw_assets.json',
+        'prot_fw_dfu': 'prot_fw_dfu_assets.json',
+		'prot_fw_enc_key': 'prot_fw_enc_key_assets.json',
+        'reprovisioning': 'reprovisioning_assets.json',
+    }
 
     def __init__(self, policy_parser, asset_map):
         self.policy_parser = policy_parser
@@ -254,15 +263,8 @@ class ProvisioningPacketPsocC3(ProvisioningPacketStrategy):
 
     def _provisioning_assets(self):
         """Gets assets list"""
-        assets_file = {
-            'provisioned': 'device_identity_assets.json',
-            'normal_provisioned': 'prov_icv_assets.json',
-            'oem_provisioning': 'oem_assets.json',
-            'prot_fw_policy': 'prot_fw_assets.json',
-            'prot_fw_dfu': 'prot_fw_dfu_assets.json',
-            'reprovisioning': 'reprovisioning_assets.json'
-        }
-        assets_list_path = os.path.join(self.ASSETS_DIR,
-                                        assets_file[self.policy_type])
+        assets_list_path = os.path.join(
+            self.ASSETS_DIR, self.ASSETS_FILE[self.policy_type]
+        )
         assets_list = read_json(assets_list_path)['Assets']
         return assets_list

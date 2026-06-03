@@ -1,19 +1,17 @@
-"""
-Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import logging
 import time
 from collections import namedtuple
@@ -41,9 +39,9 @@ class SiliconDataReaderMxs22V1:
         '00000000000000d7800e0076bc00700b': LifecycleStage.NORMAL_NO_SECURE,
         '00000000000000d780000b76bc0000db': LifecycleStage.NORMAL_PROVISIONED,
         '00000000000000d78000db76bc000edb': LifecycleStage.SECURE,
-        '00000000000000d79eb00076bef5000b': LifecycleStage.RMA_NORMAL,
+        '00000000000000d79eb00076bef5000b': LifecycleStage.RMA,
         '00000000000000d79eb00b76bef500db': LifecycleStage.RMA_NORMAL_PROVISIONED,
-        '00000000000000d79ebe0076bef5700b': LifecycleStage.RMA_NORMAL_NO_SECURE,
+        '00000000000000d79ebe0076bef5700b': LifecycleStage.RMA,
         '00000000000000d79eb0db76bef50edb': LifecycleStage.RMA_SECURE,
     }
 

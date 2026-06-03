@@ -22,3 +22,30 @@ Now program the applications separately, or merge them into a single file.
 ```bash
 $ edgeprotecttools merge-hex --image app1_signed.hex --image app2_signed.hex --output merged.hex
 ```
+
+## OEM secure key not specified
+`ERROR : The OEM secure key is not specified. Ensure specifying the 'oem_secure_key' property in the policy file`
+
+This error may occur during creating provisioning packet for CYW20829/CYW89829 devices if the OEM secure key is not specified in the policy file.
+### Solution
+Add the `oem_secure_key` value in the policy file. The value must be either a path to a 16-byte binary file containing the key or a 16-byte hexadecimal string.
+If you do not want to use the key, you can fill the property with any 16-byte data.
+
+Hex string example:
+```json
+{
+    "oem_secure_key": {
+        "description": "Hex string (16-bytes) or path to the OEM secure key",
+        "value": "AABBCCDDEEFF00112233445566778899"
+    }
+}
+```
+File path example (relative path starting from the policy file location):
+```json
+{
+    "oem_secure_key": {
+        "description": "Hex string (16-bytes) or path to the OEM secure key",
+        "value": "path/to/oem_secure_key.bin"
+    }
+}
+```

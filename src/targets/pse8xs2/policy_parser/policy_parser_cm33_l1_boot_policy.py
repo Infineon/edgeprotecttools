@@ -1,21 +1,19 @@
-"""
-Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from ...common.policy_parser_primitives import PolicyParserPrimitives
-from ...common.mxs22.asset_enums import SmifMode
+from ...common.mxs22.asset_enums import SmifMode, HashLocking
 
 
 class PolicyParserCm33L1BootPolicy(PolicyParserPrimitives):
@@ -81,6 +79,11 @@ class PolicyParserCm33L1BootPolicy(PolicyParserPrimitives):
         """Gets a value of extended_boot_policy.oem_app_start.value property"""
         return self.hex_field('extended_boot_policy', 'oem_alt_app_address',
                               'value')
+
+    def extended_boot_policy_hash_locking(self, ret_value=False):
+        """Gets a value of extended_boot_policy.hash_locking.value property"""
+        return self.enum_field(HashLocking, ret_value,
+                               'extended_boot_policy', 'hash_locking', 'value')
 
     def extended_boot_policy_external_flash_smif_exflash(self):
         """Gets a value of

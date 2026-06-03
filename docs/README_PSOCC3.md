@@ -13,6 +13,7 @@
     - [Create debug token](#create-debug-token)
     - [Read die ID](#read-die-id)
     - [Get firmware version](#get-firmware-version)
+    - [Extract public key](#extract-public-key)
     - [Get device info](#get-device-info)
 - [Provisioning process](#provisioning-process)
 - [Using package together with HSM](#using-package-together-with-hsm)
@@ -252,6 +253,20 @@ $ edgeprotecttools -t psoc_c3 version
 ```
 
 
+## Extract public key
+Extracts a public key from a RAM application response. Applicable only for `prot_fw_enc_key` RAM application. Key is saved in PEM format.
+### Command: `extract-public-key`
+### Parameters
+| Name           | Optional/Required | Description                            |
+|----------------|:-----------------:|----------------------------------------|
+| -i, --input    |     required      | Path to the input file.                |
+| -o, --output   |     required      | The file where to save the public key. |
+### Usage example
+```bash
+$ edgeprotecttools -t psoc_c3 extract-public-key --input packets/apps/prot_fw_enc_key/output.bin --output keys/device_public_key.pem
+```
+
+
 ## Get device info
 Gets device information - silicon ID, silicon revision, and family ID.
 ### Command: `device-info`
@@ -388,11 +403,7 @@ $ edgeprotecttools -t psoc_c3 transit-to-rma --token packets/rma_token.bin --key
 
 # Protected Firmware Update
 
-## Protected FW Policy provisioning
-
-This process is intended to provision Protected FW policy and assets to the device.
-This process can be executed via SWD or DFU interface
-
+## Prerequisites
 1. Generate AES key `prot_fw_key.bin`
     ```bash
     $ edgeprotecttools create-key --key-type AES128 --output keys/prot_fw_key.bin
@@ -405,8 +416,106 @@ This process can be executed via SWD or DFU interface
     ```bash
     $ edgeprotecttools create-key --key-type ECDSA-P256 --output keys/prot_fw_rot_private_key_1.pem keys/prot_fw_rot_public_key_1.pem
     ```
-4. Update policy `policy_prot_fw.json`
-5. From your project directory run the command
+## Protected FW Key provisioning
+
+This process provisions the Protected FW encryption key `prot_fw_key`. 
+This process can be executed via SWD or DFU interface.
+
+`prot_fw_key` is used for:
+
+* Protected FW Policy encryption and decryption
+* Protected FW DFU encryption and decryption
+
+`prot_fw_key` can be provisioned using only one of the two ways:
+
+* Insecure encryption key provisioning using unencrypted Protected FW Policy RAM app `prot_fw_policy`. 
+  The details are provided in the [next section](#protected-fw-policy-provisioning).
+* Secure encryption key provisioning using Protected FW Key installation RAM app `prot_fw_enc_key`. 
+  This method uses ECIES scheme to encrypt `prot_fw_key` and provision it in encrypted way. It also sets `prot_fw_enable` field to `true`.
+  The details are provided in this section.
+
+1. Generate customer public/private key pair for ECIES encryption
+    ```bash
+    $ edgeprotecttools create-key --key-type ECDSA-P256 --output keys/customer_private_key.pem keys/customer_public_key.pem
+    ```
+2. Update policy `policy/policy_prot_fw_enc_key.json`
+    ```json
+    {
+      "policy": {
+        "platform": "psoc_c3",
+        "version": 1.0,
+        "type": "prot_fw_enc_key"
+      },
+      "mode": {
+        "description": "Key installation mode: KEY_GEN or KEY_INSTALL",
+        "value": "KEY_GEN"
+      },
+      "public_key": {
+        "description": "Path to the public key used for ECIES for KEY_INSTALL mode",
+        "value": ""
+      },
+      "ciphertext": {
+        "description": "Encrypted PROT_FW_KEY used for KEY_INSTALL mode",
+        "value": ""
+      }
+    }
+    ```
+3. Run `provision-device` command with the updated policy
+    ```bash
+    $ edgeprotecttools -t psoc_c3 provision-device -p policy/policy_prot_fw_enc_key.json
+    ```
+4. Extract the device public key using `extract-public-key` command
+    ```bash
+    $ edgeprotecttools -t psoc_c3 extract-public-key --input packets/apps/prot_fw_enc_key/output.bin --output keys/device_public_key.pem
+    ```
+5. Encrypt `prot_fw_key` using ECIES scheme with the extracted device public key.
+    ```bash
+    $ edgeprotecttools ecies --kdf HKDF --hkdf-length 16 --hkdf-hash sha256 --private-key keys/customer_private_key.pem --public-key keys/device_public_key.pem -i keys/prot_fw_key.bin -o keys/ciphertext.bin
+    ```
+6. Update the policy `policy/policy_prot_fw_enc_key.json`
+    ```json
+    {
+      "policy": {
+        "platform": "psoc_c3",
+        "version": 1.0,
+        "type": "prot_fw_enc_key"
+      },
+      "mode": {
+        "description": "Key installation mode: KEY_GEN or KEY_INSTALL",
+        "value": "KEY_INSTALL"
+      },
+      "public_key": {
+        "description": "Path to the public key used for ECIES for KEY_INSTALL mode",
+        "value": "../keys/customer_public_key.pem"
+      },
+      "ciphertext": {
+        "description": "Encrypted PROT_FW_KEY used for KEY_INSTALL mode",
+        "value": "../keys/ciphertext.bin"
+      }
+    }
+    ```
+7. Run `provision-device` command with the updated policy
+    ```bash
+    $ edgeprotecttools -t psoc_c3 provision-device -p policy/policy_prot_fw_enc_key.json
+    ```
+
+The `prot_fw_key` is now installed and further Protected FW Policy provisioning is yet to be performed. 
+
+Since secure key provisioning procedure sets `prot_fw_enable` to `true` the device now expects encrypted provisioning packet (input parameters) for Protected FW Policy provisioning.
+
+Secure key provisioning allows installation of new `prot_fw_key` even if the old one is lost.
+
+## Protected FW Policy provisioning
+
+This process is intended to provision Protected FW policy and assets to the device.
+This process can be executed via SWD or DFU interface
+
+Once `prot_fw_enable` is set to `true` on the device, the device expects encrypted provisioning packet (input parameters) for Protected FW Policy provisioning. 
+Encryption of the provisioning packet is handled by `encrypt` section of `policy_prot_fw.json` policy. 
+The provisioning packet is encrypted with `prot_fw_key`. 
+
+1. Update policy `policy_prot_fw.json`
+2. From your project directory run the command
     ```bash
     $ edgeprotecttools -t psoc_c3 provision-device -p policy/policy_prot_fw.json
     ```
@@ -439,8 +548,8 @@ This process can be executed via SWD or DFU interface
         "value": "uart"
       },
       "iv": {
-       "description": "IV for encryption",
-       "value": "d3926e567875c434e9e05ae2d726104c"
+        "description": "IV for encryption",
+        "value": "d3926e567875c434e9e05ae2d726104c"
       }
     }
     ```

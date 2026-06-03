@@ -4,6 +4,7 @@
         "ocd_name": "",
         "ocd_path": "",
         "ocd_config": "",
+        "probe_type": "kitprog3",
         "default_policy": null
     },
     "serial_interface": {
@@ -20,7 +21,7 @@
             "speed": 400
         },
         "spi": {
-            "clockspeed": 8000,
+            "clockspeed": 1.0,
             "mode": "00",
             "lsb_first": false
         },

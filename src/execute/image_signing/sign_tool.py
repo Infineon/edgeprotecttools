@@ -1,19 +1,17 @@
-"""
-Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import os
 import logging
 import tempfile
@@ -21,11 +19,13 @@ import hashlib
 from typing import Union
 
 from cryptography.hazmat.primitives.asymmetric import ec
+from pyhsslms import LmsPrivateKey
 
 from ...core.key_handlers import load_enckey
 from ..encryption import XipEncryptor
 from ...core.signtool_base import SignToolBase
 from ...core.key_handlers.ec_handler import ECHandler
+from ...core.xmss.xmss import XMSSPrivateKey
 from ...execute.imgtool.image import TLV_VALUES, TLV_INFO_SIZE
 from ...execute.image_signing.image import Image, TLV
 from ...execute.image_signing.image_config_parser import ImageConfigParser
@@ -45,6 +45,8 @@ class SignTool(SignToolBase):
     def __init__(self):
         self.output = None
         self.key_path = None
+        self.key = None
+        self.user_sha = 'auto'
         self.erased_val = 0
         self.header_size = self.DEFAULT_HEADER_SIZE
         self.slot_size = self.DEFAULT_SLOT_SIZE
@@ -88,7 +90,8 @@ class SignTool(SignToolBase):
         else:
             if kwargs.get('pubkey'):
                 self.key_path = os.path.abspath(kwargs.get('pubkey'))
-
+        if kwargs.get('user_sha'):
+            self.user_sha = kwargs.get('user_sha').lower()
         if kwargs.get('erased_val') is not None:
             self.erased_val = int(str(kwargs.get('erased_val')), 0)
         if kwargs.get('slot_size') is not None:
@@ -153,6 +156,14 @@ class SignTool(SignToolBase):
             self.nonce_output = kwargs.get('nonce_output')
         self.kdf = kwargs.get('kdf')
 
+    def _validate_args(self):
+        """
+        Validates the integrity and correctness of arguments
+        """
+        if self.enckey_role in ('aes-kw', 'cmac-kdf') and not self.enckey:
+            raise ValueError(
+                f"Missing encryption key for role '{self.enckey_role}'")
+
     def sign_image(self, image: str, **kwargs) -> Union[str, Image]:
         """Signs image. Optionally encrypts the image
         @param image: The path to the image to sign
@@ -186,7 +197,8 @@ class SignTool(SignToolBase):
             :remove_tlv: TLV ID list to remove
             :allow_signed: Allows signing already signed image
             :enckey: Encryption key
-            :enckey_role: Encryption key role, either 'xip' or 'aes-kw'
+            :enckey_role: Encryption key role,
+                          either 'xip', 'aes-kw' or 'cmac-kdf'
             :encrypt_addr: Starting address for data encryption
             :nonce_output: The path where to save the nonce
             :kdf: Key derivation function name
@@ -200,15 +212,43 @@ class SignTool(SignToolBase):
                     'Signature not added. The image has been already signed')
 
         self.initialize(kwargs)
+        self._validate_args()
 
-        if not self.is_private_key(self.key_path):
-            raise ValueError(f"Signing image with public key '{self.key_path}'")
+        try:
+            self.key = self.load_private_key(self.key_path)
+        except ValueError as e:
+            raise ValueError(
+                f"Failed to open the key '{self.key_path}'") from e
 
-        img = self._sign(image, self.key_path)
+        if isinstance(self.key, LmsPrivateKey) and self.key.is_exhausted():
+            logger.error('LMS key is exhausted. No available signatures left')
+            raise ValueError('LMS key is exhausted')
+        elif isinstance(self.key, XMSSPrivateKey):
+            if self.key.is_exhausted():
+                logger.error('XMSS key is exhausted.'
+                             'No available signatures left')
+                raise ValueError('XMSS key is exhausted')
+            logger.info('Generating a signature. This may take a while')
+
+        img = self._sign(image)
+
+        if isinstance(self.key, LmsPrivateKey):
+            with open(self.key_path, "wb") as lms_f:
+                lms_f.write(self.key.serialize())
+            logger.info('LMS private key updated')
+            logger.info('Signature attempt %d of %d',
+                        self.key.q, self.key.maxSignatures())
+        elif isinstance(self.key, XMSSPrivateKey):
+            with open(self.key_path, "wb") as xmss_f:
+                xmss_f.write(self.key.serialize())
+            logger.info('XMSS private key updated')
+            logger.info('Signature attempt %d of %d',
+                        self.key.attempt, self.key.max_signatures())
 
         if isinstance(img, str):
             if self.encrypt or self.enckey:
-                logger.info('Image signed and encrypted successfully (%s)', img)
+                logger.info(
+                    'Image signed and encrypted successfully (%s)', img)
             else:
                 logger.info('Image signed successfully (%s)', img)
 
@@ -259,18 +299,24 @@ class SignTool(SignToolBase):
                     provided and encryption is used
         """
         self.initialize(kwargs)
+        self._validate_args()
 
-        if self.encrypt and not isinstance(self.output, type(self.decrypted)):
-            raise ValueError("Arguments 'output' and 'decrypted' must be "
-                             "initialized together")
+        if self.key_path:
+            self.key = self.load_public_key(self.key_path)
 
-        img = self._sign(image, self.key_path)
+        if self.encrypt or self.enckey:
+            if not isinstance(self.output, type(self.decrypted)):
+                raise ValueError("Arguments 'output' and 'decrypted' must be "
+                                 "initialized together")
+
+        img = self._sign(image)
 
         if isinstance(img, str):
             logger.info("Image saved to '%s'", img)
 
         decrypted = None
-        if self.encrypt:
+
+        if self.encrypt or self.enckey:
             if isinstance(img, Image):
                 with open(image, 'rb') as rf:
                     repl = rf.read()
@@ -342,8 +388,14 @@ class SignTool(SignToolBase):
             tag = TLV_VALUES['ECDSASIG']
         elif alg == 'RSA2048':
             tag = TLV_VALUES['RSA2048']
+        elif alg == 'RSA3072':
+            tag = TLV_VALUES['RSA3072']
         elif alg == 'RSA4096':
             tag = TLV_VALUES['RSA4096']
+        elif alg == 'LMS':
+            tag = TLV_VALUES['LMS_SIG']
+        elif alg == 'XMSS':
+            tag = TLV_VALUES['XMSS_SIG']
         else:
             raise ValueError('Unsupported signature algorithm')
 
@@ -384,7 +436,7 @@ class SignTool(SignToolBase):
 
         return result
 
-    def _sign(self, image, key):
+    def _sign(self, image):
         temp_out = None
         if not self.output:
             temp_out = tempfile.NamedTemporaryFile(suffix='.bin', delete=False)
@@ -401,7 +453,7 @@ class SignTool(SignToolBase):
                 nonce_output=self.nonce_output
             )
             encrypt_arg = self.load_key(self.encrypt) if self.encrypt else None
-        elif self.enckey_role == 'aes-kw':
+        elif self.enckey_role in ('aes-kw', 'cmac-kdf'):
             if isinstance(self.enckey, bytes):
                 encrypt_arg = self.enckey
             else:
@@ -410,7 +462,7 @@ class SignTool(SignToolBase):
             encrypt_arg = self.load_key(self.encrypt) if self.encrypt else None
 
         args = {
-            'key': self.load_key(key) if key else None,
+            'key': self.key if self.key else None,
             'public_key_format': self.public_key_format,
             'align': self.align,
             'version': self.image_version,
@@ -439,7 +491,9 @@ class SignTool(SignToolBase):
             'encrypt': encrypt_arg,
             'image_addr': self.encrypt_addr or 0,
             'encryptor': encryptor,
-            'kdf': self.kdf
+            'kdf': self.kdf,
+            'enckey_role': self.enckey_role.lower(),
+            'user_sha': self.user_sha
         }
 
         try:
@@ -447,12 +501,12 @@ class SignTool(SignToolBase):
         except Exception:
             logger.error('Signature not added')
             logger.error('imgtool finished execution with errors')
-            logger.info('Ref. %s/blob/master/docs/README_ERRORS.md',
+            logger.info('Ref. %s/blob/master/docs/README_ERRORS.md'
+                        '#image-size-exceeds-requested-size',
                         PkgData.pkg_github_url())
             raise
 
-        self._postprocess_tlvs(self.output, key)
-
+        self._postprocess_tlvs(self.output)
         if not self.validate_trailer(self.output):
             os.unlink(self.output)
             logger.warning(
@@ -462,7 +516,6 @@ class SignTool(SignToolBase):
                 'memory, where the trailer is located.')
             raise ValueError('The header + body + protected TLVs + TLVs '
                              'overlap with the trailer sector')
-
         img = None
         if temp_out:
             img = Image(self.output)
@@ -506,20 +559,13 @@ class SignTool(SignToolBase):
         return img.header_size + img.body_size + img.protected_tlv_length + \
             img.tlv_length <= max_image_size - self.min_erase_size
 
-    def _postprocess_tlvs(self, bin_file, key):
+    def _postprocess_tlvs(self, bin_file):
         """Updates TLVs added by imgtool according to specified options"""
         img = None
-        if key:
-            if (self.pubkey_encoding != 'raw' and
-                    self.signature_encoding != 'raw' and
-                    hasattr(key, 'public_key')):
-                return
-
+        if self.key:
             img = Image(bin_file)
-            key = self.load_key(key)
-
-            self._postprocess_key_tlv(img, key)
-            self._postprocess_signature_tlv(img, key)
+            self._postprocess_key_tlv(img)
+            self._postprocess_signature_tlv(img)
 
         if self.remove_tlv:
             if not img:
@@ -532,29 +578,31 @@ class SignTool(SignToolBase):
                 [self.erased_val] * (self.slot_size - img.size)) + img.trailer
 
         if img:
-            self._save(img)
+            img.save(bin_file, hex_addr=self.hex_addr)
 
-    def _postprocess_key_tlv(self, img, key):
+    def _postprocess_key_tlv(self, img):
         """Replaces public key or its hash to raw data if the raw
         encoding is specified
         """
         if self.pubkey_encoding == 'raw':
-            if not isinstance(key, (
+            if not isinstance(self.key, (
                     ec.EllipticCurvePrivateKey, ec.EllipticCurvePublicKey)):
                 raise ValueError("The 'raw' encoding of the public key "
                                  "is supported for EC key only")
 
-            pub = ECHandler.raw_format(key)
+            pub = ECHandler.raw_format(self.key)
 
             if self.public_key_format == 'hash':
-                if key.key_size == 256:
+                if self.key.key_size == 256:
                     sha = hashlib.sha256()
-                elif key.key_size == 384:
+                elif self.key.key_size == 384:
                     sha = hashlib.sha384()
-                elif key.key_size == 521:
+                elif self.key.key_size == 521:
                     sha = hashlib.sha512()
                 else:
-                    raise ValueError(f'Unsupported key length {key.key_size}')
+                    raise ValueError(
+                        f'Unsupported key length {self.key.key_size}'
+                    )
                 sha.update(pub)
                 digest = sha.digest()
                 img.remove_tlv(TLV_VALUES['KEYHASH'])
@@ -563,7 +611,7 @@ class SignTool(SignToolBase):
                 img.remove_tlv(TLV_VALUES['PUBKEY'])
                 img.add_tlv(TLV(TLV_VALUES['PUBKEY'], pub))
 
-    def _postprocess_signature_tlv(self, img, key):
+    def _postprocess_signature_tlv(self, img):
         """Replaces signature to raw data if the raw encoding is
         specified.
         Removes signature TLV placeholder if a public key is specified.
@@ -571,34 +619,18 @@ class SignTool(SignToolBase):
         the correct padding size calculation for PSoC 64 upgrade image.
         This placeholder is not needed for the general sign tool
         """
-        try:
-            key.public_key()
-        except AttributeError:
+        if not self.is_supported_private_key(self.key):
             img.remove_tlv(TLV_VALUES['ECDSASIG'])
             img.remove_tlv(TLV_VALUES['RSA2048'])
             img.remove_tlv(TLV_VALUES['RSA3072'])
             img.remove_tlv(TLV_VALUES['RSA4096'])
             img.remove_tlv(TLV_VALUES['ED25519'])
+            img.remove_tlv(TLV_VALUES['LMS_SIG'])
+            img.remove_tlv(TLV_VALUES['XMSS_SIG'])
 
         if self.signature_encoding == 'raw':
             sig_tlv = img.tlv_by_tag(TLV_VALUES['ECDSASIG'])
             if sig_tlv:
-                r, s = ECHandler.asn1_to_rs(sig_tlv.value, key.key_size)
+                r, s = ECHandler.asn1_to_rs(sig_tlv.value, self.key.key_size)
                 img.remove_tlv(sig_tlv.tag)
                 img.add_tlv(TLV(sig_tlv.tag, r + s))
-
-    def _save(self, img):
-        """Saves image object into a file"""
-        if self.output.endswith('.hex'):
-            with tempfile.NamedTemporaryFile(dir=os.path.dirname(self.output),
-                                             suffix='.bin',
-                                             delete=False) as tf:
-                temp_bin = tf.name
-            with open(temp_bin, 'wb') as f:
-                f.write(img.data)
-            self.bin2hex(temp_bin, self.output,
-                         offset=self.hex_addr or img.base_addr)
-            os.unlink(temp_bin)
-        else:
-            with open(self.output, 'wb') as f:
-                f.write(img.data)

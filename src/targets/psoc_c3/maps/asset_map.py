@@ -1,19 +1,17 @@
-"""
-Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2024-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import json
 import logging
 import os
@@ -54,6 +52,8 @@ class AssetMapPsocC3:
             return AssetMapPsocC3.prot_fw_assets(p)
         if policy_type == 'prot_fw_dfu':
             return AssetMapPsocC3.prot_fw_dfu_assets(p)
+        if policy_type == 'prot_fw_enc_key':
+            return AssetMapPsocC3.prot_fw_enc_key_assets(p)
         if policy_type == 'device_integrity_exam':
             return AssetMapPsocC3.device_integrity_exam_assets(p, **kwargs)
         if policy_type == 'provisioned':
@@ -437,16 +437,6 @@ class AssetMapPsocC3:
                     },
                 ],
             },
-            'pc1_handler': {
-                'size': 4,
-                'data': [
-                    {
-                        'name': 'PC1_HANDLER',
-                        'shift': 0,
-                        'value': p.pc1_handler()
-                    },
-                ],
-            },
             'pc2_handler': {
                 'size': 4,
                 'data': [
@@ -697,8 +687,7 @@ class AssetMapPsocC3:
                     {
                         'name': 'PROT_FW_PC_CTL_VALID',
                         'shift': 0,
-                        'value': p.prot_fw_pc_ctl_valid(
-                            ret_value=True)
+                        'value': p.prot_fw_pc_ctl_valid(ret_value=True)
                     },
                 ],
             },
@@ -746,6 +735,43 @@ class AssetMapPsocC3:
                         'name': 'iv',
                         'shift': 0,
                         'value': p.iv()
+                    },
+                ],
+            }
+        }
+        return assets
+
+    @staticmethod
+    def prot_fw_enc_key_assets(p):
+        """Gets bytes for Protected FW Key Install assets"""
+        assets = {
+            'mode': {
+                'size': 4,
+                'data': [
+                    {
+                        'name': 'MODE',
+                        'shift': 0,
+                        'value': p.mode(ret_value=True)
+                    },
+                ],
+            },
+            'public_key': {
+                'size': 68,
+                'data': [
+                    {
+                        'name': 'PUBLIC_KEY',
+                        'shift': 0,
+                        'value': p.public_key_ecies(ret_value=True)
+                    },
+                ],
+            },
+            'ciphertext': {
+                'size': 16,
+                'data': [
+                    {
+                        'name': 'CIPHERTEXT',
+                        'shift': 0,
+                        'value': p.ciphertext(ret_value=True)
                     },
                 ],
             }

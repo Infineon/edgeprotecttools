@@ -1,0 +1,4 @@
+name: cyapp_prot_fw_enc_key
+description: This application performs ECIES to update PROT_FW_KEY.
+type: Firmware application
+version: 1.0.1.5680

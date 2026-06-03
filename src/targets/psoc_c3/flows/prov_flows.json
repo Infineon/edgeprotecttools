@@ -51,6 +51,12 @@
         "prot_fw_dfu"
       ]
     },
+    "prot_fw_enc_key": {
+      "desc": "Provisioning of the Protected FW encryption key",
+      "apps": [
+        "prot_fw_enc_key"
+      ]
+    },
     "device_integrity_exam": {
       "desc": "Device Integrity Exam",
       "apps": [
@@ -67,6 +73,7 @@
     "to_rma": "../packets/apps/to_rma/config.json",
     "prot_fw_policy": "../packets/apps/prot_fw_policy/config.json",
     "prot_fw_dfu": "../packets/apps/prot_fw_dfu/config.json",
+    "prot_fw_enc_key": "../packets/apps/prot_fw_enc_key/config.json",
     "device_integrity_exam": "../packets/apps/device_integrity_exam/config.json"
   }
 }

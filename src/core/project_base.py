@@ -1,19 +1,17 @@
-"""
-Copyright 2020-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2020-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import os
 import json
 import logging
@@ -35,6 +33,7 @@ class ProjectInitializerBase(ABC):
 
     metadata_file = f'.{PkgData.pkg_name().lower()}'
     supported_matadata_files = [metadata_file, '.cysecuretools']
+    supported_probe_types = ['kitprog3', 'jlink']
     keys_dirname = 'keys'
     policy_dirname = 'policy'
     prebuilt_dirname = 'prebuilt'
@@ -65,6 +64,17 @@ class ProjectInitializerBase(ABC):
             metadata_file = os.path.abspath(os.path.join(cwd, filename))
             if os.path.isfile(metadata_file):
                 return metadata_file
+        return None
+
+    @staticmethod
+    def get_global_settings_file():
+        """Gets project global settings file path
+        :return: The project global settings file path or None
+        """
+        global_settings_file = os.path.abspath(os.path.join(
+            PkgData.pkg_data_dir(), 'global_settings.json'))
+        if os.path.isfile(global_settings_file):
+            return global_settings_file
         return None
 
     @staticmethod
@@ -120,6 +130,45 @@ class ProjectInitializerBase(ABC):
                     os.remove(filename)
                 except OSError:
                     pass
+
+    @staticmethod
+    def get_probe_type():
+        """
+        Retrieves the probe type from the metadata file.
+        Returns:
+            str or None: The probe type if specified and valid, None otherwise.
+        Raises:
+            ValueError: If the probe type is specified but not supported.
+
+        """
+        probe_type = None
+        metadata_file = ProjectInitializerBase.get_medatada_file()
+        global_settings_file = ProjectInitializerBase.get_global_settings_file()
+
+        if metadata_file:
+            with open(metadata_file, encoding='utf-8') as f:
+                data = json.load(f)
+                probe_type = data.get(
+                    'user_settings', {}).get('probe_type', '')
+        elif global_settings_file:
+            with open(global_settings_file, encoding='utf-8') as f:
+                data = json.load(f)
+                probe_type = data.get(
+                    'programming_tool', {}).get('probe_type', '')
+
+        if probe_type:
+            probe_type = probe_type.lower()
+        else:
+            return None
+
+        if probe_type not in ProjectInitializerBase.supported_probe_types:
+            supported = ', '.join(ProjectInitializerBase.supported_probe_types)
+            raise ValueError(
+                f"Unsupported probe type '{probe_type}'. "
+                f"Expected one of: {supported}"
+            )
+
+        return probe_type
 
     @staticmethod
     def get_ocd_data(cwd=None):

@@ -1,0 +1,66 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Protected FW Encrypted Key Policy Schema",
+    "type": "object",
+    "required": [
+        "policy",
+        "mode",
+        "public_key",
+        "ciphertext"
+    ],
+    "properties": {
+        "policy": {
+            "type": "object",
+            "required": [
+                "platform",
+                "version",
+                "type"
+            ],
+            "properties": {
+                "platform": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "number",
+                    "minimum": 1.0,
+                    "maximum": 99.99
+                },
+                "type": {
+                    "type": "string",
+                    "const": "prot_fw_enc_key"
+                }
+            }
+        },
+        "mode": {
+            "type": "object",
+            "required": [
+                "value"
+            ],
+            "properties": {
+                "value": {
+                    "type": "string",
+                    "enum": [
+                        "KEY_GEN",
+                        "KEY_INSTALL"
+                    ]
+                }
+            }
+        },
+        "public_key": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "ciphertext": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

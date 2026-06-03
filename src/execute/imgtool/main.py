@@ -1,10 +1,22 @@
 #! /usr/bin/env python3
-#
 # Copyright 2017-2020 Linaro Limited
 # Copyright 2019-2020 Arm Limited
-# Copyright 2022-2025 Cypress Semiconductor Corporation (an Infineon company)
-# or an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
-#     Changes made to the original file:
+# (c) 2022-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Changes made to the original file:
 #     [Feb 26 2021]
 #         - Added image encryption scheme with random salt and AES
 #           initial vectors from HKDF tag
@@ -13,22 +25,6 @@
 #         - Added custom encryptor support
 #         - Added image_addr argument necessary for XIP encryption.
 #           Consider image_addr value in HKDF salt calculation
-#
-#
-# SPDX-License-Identifier: Apache-2.0
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import re
 import click
 import getpass
@@ -84,7 +80,8 @@ keygens = {
     'ed25519':    gen_ed25519,
     'x25519':     gen_x25519,
 }
-
+valid_sha = [ 'auto', '256', '384', '512',
+              'sha256', 'sha384', 'sha512' ]
 
 def load_key(keyfile):
     # TODO: better handling of invalid pass-phrase
@@ -349,12 +346,20 @@ def extend(align, version, header_size, slot_size, infile, outfile,
 @click.option('--kdf', default='HKDF',
               type=click.Choice(['HKDF', 'KBKDFCMAC'], case_sensitive=False),
               help='Use HKDF or KBKDFCMAC for key derivation')
+@click.option('--enckey-role', default="XIP",
+              type=click.Choice(['XIP', 'AES-KW', 'CMAC-KDF'],
+                                case_sensitive=False),
+              help='Encryption key role')
+@click.option('--sha', 'user_sha', type=click.Choice(valid_sha), default='auto',
+              help='selected sha algorithm to use; defaults to "auto" '
+                   'which is 256 if no cryptographic signature is used, '
+                   'or default for signature type')
 def sign(key, public_key_format, align, version, pad_sig, header_size,
          pad_header, slot_size, pad, confirm, max_sectors, overwrite_only,
          endian, encrypt, infile, outfile, dependencies, load_addr, hex_addr,
          erased_val, save_enctlv, security_counter, boot_record, custom_tlv,
          custom_tlv_unprotected, rom_fixed, use_random_iv, image_addr, kdf=None,
-         encryptor=None):
+         encryptor=None, enckey_role=None, user_sha='auto'):
 
     if confirm:
         # Confirmed but non-padded images don't make much sense, because
@@ -367,7 +372,7 @@ def sign(key, public_key_format, align, version, pad_sig, header_size,
                       endian=endian, load_addr=load_addr, rom_fixed=rom_fixed,
                       erased_val=erased_val, save_enctlv=save_enctlv,
                       security_counter=security_counter, image_addr=image_addr,
-                      kdf=kdf)
+                      kdf=kdf, enckey_role=enckey_role)
     img.load(infile)
     key = load_key(key) if key else None
     if isinstance(encrypt, bytes):
@@ -396,7 +401,8 @@ def sign(key, public_key_format, align, version, pad_sig, header_size,
     custom_tlvs['unprotected'] = parse_tlvs(custom_tlv_unprotected)
 
     img.create(key, public_key_format, enckey, dependencies, boot_record,
-               custom_tlvs, use_random_iv=use_random_iv, encryptor=encryptor)
+               custom_tlvs, use_random_iv=use_random_iv, encryptor=encryptor,
+               user_sha=user_sha)
     img.save(outfile, hex_addr)
 
 

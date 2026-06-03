@@ -1,21 +1,20 @@
-"""
-Copyright 2019-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2019-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from .targets import (
-    is_mxs40v1, is_mxs40sv2, is_mxs22, is_traveo_t2g, is_cyw559xx, is_psb3xxx)
+    is_mxs40v1, is_mxs40sv2, is_mxs22, is_traveo_t2g, is_cyw559xx
+)
 from .api_common import CommonAPI
 
 
@@ -50,9 +49,6 @@ class ProvisioningPackage:
                 elif is_mxs40sv2(target):
                     from .api_mxs40sv2 import Mxs40sv2API
                     api_class = Mxs40sv2API
-                elif is_psb3xxx(target):
-                    from .api_psb3xxx import PSB3xxxAPI
-                    api_class = PSB3xxxAPI
                 elif is_mxs22(target):
                     from .api_mxs22 import Mxs22API
                     api_class = Mxs22API

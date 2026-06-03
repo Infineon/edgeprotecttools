@@ -1,19 +1,17 @@
-"""
-Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from .....core.status_codes_base import StatusCodesBase
 
 
@@ -95,14 +93,14 @@ class RamAppStatusMXS22(StatusCodesBase):
             },
             0x45000033: {
                 "status": "CYAPP_DEVICE_ID_CSR_FAILED",
-                "desc": "DICE_DeviceID CSR"
+                "desc": "DICE_DeviceID CSR (Certificate Sign Request) creation failed"
             },
             0x45000034: {
                 "status": "CYAPP_DEVICE_ID_KEYPAIR_FAILED",
                 "desc": "Fail to retrieve DeviceID keypair"
             },
             0x45000035: {
-                "status": "CYAPP_ALIAS_CERT_GEN_FAILED",
+                "status": "CYAPP_ALIAS_CERT_GENERATION_FAILED",
                 "desc": "Alias certificate generation failed"
             },
             0x45000036: {
@@ -146,16 +144,16 @@ class RamAppStatusMXS22(StatusCodesBase):
                 "desc": "Exceed provisioning limits"
             },
             0x45000040: {
-                "status": "CYAPP_ALIAS_KEY_PAIR_GEN_FAILED",
-                "desc": "Fail to generate Alias keypair"
+                "status": "CYAPP_ALIAS_KEY_GENERATION_FAILED",
+                "desc": "Fail to generate Alias key pair"
             },
             0x45000041: {
-                "status": "CYAPP_HASH_VALIDATION_FAILED",
-                "desc": "Fail to validate hash"
+                "status": "CYAPP_ASSET_HASH_INVALID",
+                "desc": "Fail to validate asset hash"
             },
             0x45000042: {
-                "status": "CYAPP_SE_RT_SERVICES_FAILED",
-                "desc": "Call of SE RT Services API failed"
+                "status": "CYAPP_RT_SERVICES_FAILED",
+                "desc": "Call of RT_SERVICES API failed"
             },
             0x45000043: {
                 "status": "CYAPP_RMA_TOKEN_INVALID",
@@ -199,11 +197,11 @@ class RamAppStatusMXS22(StatusCodesBase):
             },
             0x4500004D: {
                 "status": "CYAPP_REPROV_USER_KEYS_NOT_ALLOWED",
-                "desc": "Re-provisioning of OEM keys is protected"
+                "desc": "Re-provisioning of user keys is protected"
             },
             0x4500004E: {
                 "status": "CYAPP_REPROV_USER_CERTIFICATE_NOT_ALLOWED",
-                "desc": "Re-provisioning of chain-of-trust certificates is protected"
+                "desc": "Re-provisioning of user certificates is protected"
             },
             0x4500004F: {
                 "status": "CYAPP_REPROV_CM33_L1_BOOT_NOT_ALLOWED",
@@ -275,6 +273,26 @@ class RamAppStatusMXS22(StatusCodesBase):
             },
             0x45000060: {
                 "status": "CYAPP_INTEGRITY_CERT_INVALID",
-                "desc": "No description provided"
+                "desc": "Device information provided in the certificate for integrity exam does not match device information stored on the device (silicon, family and revision)."
+            },
+            0x45000061: {
+                "status": "CYAPP_IMAGE_INVALID",
+                "desc": "Fail to validate image"
+            },
+            0x45000062: {
+                "status": "CYAPP_REPROV_LISTEN_WINDOW_NOT_ALLOWED",
+                "desc": "Re-provisioning of listen window is protected"
+            },
+            0x45000063: {
+                "status": "CYAPP_REPROV_BLOCKED_PC_NOT_ALLOWED",
+                "desc": "Re-provisioning of blocked_pc is protected"
+            },
+            0x45000066: {
+                "status": "CYAPP_REPROV_SECURE_BOOT_NOT_ALLOWED",
+                "desc": "Re-provisioning of secure boot is protected"
+            },
+            0x45000067: {
+                "status": "CYAPP_REPROV_HIB_RAM_CONTEXT_ADDR_NOT_ALLOWED",
+                "desc": "Re-provisioning of context is protected"
             }
         }

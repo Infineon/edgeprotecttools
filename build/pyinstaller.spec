@@ -1,8 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
+import sys
 from PyInstaller.utils.hooks import collect_submodules
 
 hiddenimports = []
 hiddenimports += collect_submodules('elftools')
+if sys.version_info.major == 3 and sys.version_info.minor == 8:
+    hiddenimports += collect_submodules('backports')
 
 
 a = Analysis(

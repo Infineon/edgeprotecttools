@@ -82,7 +82,8 @@
 * [Create a debug certificate](#create-debug-certificate) - The debug certificate is used by ROM boot code to enable CM33-AP and/or Sys-AP when it is temporarily disabled.
 
 # Important notes
-All examples in this document are provided for the CYW20829 MCU. For CYW89829 MCU, use the `-t cyw89829` option. Ensure you specify the correct device revision using the `--rev` option. If not specified, the tool will default to the latest revision. Latest MCU revision can be found in the [CYW20829/CYW89829 HW/SW compatibility](#cyw20829cyw89829-hwsw-compatibility) table.
+* All examples in this document are provided for the CYW20829 MCU. For CYW89829 MCU, use the `-t cyw89829` option. Ensure you specify the correct device revision using the `--rev` option. If not specified, the tool will default to the latest revision. Latest MCU revision can be found in the [CYW20829/CYW89829 HW/SW compatibility](#cyw20829cyw89829-hwsw-compatibility) table.
+* B1 parts have a new feature that allows storing an additional key named the OEM secure key. The key can be used for any purpose. Specifying the key is mandatory and requires adding the key to the `oem_secure_key` property in the policy file. If you do not want to use the key, you can fill the property with any 16-byte data.
 
 # Quick start
 ## 1. Set a path to the On-Chip debugger

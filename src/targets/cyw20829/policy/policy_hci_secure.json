@@ -139,6 +139,10 @@
             "oem_pub_key_0": {
                 "description": "Path to the ICV HCI public key 0",
                 "value": "../keys/pub_hci_0.pem"
+            },
+            "oem_secure_key": {
+                "description": "Hex string (16-bytes) or path to the OEM secure key",
+                "value": ""
             }
         }
     }

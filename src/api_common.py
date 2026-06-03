@@ -1,19 +1,17 @@
-"""
-Copyright 2019-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2019-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import json
 import os
 import re
@@ -24,6 +22,7 @@ import sys
 
 from cryptography.hazmat.primitives.asymmetric import ec, rsa, x25519
 from intelhex import IntelHex, HexRecordError
+from pyhsslms import LmsPrivateKey, LmsPublicKey
 
 from .core.certificate_strategy import CertAdapterV1
 from .core.connect_helper import ConnectHelper
@@ -31,6 +30,7 @@ from .core.cose import Cose
 from .core.deprecated import deprecated
 from .core.exceptions import ValidationError
 from .core.key_handlers.ec_handler import ECHandler
+from .core.key_handlers.ml_dsa_handler import MLDSAPublicKey, MLDSAPrivateKey
 from .core.key_handlers.rsa_handler import RSAHandler
 from .core.target_director import TargetDirector
 from .core.ocd_settings import OcdSettings
@@ -45,15 +45,17 @@ from .core.enums import (
 )
 from .core.key_handlers import (
     emit_c, key_encoding_and_format, load_public_key, load_private_key)
+from .core.xmss.xmss import XMSSPrivateKey, XMSSPublicKey
 from .execute.combine_sign_tool import (CommandJsonValidator,
                                         CommandProcessor,
                                         CommandGroupParser)
 from .execute.ihex2hcd import hex2hcd
 from .execute.image_signing import MergeTool, SplitTool, SignTool, MultiImage
-from .execute.keygens import (ec_keygen, rsa_keygen, aes_keygen,
-                              x25519_keygen, lms_keygen)
+from .execute.keygens import (ec_keygen, rsa_keygen, aes_keygen, ml_dsa_keygen,
+                              x25519_keygen, lms_keygen, xmss_keygen)
 from .execute.programmer.dfuht_wrapper import Dfuht
 from .execute.programmer.programmer import ProgrammingTool
+from .execute.sign import sign_data
 from .execute.encryption import EncryptorAES, XipEncryptor
 from .execute.cbor_parser import CborParser
 from .execute import dump
@@ -364,6 +366,26 @@ class CommonAPI:
         return digest
 
     @staticmethod
+    def sign(data_source, key_path, password=None, output=None):
+        """Signs data from binary file or hex string
+        @param data_source: Either a file path to binary data or a hex string
+        @param key_path: Path to the private key file
+        @param password: Optional password for encrypted private keys
+        @param output: Optional output file to save the signature
+        @return: Signature in bytes format
+        """
+        signature = sign_data(data_source, key_path, password=password)
+
+        logger.info('Signature: %s', signature.hex())
+
+        if output:
+            with open(output, 'wb') as f:
+                f.write(signature)
+            logger.info("Signature saved to '%s'", os.path.abspath(output))
+
+        return signature
+
+    @staticmethod
     def bin2hex(image, output, offset=0):
         """Converts bin to hex
         @param image: Input binary file
@@ -515,7 +537,8 @@ class CommonAPI:
         """
         key_algorithms = [
             'ECDSA-P256', 'ECDSA-P384', 'ECDSA-P521', 'X25519',
-            'RSA2048', 'RSA3072', 'RSA4096', 'AES128', 'AES256'
+            'RSA2048', 'RSA3072', 'RSA4096', 'AES128', 'AES256',
+            'ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'
         ]
 
         if alg.upper() not in key_algorithms:
@@ -544,70 +567,112 @@ class CommonAPI:
 
         keys_exist = False
         for key_path in output:
-            keys_exist = os.path.isfile(key_path)
-            if keys_exist:
+            if os.path.isfile(key_path):
+                keys_exist = True
                 logger.warning("Key already exists '%s'",
                                os.path.abspath(key_path))
-        if keys_exist:
-            if not self.skip_prompts:
-                answer = input('Overwrite? (y/n): ')
-                if answer.lower() != 'y':
-                    logger.info('Terminated by user')
-                    return True
+
+        if keys_exist and (not self.skip_prompts):
+            answer = input('Overwrite ? (y/n): ')
+            if answer.lower() != 'y':
+                logger.info('Terminated by user')
+                return True
 
         # Generate keys
-        if alg in (KeyAlgorithm.ECDSA_P256, KeyAlgorithm.ECDSA_P384,
+        if alg in (KeyAlgorithm.ECDSA_P256,
+                   KeyAlgorithm.ECDSA_P384,
                    KeyAlgorithm.ECDSA_P521):
-            private_key, public_key = ec_keygen.generate_key(
-                key_param, template=kwargs.get('template'),
-                byteorder=kwargs.get('byteorder', 'big')
-            )
-            if keys.private and private_key:
-                ec_keygen.save_key(
-                    private_key, keys.private, fmt, kid=kwargs.get('kid'),
-                    password=kwargs.get('password')
-                )
-                logger.info("Created a key '%s'", os.path.abspath(keys.private))
-            if keys.public and public_key:
-                ec_keygen.save_key(public_key, keys.public, fmt,
-                                   kid=kwargs.get('kid'))
-                logger.info("Created a key '%s'", os.path.abspath(keys.public))
+            self._create_keys_ec(keys, key_param, fmt, **kwargs)
         elif alg in (KeyAlgorithm.RSA2048,
                      KeyAlgorithm.RSA3072,
                      KeyAlgorithm.RSA4096):
-            private_key, public_key = rsa_keygen.generate_key(
-                key_param, template=kwargs.get('template'))
-            if keys.private and private_key:
-                rsa_keygen.save_key(
-                    private_key, keys.private, fmt, kid=kwargs.get('kid'),
-                    password=kwargs.get('password')
-                )
-                logger.info("Created a key '%s'", os.path.abspath(keys.private))
-            if keys.public and public_key:
-                rsa_keygen.save_key(public_key, keys.public, fmt,
-                                    kid=kwargs.get('kid'))
-                logger.info("Created a key '%s'", os.path.abspath(keys.public))
+            self._create_keys_rsa(keys, key_param, fmt, **kwargs)
         elif alg in (KeyAlgorithm.AES128, KeyAlgorithm.AES256):
-            aes_keygen.generate_key(
-                key_size=key_param, add_iv=False, output=output[0])
+            self._create_key_aes(output[0], key_param)
         elif alg == KeyAlgorithm.X25519:
-            if not keys.private:
-                raise ValueError('Private key path is not specified')
-            if not keys.public or keys.public == keys.private:
-                raise ValueError('Public key path is not specified')
-            private, public = x25519_keygen.generate_key()
-            x25519_keygen.save_key(private, keys.private, fmt,
-                                   password=kwargs.get('password'))
-            logger.info("Created a key '%s'", os.path.abspath(keys.private))
-            x25519_keygen.save_key(public, keys.public, fmt)
-            logger.info("Created a key '%s'", os.path.abspath(keys.public))
+            self._create_keys_x25519(keys, fmt, **kwargs)
+        elif alg in (KeyAlgorithm.ML_DSA_44,
+                     KeyAlgorithm.ML_DSA_65,
+                     KeyAlgorithm.ML_DSA_87):
+            assert fmt in ('PEM', 'DER')
+            self._create_keys_ml_dsa(keys, alg, fmt)
         return True
+
+    @staticmethod
+    def _create_keys_ec(keys, key_param, fmt, **kwargs):
+        private_key, public_key = ec_keygen.generate_key(
+            key_param, template=kwargs.get('template'),
+            byteorder=kwargs.get('byteorder', 'big')
+        )
+        if keys.private and private_key:
+            ec_keygen.save_key(
+                private_key, keys.private, fmt, kid=kwargs.get('kid'),
+                password=kwargs.get('password')
+            )
+            logger.info("Created a key '%s'", os.path.abspath(keys.private))
+        if keys.public and public_key:
+            ec_keygen.save_key(public_key, keys.public, fmt,
+                               kid=kwargs.get('kid'))
+            logger.info("Created a key '%s'", os.path.abspath(keys.public))
+
+    @staticmethod
+    def _create_keys_rsa(keys, key_param, fmt, **kwargs):
+        private_key, public_key = rsa_keygen.generate_key(
+            key_param, template=kwargs.get('template'))
+        if keys.private and private_key:
+            rsa_keygen.save_key(
+                private_key, keys.private, fmt, kid=kwargs.get('kid'),
+                password=kwargs.get('password')
+            )
+            logger.info("Created a key '%s'", os.path.abspath(keys.private))
+        if keys.public and public_key:
+            rsa_keygen.save_key(public_key, keys.public, fmt,
+                                kid=kwargs.get('kid'))
+            logger.info("Created a key '%s'", os.path.abspath(keys.public))
+
+    @staticmethod
+    def _create_key_aes(output, key_param):
+        aes_keygen.generate_key(
+            key_size=key_param, add_iv=False, output=output
+        )
+
+    @staticmethod
+    def _create_keys_x25519(keys, fmt, **kwargs):
+        if not keys.private:
+            raise ValueError('Private key path is not specified')
+        if not keys.public or keys.public == keys.private:
+            raise ValueError('Public key path is not specified')
+        private, public = x25519_keygen.generate_key()
+        x25519_keygen.save_key(private, keys.private, fmt,
+                               password=kwargs.get('password'))
+        logger.info("Created a key '%s'", os.path.abspath(keys.private))
+        x25519_keygen.save_key(public, keys.public, fmt)
+        logger.info("Created a key '%s'", os.path.abspath(keys.public))
+
+    @staticmethod
+    def _create_keys_ml_dsa(keys, alg, fmt):
+        if not keys.private:
+            raise ValueError('Private key path is not specified')
+        if not keys.public or keys.public == keys.private:
+            raise ValueError('Public key path is not specified')
+        if fmt and fmt.upper() not in ('PEM', 'DER'):
+            raise ValueError(f"Unsupported key format '{fmt}' for ML-DSA. "
+                             "Supported formats: PEM, DER")
+        private, public = ml_dsa_keygen.generate_key(alg)
+        ml_dsa_keygen.save_key(private, keys.private, fmt.upper())
+        logger.info("Created a key '%s'", os.path.abspath(keys.private))
+        ml_dsa_keygen.save_key(public, keys.public, fmt.upper())
+        logger.info("Created a key '%s'", os.path.abspath(keys.public))
 
     def create_keys_lms(self, lms_type, lmots_type, output):
         """Creates LMS key pair
         @param lms_type: LMS key type
         @param lmots_type: LM-OTS key type
         @param output: Tuple or list with private and public key paths"""
+        lms_match = re.search(r'-M([0-9]+)-', lms_type)
+        lmots_match = re.search(r'-N([0-9]+)-', lmots_type)
+        if lms_match.group(1) != lmots_match.group(1):
+            raise ValueError('Incompatible LMS type and LMOTS type')
         if not isinstance(output, (tuple, list)):
             raise ValueError('Incorrect output path data format')
         if len(output) != 2:
@@ -615,10 +680,11 @@ class CommonAPI:
 
         keys_exist = False
         for key_path in output:
-            keys_exist = os.path.isfile(key_path)
-            if keys_exist:
+            if os.path.isfile(key_path):
+                keys_exist = True
                 logger.warning("Key already exists '%s'",
                                os.path.abspath(key_path))
+
         if keys_exist and (not self.skip_prompts):
             answer = input('Overwrite ? (y/n): ')
             if answer.lower() != 'y':
@@ -651,6 +717,54 @@ class CommonAPI:
 
         return True
 
+    def create_keys_xmss(self, xmss_type, output):
+        """Creates XMSS key pair
+        @param xmss_type: XMSS key type
+        @param output: Tuple or list with private and public key paths"""
+        if not isinstance(output, (tuple, list)):
+            raise ValueError('Incorrect output path data format')
+        if len(output) != 2:
+            raise ValueError('No path for private or public keys')
+
+        keys_exist = False
+        for key_path in output:
+            if os.path.isfile(key_path):
+                keys_exist = True
+                logger.warning("Key already exists '%s'",
+                               os.path.abspath(key_path))
+
+        if keys_exist and (not self.skip_prompts):
+            answer = input('Overwrite ? (y/n): ')
+            if answer.lower() != 'y':
+                logger.info('Terminated by user')
+                return True
+
+        private_path, public_path = output
+
+        if private_path == public_path:
+            raise ValueError('Same path for private and public keys')
+
+        try:
+            private, public = xmss_keygen.generate_key(xmss_type)
+        except ValueError as e:
+            raise ValueError(f'Failed to create XMSS key: {e}') from e
+
+        if private and public:
+            try:
+                xmss_keygen.save_key(private, private_path)
+                xmss_keygen.save_key(public, public_path)
+            except (ValueError, OSError) as e:
+                raise ValueError(f"Unable to save keys: {e}") from e
+
+            logger.info("Created an XMSS private key '%s'",
+                        os.path.abspath(private_path))
+            logger.info("Created an XMSS public key '%s'",
+                        os.path.abspath(public_path))
+        else:
+            raise ValueError('Missing data for key generation')
+
+        return True
+
     @staticmethod
     def convert_key(key, enc_fmt, **kwargs):
         """Converts key to other formats
@@ -675,13 +789,19 @@ class CommonAPI:
             if isinstance(key, (
                     ec.EllipticCurvePrivateKey, ec.EllipticCurvePublicKey,
                     rsa.RSAPrivateKey, rsa.RSAPublicKey,
-                    x25519.X25519PrivateKey, x25519.X25519PublicKey)):
+                    x25519.X25519PrivateKey, x25519.X25519PublicKey,
+                    LmsPrivateKey, LmsPublicKey,
+                    XMSSPrivateKey, XMSSPublicKey,
+                    MLDSAPrivateKey, MLDSAPublicKey
+            )):
                 result = emit_c(
                     key, key_format, password=password, var_name=var_name
                 )
             else:
-                raise ValueError('The expected key types are: '
-                                 'RSA, ECDSA, or X25519')
+                raise ValueError(
+                    'The expected key types are: '
+                    'ECDSA, RSA, X25519, LMS, XMSS, ML-DSA'
+                )
 
             with open(output, 'w', encoding='utf-8') as f:
                 f.write(result)
@@ -720,6 +840,9 @@ class CommonAPI:
                 x25519_keygen.save_key(key, output, key_encoding,
                                        fmt=key_format, password=password)
                 logger.info("Created a key '%s'", os.path.abspath(output))
+            elif isinstance(key, (MLDSAPrivateKey, MLDSAPublicKey)):
+                ml_dsa_keygen.save_key(key, output, key_encoding)
+                logger.info("Created a key '%s'", os.path.abspath(output))
             else:
                 raise TypeError('Unexpected key type')
 
@@ -751,6 +874,14 @@ class CommonAPI:
             elif isinstance(key, ec.EllipticCurvePrivateKey):
                 if output:
                     ec_keygen.save_key(key.public_key(), output, fmt)
+                    logger.info("Created a key '%s'", os.path.abspath(output))
+            elif isinstance(key, MLDSAPrivateKey):
+                if fmt.lower() not in ('pem', 'der'):
+                    raise ValueError('The expected format is one of: PEM, DER')
+                if output:
+                    ml_dsa_keygen.save_key(
+                        key.public_key(), output, fmt.upper()
+                    )
                     logger.info("Created a key '%s'", os.path.abspath(output))
             else:
                 raise ValueError('Unexpected key type')
@@ -907,8 +1038,7 @@ class CommonAPI:
         """
         if 'random' in data:
             data = os.urandom(int(data.replace('random', ''), 0))
-
-        if len(data) % 2 != 0:
+        elif len(data) % 2 != 0:
             logger.error(
                 'The hex string must contain an even number of characters')
             return False
@@ -1324,6 +1454,29 @@ class CommonAPI:
             logger.error('Certificate verification failed')
             return False
 
+    @staticmethod
+    def ecies(private_key, public_key, input_file, output_file, kdf, **kwargs):
+        """Encrypts data with ECIES
+        @param private_key: Path to the private key file or key object
+        @param public_key: Path to the public key file or key object
+        @param kdf: Key derivation function (HKDF)
+        @return: ECIES object
+        """
+        if isinstance(private_key, str):
+            private_key = SignTool.load_key(private_key)
+        if isinstance(public_key, str):
+            public_key = SignTool.load_key(public_key)
+
+        with open(os.path.abspath(input_file), 'rb') as f:
+            data = f.read()
+
+        result = ECHandler.ecies(private_key, public_key, data, kdf, **kwargs)
+
+        with open(os.path.abspath(output_file), 'wb') as f:
+            f.write(result)
+        logger.info("Data saved to '%s'", os.path.abspath(output_file))
+        return True
+
     def _init_ocd(self):
         settings = OcdSettings()
         try:
@@ -1395,6 +1548,8 @@ class CommonAPI:
         elif key_type == 'AES256':
             param = 32
         elif key_type == 'X25519':
+            param = None
+        elif key_type in ('ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'):
             param = None
         else:
             raise ValueError(f"Invalid key type '{key_type}'")

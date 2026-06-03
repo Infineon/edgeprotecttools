@@ -1,19 +1,17 @@
-"""
-Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from typing import Union
 
 from cryptography.hazmat.primitives.asymmetric.rsa import (
@@ -23,7 +21,7 @@ from cryptography.hazmat.primitives.asymmetric.ec import (
 )
 from cryptography.hazmat.primitives import serialization
 
-from .psa_constants import PsaKeyTypes, PsaKeyLifetime
+from .psa_constants import PsaKeyTypes, PsaKeyPersistence, PsaKeyLocation
 from .asset_enums import KeyUsage, KeyAlgorithm
 from ....core.key_handlers import load_public_key, load_private_key
 from ....core.bitops import number_size
@@ -44,6 +42,7 @@ USE_ID = 0x30010004
 KEY_DATA_ID = 0x30010005
 KEY_OWNER_ID = 0x30010006
 KEY_BITS_ID = 0x30010007
+KEY_LOCATION_ID = 0x30010008
 
 
 class CustomKeysPacket:
@@ -63,12 +62,18 @@ class CustomKeysPacket:
             kid = CustomKeysPacket.key_id(data['kid']['value'])
             alg = CustomKeysPacket.key_algorithm(data['alg']['value'])
             use = CustomKeysPacket.key_usage(data['use']['value'])
+            kda = CustomKeysPacket.key_data(key)
+
             if data.get('kty') and data['kty'].get('value'):
                 kty = CustomKeysPacket.key_type(key, data['kty']['value'])
             else:
                 kty = CustomKeysPacket.key_type_auto(key, data['alg']['value'])
-            kda = CustomKeysPacket.key_data(key)
-            kbt = CustomKeysPacket.key_bits(key)
+
+            if data.get('bits') and data['bits'].get('value'):
+                kbt = int(str(data['bits']['value']), 0)
+            else:
+                kbt = CustomKeysPacket.key_bits(key)
+
             user_key = {
                 KID_ID: kid,
                 KTY_ID: kty,
@@ -81,17 +86,16 @@ class CustomKeysPacket:
             if data.get('owner') and data['owner'].get('value') is not None:
                 kwn = CustomKeysPacket.key_owner(data['owner']['value'])
                 user_key.update({KEY_OWNER_ID: kwn})
+
+            if (data.get('lifetime')
+                    and data['lifetime'].get('location') is not None
+                    and data['lifetime'].get('persistence') is not None):
+                location = data['lifetime']['location'].upper()
+                persistence = data['lifetime']['persistence'].upper()
+                loc = CustomKeysPacket.key_lifetime(persistence, location)
+                user_key.update({KEY_LOCATION_ID: loc})
             cbor_data.append(user_key)
         return cbor_data
-
-    @staticmethod
-    def key_lifetime(lifetime: str) -> int:
-        """Gets key lifetime value for PSA import"""
-        lifetime = lifetime.upper().strip()
-        try:
-            return PsaKeyLifetime[lifetime].value
-        except KeyError as e:
-            raise ValueError(f"Unknown key lifetime '{lifetime}'") from e
 
     @staticmethod
     def key_id(kid: Union[int, str]) -> int:
@@ -216,16 +220,31 @@ class CustomKeysPacket:
         return int(str(owner), 0)
 
     @staticmethod
+    def key_lifetime(persistence: str, location: str) -> int:
+        """Gets key location value for PSA import"""
+        if persistence not in ('VOLATILE', 'DEFAULT', 'READ_ONLY'):
+            raise ValueError(f'Invalid key persistence: "{persistence}"')
+
+        if location not in ('LOCATION_LOCAL_STORAGE', 'LOCATION_SE'):
+            raise ValueError(f'Invalid key location: "{location}"')
+
+        return (PsaKeyLocation[location].value << 8 |
+                PsaKeyPersistence[persistence].value)
+
+    @staticmethod
     def load_key(key_path: str) -> KeyTypes:
-        """Loads a key from file"""
+        """Loads a key from hex string or file"""
         try:
-            key = load_private_key(key_path)
+            key = bytes.fromhex(key_path)
         except ValueError:
             try:
-                key = load_public_key(key_path)
+                key = load_private_key(key_path)
             except ValueError:
-                with open(key_path, 'rb') as f:
-                    key = f.read()
+                try:
+                    key = load_public_key(key_path)
+                except ValueError:
+                    with open(key_path, 'rb') as f:
+                        key = f.read()
         return key
 
     @staticmethod

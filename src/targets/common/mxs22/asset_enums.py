@@ -1,19 +1,17 @@
-"""
-Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from enum import Enum
 
 from .psa_constants import (PsaKeyAlgorithms, PsaKeyUsage)
@@ -182,6 +180,10 @@ IfxKeyRevocation = {
     'IFX_RMA_MASTER_KEY': 0x08,
     'IFX_APP_INTEGRITY_KEY': 0x10,
     'IFX_APP_ENCRYPTION_KEY': 0x20,
+    'IFX_WIFISS_INTEGRITY_KEY': 0x40,
+    'IFX_WIFISS_ENCRYPTION_KEY': 0x80,
+    'IFX_BTSS_INTEGRITY_KEY': 0x100,
+    'IFX_BTSS_ENCRYPTION_KEY': 0x200,
 }
 
 SmifMode = Enum(
@@ -189,6 +191,15 @@ SmifMode = Enum(
     names=[
         ('AUTO', 0),
         ('SDR', 1)
+    ]
+)
+
+HashLocking = Enum(
+    value='Hash_Locking',
+    names=[
+        ('Off', 0),
+        ('FastBoot', 1),
+        ('Lock', 2),
     ]
 )
 
@@ -202,3 +213,64 @@ WarmBoot = Enum(
         ('None', 0),
     ]
 )
+
+SDIOVersion = Enum(
+    value='SDIO_Version',
+    names=[
+        ('2.0', 2),
+        ('3.0', 3),
+    ]
+)
+
+SDIOMaxF2BlockSize = Enum(
+    value='SDIO_Max_F2_Block_Size',
+    names=[
+        ('512', 0),
+        ('256', 1),
+        ('128', 2),
+        ('64', 3),
+    ]
+)
+
+SDIOMaxSpeedCoding = Enum(
+    value='SDIO_Max_Speed_Coding',
+    names=[
+        ('reserved', 0),
+        ('1.0', 1),
+        ('1.2', 2),
+        ('1.3', 3),
+        ('1.5', 4),
+        ('2.0', 5),
+        ('2.5', 6),
+        ('3.0', 7),
+        ('3.5', 8),
+        ('4.0', 9),
+        ('4.5', 10),
+        ('5.0', 11),
+        ('5.5', 12),
+        ('6.0', 13),
+        ('7.0', 14),
+        ('8.0', 15),
+    ]
+)
+
+SDIODriveStrength = Enum(
+    value='SDIO_Drive_Strength',
+    names=[
+        ('B', 0),
+        ('A', 1),
+        ('C', 2),
+        ('D', 3),
+    ]
+)
+
+SDIOMaxSpeedScale = Enum(
+    value='SDIO_Max_Speed_Scale',
+    names=[
+        ('100 kbps', 0),
+        ('1 Mbps', 1),
+        ('10 Mbps', 2),
+        ('25 Mbps', 3),
+    ]
+)
+

@@ -43,10 +43,8 @@
                 "boot",
                 "dfu",
                 "boot_od_clk",
-                "pc1_ctl_valid",
                 "pc2_ctl_valid",
                 "pc3_ctl_valid",
-                "pc1_handler",
                 "pc2_handler",
                 "pc3_handler",
                 "mpc"
@@ -596,18 +594,6 @@
                         }
                     }
                 },
-                "pc1_ctl_valid": {
-                    "title": "True when 'pc1_handler' is valid",
-                    "type": "object",
-                    "required": [
-                        "value"
-                    ],
-                    "properties": {
-                        "value": {
-                            "type": "boolean"
-                        }
-                    }
-                },
                 "pc2_ctl_valid": {
                     "title": "True when 'pc2_handler' is valid",
                     "type": "object",
@@ -629,23 +615,6 @@
                     "properties": {
                         "value": {
                             "type": "boolean"
-                        }
-                    }
-                },
-                "pc1_handler": {
-                    "title": "Used to switch to PC1 when it is a 'Special' PC",
-                    "type": "object",
-                    "required": [
-                        "value"
-                    ],
-                    "properties": {
-                        "value": {
-                            "type": [
-                                "number",
-                                "string"
-                            ],
-                            "minimum": 0,
-                            "maximum": 4294967295
                         }
                     }
                 },

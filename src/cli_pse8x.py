@@ -1,19 +1,17 @@
-"""
-Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2024-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import os
 import sys
 import logging
@@ -33,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 cmd_init = cli_mxs22.cmd_init
 test_pkg_type = cli_mxs22.test_pkg_type
+validate_testapps_args = cli_mxs22.validate_testapps_args
 
 
 @main.command('debug-token',
@@ -414,5 +413,59 @@ def cmd_device_info(ctx, probe_id, ap):
                                  hex(ex_boot_status))
 
         return status
+
+    return process
+
+
+@main.command('create-provisioning-packet',
+              help='Creates binary packet for device provisioning')
+@click.option('-p', '--policy', type=click.Path(), help='Provisioning policy')
+@click.option('-k', '--key', '--key-path', 'key', type=click.Path(),
+              help='The key used to sign the provisioning packet')
+@click.option('--ifx-oem-cert', type=click.Path(),
+              help='The path to OEM certificate')
+@click.option('--signature', type=click.Path(),
+              help='The signature to add to the provisioning packet')
+@click.option('--kid', help='The ID of the key used to verify the packet')
+@click.option('--algorithm', type=click.Choice(['ES256', 'ES384', 'ES512'],
+              case_sensitive=False), default='ES256',
+              help='Signature algorithm')
+@click.option('-o', '--output', type=click.Path(),
+              help="The packet output file. Applicable with 'signature' only")
+@click.option('--revoke', type=click.Path(),
+              help="The path to key revocation token")
+@click.option('--integrity-cert', type=click.Path(), hidden=True,
+              help='The path to integrity exam certificate')
+@click.option('--testapps', is_flag=True, hidden=True)
+@click.option('--testapps-si', is_flag=True, hidden=True)
+@click.pass_context
+def cmd_create_provisioning_packet(ctx, key, policy, ifx_oem_cert, signature,
+                                   kid, algorithm, output, revoke, testapps,
+                                   testapps_si, integrity_cert):
+    """Creates device provisioning packet"""
+    @process_handler()
+    def process():
+        if 'TOOL' not in ctx.obj:
+            return False
+
+        if policy:
+            ctx.obj['TOOL'].policy = policy
+        validate_args()
+
+        return ctx.obj['TOOL'].create_provisioning_packet(
+            key_path=key, kid=kid, signature=signature, output=output,
+            revoke=revoke, testapps=test_pkg_type(testapps, testapps_si),
+            ifx_oem_cert=ifx_oem_cert, integrity_cert=integrity_cert,
+            algorithm=algorithm)
+
+    def validate_args():
+        if not (ctx.obj['TOOL'].policy or integrity_cert):
+            sys.stderr.write("Error: Missing option '--policy'.\n")
+            sys.exit(2)
+        if key and signature:
+            sys.stderr.write("Error: The '--key-path' and '--signature' options"
+                             " are mutually exclusive.\n")
+            sys.exit(2)
+        validate_testapps_args(testapps, testapps_si)
 
     return process

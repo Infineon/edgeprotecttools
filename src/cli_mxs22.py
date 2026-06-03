@@ -1,19 +1,17 @@
-"""
-Copyright 2022-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2022-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import json
 import sys
 import logging
@@ -36,6 +34,8 @@ logger = logging.getLogger(__name__)
 @click.option('--signature', type=click.Path(),
               help='The signature to add to the provisioning packet')
 @click.option('--kid', help='The ID of the key used to verify the packet')
+@click.option('--algorithm', type=click.Choice(['ES256', 'ES384', 'ES512'],
+              case_sensitive=False), help='Signature algorithm')
 @click.option('-o', '--output', type=click.Path(),
               help="The packet output file. Applicable with 'signature' only")
 @click.option('--revoke', type=click.Path(),
@@ -46,8 +46,8 @@ logger = logging.getLogger(__name__)
 @click.option('--testapps-si', is_flag=True, hidden=True)
 @click.pass_context
 def cmd_create_provisioning_packet(ctx, key, policy, ifx_oem_cert, signature,
-                                   kid, output, revoke, testapps, testapps_si,
-                                   integrity_cert):
+                                   kid, algorithm, output, revoke, testapps,
+                                   testapps_si, integrity_cert):
     """Creates device provisioning packet"""
     @process_handler()
     def process():
@@ -61,7 +61,8 @@ def cmd_create_provisioning_packet(ctx, key, policy, ifx_oem_cert, signature,
         return ctx.obj['TOOL'].create_provisioning_packet(
             key_path=key, kid=kid, signature=signature, output=output,
             revoke=revoke, testapps=test_pkg_type(testapps, testapps_si),
-            ifx_oem_cert=ifx_oem_cert, integrity_cert=integrity_cert)
+            ifx_oem_cert=ifx_oem_cert, integrity_cert=integrity_cert,
+            algorithm=algorithm)
 
     def validate_args():
         if not (ctx.obj['TOOL'].policy or integrity_cert):
@@ -273,6 +274,9 @@ def cmd_provision_device(ctx, key, policy, ifx_oem_cert, revoke, kid, probe_id,
     def validate_args():
         if not ctx.obj['TOOL'].policy:
             sys.stderr.write("Error: Missing option '--policy'.\n")
+            sys.exit(2)
+        if not existing_packet and not key:
+            sys.stderr.write("Error: Missing option '--key'.\n")
             sys.exit(2)
         validate_testapps_args(testapps, testapps_si)
 
@@ -518,5 +522,48 @@ def multi_image_cbor_hsm(ctx, output, input_path, template, algorithm,
             input_path, output, None, template=template,
             algorithm=algorithm, signature=signature, kid=kid,
             add_size=add_size)
+
+    return process
+
+@main.command('fw-update', help='Firmware update')
+@click.option('--image', type=click.Path(), help='The path to the image')
+@click.option('--fw-type',  required=True, type=click.Choice(
+             ['btss_patch', 'rt_services'],
+             case_sensitive=False), help='The type of the firmware')
+@click.option('--key', type=click.Path(), help='The key to sign the package')
+@click.option('--probe-id', 'probe_id', help='Probe serial number')
+@click.option('--testapps', is_flag=True, hidden=True)
+@click.option('--testapps-si', is_flag=True, hidden=True)
+@click.option('--existing-packet', is_flag=True,
+              help='Skip provisioning packet creation and use existing')
+@click.pass_context
+def cmd_fw_update(ctx, image, fw_type, key, probe_id, testapps, testapps_si,
+                     existing_packet):
+    """Executes FW update application"""
+    @process_handler()
+    def process():
+        validate()
+        if 'TOOL' not in ctx.obj:
+            return False
+        return ctx.obj['TOOL'].fw_update(
+            image=image,
+            key=key,
+            flow_name=fw_type,
+            probe_id=probe_id,
+            testapps=test_pkg_type(testapps, testapps_si),
+            existing_packet=existing_packet)
+
+    def validate():
+        if not ((image and key) or existing_packet):
+            sys.stderr.write("Error: Either both '--image' and '--key' options "
+                             "or '--existing-packet' option "
+                             "must be specified.\n")
+            sys.exit(2)
+
+        if (image or key) and existing_packet:
+            sys.stderr.write("Error: Using '--existing-packet' option "
+                             "along with '--image' or '--key' options "
+                             "is not allowed.\n")
+            sys.exit(2)
 
     return process

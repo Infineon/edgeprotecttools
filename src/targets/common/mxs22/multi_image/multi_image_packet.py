@@ -1,29 +1,27 @@
-"""
-Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
-import hashlib
+# (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import json
 import logging
 import os
 
 from cbor import cbor
-from intelhex import IntelHex
+from intelhex import IntelHex, HexRecordError
 
-from ....execute.image_signing import SplitTool, MultiImage
-from .key_validator_mxs22 import KeyValidatorMXS22
+from .....execute.image_signing import MultiImage, SplitTool
+from .....targets.common.mxs22.multi_image.image_meta_item import ImageMetaItem
+from .....targets.common.mxs22.key_validator_mxs22 import KeyValidatorMXS22
 
 logger = logging.getLogger(__name__)
 
@@ -40,16 +38,25 @@ class MultiImageMXS22(MultiImage):
     @property
     def template(self):
         """Additional image data template path"""
-        return self._template
+        return os.path.abspath(self._template) if self._template else None
+
+    def load_image(self):
+        """Loads input file and splits it into segments"""
+        try:
+            try:
+                segments = SplitTool.split(self.input_path)
+            except UnicodeDecodeError:
+                ih = IntelHex()
+                ih.loadbin(self.input_path)
+                seg_start, seg_end = ih.segments()[0]
+                segments = [ih[seg_start:seg_end]]
+        except (HexRecordError, IndexError):
+            raise ValueError(f"Invalid file format '{self.input_path}'")
+        return segments
 
     def collect_data(self):
         """Collects data from input file"""
-        try:
-            segments = SplitTool.split(self.input_path)
-        except UnicodeDecodeError:
-            logger.error(
-                'Unsupported image format %s', os.path.abspath(self.input_path))
-            return False
+        segments = self.load_image()
 
         if self.template:
             data = self.image_template(segments)
@@ -73,14 +80,23 @@ class MultiImageMXS22(MultiImage):
             raise ValueError('The number of images does not correspond '
                              'to the meta address fields')
         image_info = []
+        images = []
         for item in meta:
-            image_info.extend(self.process_meta_item(item, segments))
-
+            addr = int(str(item.get('addr')), 0)
+            segment = self.select_segment_bytes(segments, addr)
+            meta_item = ImageMetaItem(item, segment, self.template)
+            if meta_item.enckey:
+                meta_item.encrypt_image()
+            image_info.append(meta_item.to_dict())
+            images.append(meta_item.image)
+            for msg in meta_item.logging_info():
+                logger.info(msg)
+            if meta_item.edc_addr:
+                image_info.append({'addr': meta_item.edc_addr})
+                segment = self.select_segment_bytes(segments, meta_item.edc_addr)
+                images.append(segment)
         packet = [cbor.dumps(image_info)]
-        for addr_itm in addresses:
-            image = self.select_segment_bytes(segments, addr_itm)
-            packet.append(image)
-
+        packet.extend(images)
         return packet
 
     @staticmethod
@@ -119,54 +135,6 @@ class MultiImageMXS22(MultiImage):
             })
         return packet
 
-    def process_meta_item(self, item, segments):
-        """Processes item of the template 'meta' array
-        @param item: Item of the 'meta' array in the template
-        @param segments: List of IntelHex objects containing hex segments
-        """
-        meta = {}
-        edc = {}
-        for field in item:
-            if field in ('addr', 'nv_counter', 'nv_counter_addr_nvm',
-                         'nv_counter_addr_otp', 'hash_addr', 'l1_ver_img_idx',
-                         'img_info_offset'):
-                meta.update(self.process_field(item, field))
-            elif field == 'hash':
-                meta.update(
-                    self.process_hash(item.get('hash'), meta.get('addr'),
-                                      segments))
-            elif field == 'edc_addr':
-                edc.update(self.process_field(item, field))
-            elif field == 'iv':
-                meta.update(self.process_iv(item, field))
-            else:
-                meta.update({field: item.get(field)})
-        image_info = [meta]
-        if edc:
-            image_info.append(edc)
-        return image_info
-
-    def process_hash(self, img_hash, img_addr, segments):
-        """Computes image hash if hash field is 'auto' or algorithm specified,
-        or converts to bytes array
-        @param img_hash: Image hash value
-        @param img_addr: Image address
-        @param segments: List of IntelHex objects containing hex segments
-        """
-        if img_hash in ('auto', 'sha256'):
-            img = self.select_segment_bytes(segments, img_addr)
-            img_hash = hashlib.sha256(img)
-            return {'hash': img_hash.digest()}
-        if img_hash == 'sha384':
-            img = self.select_segment_bytes(segments, img_addr)
-            img_hash = hashlib.sha384(img)
-            return {'hash': img_hash.digest()}
-        if img_hash == 'sha512':
-            img = self.select_segment_bytes(segments, img_addr)
-            img_hash = hashlib.sha512(img)
-            return {'hash': img_hash.digest()}
-        return {'hash': bytes.fromhex(img_hash)}
-
     @staticmethod
     def process_field(meta_item, field):
         """Converts field name and value to the CBOR packet format"""
@@ -177,24 +145,6 @@ class MultiImageMXS22(MultiImage):
             elif field == 'edc_addr':
                 field = 'addr'
             return {field: int(str(data), 0)}
-        raise ValueError(f"The '{field}' field is empty")
-
-    def process_iv(self, item, field):
-        """Processes IV field from the template item"""
-        iv = item.get(field)
-        if iv is not None:
-            try:
-                with open(os.path.join(os.path.dirname(self.input_path), iv),
-                          'rb') as f:
-                    data = f.read()
-            except (FileNotFoundError, OSError, ValueError):
-                try:
-                    data = bytes.fromhex(iv)
-                except ValueError as e:
-                    raise ValueError(
-                        f"Error parsing data: '{field}'"
-                    ) from e
-            return {'iv': data}
         raise ValueError(f"The '{field}' field is empty")
 
     @staticmethod

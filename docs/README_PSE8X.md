@@ -157,7 +157,7 @@ Creates a certificate-signing request (CSR). The CSR contains OEM data and publi
 | --sign-key-1       |     optional      | The secondary key used to sign the CSR. If the signing keys are not specified, an unsigned CSR is generated .                                                                                                                                                               |
 ### Usage example
 ```bash
-$ edgeprotecttools -t pse8xs2 oem-csr --public-key-0 oem_public_key_0.pem --public-key-1 oem_public_key_1.pem --sign-key-0 oem_private_key_0 --sign-key-1 oem_private_key_1 --oem "Company Name" --project "Project Name" --project-number 12345678 --cert-type development --output oem_csr.bin
+$ edgeprotecttools -t pse8xs2 oem-csr --public-key-0 oem_public_key_0.pem --public-key-1 oem_public_key_1.pem --sign-key-0 oem_private_key_0.pem --sign-key-1 oem_private_key_1.pem --oem "Company Name" --project "Project Name" --project-number 12345678 --cert-type development --output oem_csr.bin 
 ```
 
 
@@ -377,7 +377,7 @@ Outputs version of ROM_BOOT, RRAM_SE_BOOT, BASE_SE_RT_SERVICES, SE_RT_SERVICES a
 | --probe-id |     optional      | Probe serial number. |
 ### Usage example
 ```bash
-$ edgeprotecttools -t pse8xs2 -p version
+$ edgeprotecttools -t pse8xs2 version
 ```
 
 

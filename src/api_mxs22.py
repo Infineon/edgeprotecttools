@@ -1,19 +1,17 @@
-"""
-Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2024-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import logging
 import os
 
@@ -28,7 +26,7 @@ from .execute.keygens import ec_keygen
 from .targets.common.mxs22 import CertificateStrategyMXS22
 from .targets.common.mxs22 import ImageVerificationMXS22
 from .targets.common.mxs22.enums import LifecycleStage
-from .targets.common.mxs22.multi_image_packet import MultiImageMXS22
+from .targets.common.mxs22.multi_image.multi_image_packet import MultiImageMXS22
 
 logger = logging.getLogger(__name__)
 
@@ -260,7 +258,7 @@ class Mxs22API(CommonAPI):
         if status == ProvisioningStatus.FAIL:
             logger.error('An error occurred while loading the application')
 
-        return True
+        return status == ProvisioningStatus.OK
 
     @staticmethod
     def multi_image_cose(input_path, output, key, **kwargs):
@@ -298,6 +296,33 @@ class Mxs22API(CommonAPI):
             status = context.provision(self.tool, self.target,
                                        flow_name='se_rt_services_update',
                                        **kwargs)
+            ConnectHelper.disconnect(self.tool)
+        else:
+            status = ProvisioningStatus.FAIL
+
+        if status == ProvisioningStatus.FAIL:
+            logger.error('An error occurred while loading the application')
+
+        return status == ProvisioningStatus.OK
+
+    def fw_update(self, **kwargs):
+        """Executes FW update application
+        @return: True if success, otherwise False
+        """
+        if not kwargs.get('existing_packet'):
+            ctx = ProvisioningPacketCtx(
+                self.target.provisioning_packet_strategy)
+            ctx.create_package(self.target, input_params=kwargs.get('image'),
+                               **kwargs)
+        if ConnectHelper.connect(self.tool, self.target,
+                                 probe_id=kwargs.get('probe_id'), ap='sysap'):
+            if not self.target.version_provider.check_compatibility(self.tool):
+                ConnectHelper.disconnect(self.tool)
+                return False
+            self.target.version_provider.log_version(self.tool)
+            logger.info('Running the FW patch update application')
+            context = ProvisioningContext(self.target.provisioning_strategy)
+            status = context.provision(self.tool, self.target, **kwargs)
             ConnectHelper.disconnect(self.tool)
         else:
             status = ProvisioningStatus.FAIL

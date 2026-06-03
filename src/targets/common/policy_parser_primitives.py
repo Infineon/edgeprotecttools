@@ -1,19 +1,17 @@
-"""
-Copyright 2022-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2022-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import os
 
 
@@ -125,3 +123,34 @@ class PolicyParserPrimitives:
             except ValueError as e:
                 raise ValueError(f"Invalid integer value '{value}'") from e
         return value if value else 0
+
+    def abs_path(self, path):
+        """ Converts policy related path to the absolute. """
+        if not os.path.isabs(path):
+            path = os.path.abspath(os.path.join(self.policy_dir, path))
+        return path
+
+    def mac_address(self, field_name, byte_len):
+        """
+        Parse a MAC/BD-address policy field.
+
+        Reads a colon-separated hex string, validates its length, and returns
+        the value packed as little-endian bytes (low DWORD first, high half
+        second). For a 6-byte address the high half is zero-padded to 8 bytes.
+        Returns None when the field is empty.
+        """
+        value = self.field(field_name, 'value')
+        if not value:
+            return None
+
+        hex_str = value.replace(':', '')
+        try:
+            data = bytes.fromhex(hex_str)
+        except ValueError as exc:
+            raise ValueError(f"Invalid '{field_name}' format") from exc
+
+        if len(data) != byte_len:
+            raise ValueError(
+                f"'{field_name}' must be {byte_len} bytes long")
+
+        return int.from_bytes(data, 'big').to_bytes(8, 'little')

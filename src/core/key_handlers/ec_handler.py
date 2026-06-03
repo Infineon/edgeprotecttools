@@ -1,21 +1,21 @@
-"""
-Copyright 2022-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2022-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import hashlib
 
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from jose.utils import long_to_base64
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 from cryptography.hazmat.primitives.asymmetric import ec, utils
@@ -223,6 +223,87 @@ class ECHandler:
             signature_algorithm=ec.ECDSA(utils.Prehashed(hash_algorithm()))
         )
         return sig
+
+    @staticmethod
+    def ecies(private_key, public_key, data, kdf, **kwargs):
+        """Encrypts plaintext using ECIES scheme"""
+        if not isinstance(private_key, EllipticCurvePrivateKey):
+            private_key = load_private_key(private_key)
+        if not isinstance(public_key, EllipticCurvePublicKey):
+            public_key = load_public_key(public_key)
+
+        key_derivation = ECHandler._ecies_key_derivation(kdf, **kwargs)
+
+        shared_key = private_key.exchange(ec.ECDH(), public_key)
+        derived_key = key_derivation.derive(shared_key)
+
+        cipher = Cipher(algorithms.AES(derived_key), modes.ECB())
+        encryptor = cipher.encryptor()
+
+        return encryptor.update(data) + encryptor.finalize()
+
+    @staticmethod
+    def _ecies_key_derivation(kdf, **kwargs):
+        """Creates KDF instance"""
+        if kdf == 'HKDF':
+            ECHandler._ecies_hkdf_validation(**kwargs)
+
+            hkdf_length = kwargs.get('hkdf_length')
+            hkdf_hash = kwargs.get('hkdf_hash')
+            hkdf_salt = kwargs.get('hkdf_salt')
+            hkdf_info = kwargs.get('hkdf_info')
+
+            salt = bytes.fromhex(hkdf_salt if hkdf_salt else '')
+            info = bytes.fromhex(hkdf_info if hkdf_info else '')
+
+            hash_map = {
+                'SHA256': hashes.SHA256(),
+                'SHA384': hashes.SHA384(),
+                'SHA512': hashes.SHA512()
+            }
+
+            key_derivation = HKDF(
+                algorithm=hash_map[hkdf_hash.upper()],
+                length=int(str(hkdf_length), 0),
+                salt=salt,
+                info=info,
+                backend=default_backend()
+            )
+            return key_derivation
+        else:
+            raise ValueError(f"Unsupported KDF '{kdf}'")
+
+    @staticmethod
+    def _ecies_hkdf_validation(**kwargs):
+        """Validates HKDF parameters for ECIES encryption"""
+        hkdf_length = kwargs.get('hkdf_length')
+        assert hkdf_length, "HKDF length must be specified"
+        try:
+            int(str(hkdf_length), 0)
+        except ValueError as e:
+            raise ValueError("HKDF length must be an integer") from e
+        assert (
+            int(str(hkdf_length), 0) in (16, 32)
+        ), "Unsupported HKDF length. Expected: 16 or 32 bytes"
+
+        hkdf_hash = kwargs.get('hkdf_hash')
+        assert hkdf_hash, "HKDF hash must be specified"
+        assert hkdf_hash.upper() in (
+            'SHA256', 'SHA384', 'SHA512'
+        ), "Unsupported HKDF hash"
+
+        salt = kwargs.get('hkdf_salt')
+        try:
+            bytes.fromhex(salt if salt else '')
+        except ValueError as e:
+            raise ValueError("HKDF salt must be a hex string") from e
+
+        info = kwargs.get('hkdf_info')
+        try:
+            bytes.fromhex(info if info else '')
+        except ValueError as e:
+            raise ValueError("HKDF info must be a hex string") from e
+
 
     @staticmethod
     def jwk_to_pem(jwk_file, private_key=True):

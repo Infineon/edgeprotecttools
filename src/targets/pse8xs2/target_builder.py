@@ -1,19 +1,17 @@
-"""
-Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2024-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from .advanced_validator import AdvancedValidatorPse8x
 from .maps.asset_map import AssetMapPse8x
 from .maps.memory_map import MemoryMapPse8x
@@ -22,10 +20,10 @@ from .policy_parser.policy_parser import PolicyParser
 from .policy_version_validator import PolicyVersionValidator
 from .policy_validator import PolicyValidatorPSE8xB0
 from .project_init_pse8xs2 import ProjectInitPse8xs2
+from .provisioning import RamAppLoaderPSE8x
 from ..common.mxs22 import (
     TokenMXS22, CertificateStrategyMXS22,
-    RamAppLoaderMXS22, ProvisioningPacketMXS22,
-    ProvisioningMXS22, VersionProviderMXS22
+    ProvisioningPacketMXS22, ProvisioningMXS22, VersionProviderMXS22
 )
 from ..common.mxs22.si_data_reader import SiliconDataReaderMxs22V1
 from ..common.mxs22.data import RamAppStatusMXS22
@@ -47,7 +45,6 @@ class PSE8xS2Builder(TargetBuilder):
         return {
             'openocd': {
                 'variables': 'set ENABLE_CM33 0; set ENABLE_CM55 0',
-                'interface': 'kitprog3',
                 'before_init': '',
                 'after_init': 'reset init; targets'
             }
@@ -131,7 +128,7 @@ class PSE8xS2Builder(TargetBuilder):
         return CertificateStrategyMXS22()
 
     def get_app_loader(self):
-        return RamAppLoaderMXS22(RamAppStatusMXS22())
+        return RamAppLoaderPSE8x(RamAppStatusMXS22())
 
     def get_silicon_id(self):
         """Gets the target silicon ID"""

@@ -1,12 +1,16 @@
 {
-    "$schema": "http://json-schema.org/draft-03/schema#",
-    "id": "#",
-    "required": true,
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "required": [
+        "policy"
+    ],
     "type": "object",
     "properties": {
         "policy": {
-            "id": "policy",
-            "required": true,
+            "required": [
+                "platform",
+                "version",
+                "type"
+            ],
             "type": "object",
             "properties": {
                 "platform": {
@@ -24,8 +28,9 @@
             }
         },
         "extended_boot_image": {
-            "id": "extended_boot_image",
-            "required": false,
+            "required": [
+                "value"
+            ],
             "type": "object",
             "description": "Image of Extended Boot in CBOR format, signed by IFX",
             "properties": {
@@ -35,8 +40,9 @@
             }
         },
         "ifx_oem_cert": {
-            "id": "ifx_oem_cert",
-            "required": false,
+            "required": [
+                "value"
+            ],
             "type": "object",
             "description": "IFX_OEM_CERT containing OEM keys, signed by IFX",
             "properties": {
@@ -46,8 +52,9 @@
             }
         },
         "ifx_key_revocation": {
-            "id": "ifx_key_revocation",
-            "required": false,
+            "required": [
+                "value"
+            ],
             "type": "object",
             "description": "Request for IFX RoT key revocation, signed by IFX",
             "properties": {
@@ -57,8 +64,9 @@
             }
         },
         "user_certificate": {
-            "id": "user_certificate",
-            "required": false,
+            "required": [
+                "value"
+            ],
             "type": "object",
             "description": "Custom user certificates",
             "properties": {
@@ -68,18 +76,23 @@
             }
         },
         "debug": {
-            "id": "debug",
-            "required": false,
             "type": "object",
             "properties": {
                 "cm33": {
-                    "id": "cm33",
-                    "required": false,
+                    "required": [
+                        "cpu",
+                        "allowed",
+                        "dbgen",
+                        "niden",
+                        "spiden",
+                        "spniden"
+                    ],
                     "type": "object",
                     "properties": {
                         "cpu": {
-                            "id": "cpu",
-                            "required": true,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "CPU access port debug restriction",
                             "properties": {
@@ -90,20 +103,22 @@
                             }
                         },
                         "allowed": {
-                            "id": "allowed",
-                            "required": true,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Indicates who is allowed to access the AP. The option is applicable when CPU control is 'Allowed'",
                             "properties": {
                                 "value": {
-                                "type": "string",
-                                "enum": ["Firmware", "Certificate", "Open"]
+                                    "type": "string",
+                                    "enum": ["Firmware", "Certificate", "Open"]
                                 }
                             }
                         },
                         "dbgen": {
-                            "id": "dbgen",
-                            "required": true,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Invasive Debug",
                             "properties": {
@@ -113,8 +128,9 @@
                             }
                         },
                         "niden": {
-                            "id": "niden",
-                            "required": true,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Non-Invasive Debug",
                             "properties": {
@@ -124,8 +140,9 @@
                             }
                         },
                         "spiden": {
-                            "id": "spiden",
-                            "required": true,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Secure Privileged Invasive Debug",
                             "properties": {
@@ -135,8 +152,9 @@
                             }
                         },
                         "spniden": {
-                            "id": "spniden",
-                            "required": true,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Secure Privileged Non-Invasive Debug",
                             "properties": {
@@ -148,13 +166,21 @@
                     }
                 },
                 "system": {
-                    "id": "system",
-                    "required": false,
+                    "required": [
+                        "ap",
+                        "allowed",
+                        "mpc_ppc_enable",
+                        "rram_otp_enable",
+                        "rram_nvm_enable",
+                        "ram_enable",
+                        "mmio_enable"
+                    ],
                     "type": "object",
                     "properties": {
                         "ap": {
-                            "id": "ap",
-                            "required": true,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "System access port (SYS-AP) restriction",
                             "properties": {
@@ -165,8 +191,9 @@
                             }
                         },
                         "allowed": {
-                            "id": "allowed",
-                            "required": true,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Indicates who is allowed to access the AP. The option is applicable when CPU control is 'Allowed'",
                             "properties": {
@@ -177,8 +204,9 @@
                             }
                         },
                         "mpc_ppc_enable": {
-                            "id": "mpc_ppc_enable",
-                            "required": true,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Indicates that the MPC/PPC on the system access port must be programmed and locked according to the settings in the next 4 fields.",
                             "properties": {
@@ -188,8 +216,9 @@
                             }
                         },
                         "rram_otp_enable": {
-                            "id": "rram_otp_enable",
-                            "required": true,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "This field indicates if access is allowed to general purpose OTP",
                             "properties": {
@@ -200,8 +229,9 @@
                             }
                         },
                         "rram_nvm_enable": {
-                            "id": "rram_nvm_enable",
-                            "required": true,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "This field indicates if access is allowed to RRAM NVM, from MAIN_NVM to PROTECTED_NVM",
                             "properties": {
@@ -212,8 +242,9 @@
                             }
                         },
                         "ram_enable": {
-                            "id": "ram_enable",
-                            "required": true,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "This field indicates what portion of SRAM is accessible through the system access port",
                             "properties": {
@@ -224,8 +255,9 @@
                             }
                         },
                         "mmio_enable": {
-                            "id": "mmio_enable",
-                            "required": true,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "This field indicates what portion of the MMIO region is accessible through the system access port",
                             "properties": {
@@ -238,14 +270,13 @@
                     }
                 },
                 "rma": {
-                    "id": "rma",
-                    "required": false,
                     "type": "object",
                     "description": "RMA configuration",
                     "properties": {
                         "permission": {
-                            "id": "permission",
-                            "required": false,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Permission for transition to RMA LCS",
                             "properties": {
@@ -257,8 +288,9 @@
                     }
                 },
                 "debug_key": {
-                    "id": "debug_key",
-                    "required": false,
+                    "required": [
+                        "value"
+                    ],
                     "type": "object",
                     "description": "ECDSA public key, used to verify signature of debug token",
                     "properties": {
@@ -270,14 +302,10 @@
             }
         },
         "reprovisioning": {
-            "id": "reprovisioning",
-            "required": false,
             "type": "object",
             "description": "Reprovisioning policy. Used to restrict the assets reprovisioning",
             "properties": {
                 "debug": {
-                    "id": "debug",
-                    "required": false,
                     "type": "object",
                     "properties": {
                         "cm33": {
@@ -301,14 +329,14 @@
                     "type": "boolean"
                 },
                 "user_certificate": {
-                    "required": false,
                     "type": "boolean"
                 }
             }
         },
         "user_keys": {
-            "id": "user_keys",
-            "required": false,
+            "required": [
+                "value"
+            ],
             "type": "object",
             "description": "List of OEM custom keys. Fill in the key data with your values",
             "properties": {
@@ -318,13 +346,13 @@
             }
         },
         "extended_boot_policy": {
-            "id": "extended_boot_policy",
-            "required": false,
             "type": "object",
+            "additionalProperties": false,
             "properties": {
                 "secure_boot": {
-                    "id": "secure_boot",
-                    "required": false,
+                    "required": [
+                        "value"
+                    ],
                     "type": "object",
                     "description": "Disable/Enable secure boot option",
                     "properties": {
@@ -334,8 +362,9 @@
                     }
                 },
                 "clock": {
-                    "id": "clock",
-                    "required": false,
+                    "required": [
+                        "value"
+                    ],
                     "type": "object",
                     "description": "Defines default core clock speed in MHz",
                     "properties": {
@@ -346,8 +375,9 @@
                     }
                 },
                 "listen_window": {
-                    "id": "listen_window",
-                    "required": false,
+                    "required": [
+                        "value"
+                    ],
                     "type": "object",
                     "description": "Defines listen window timeout in ms",
                     "properties": {
@@ -357,8 +387,9 @@
                     }
                 },
                 "enable_alt_serial": {
-                    "id": "enable_alt_serial",
-                    "required": false,
+                    "required": [
+                        "value"
+                    ],
                     "type": "object",
                     "description": "Disable/Enable Alternate serial interface",
                     "properties": {
@@ -368,13 +399,12 @@
                     }
                 },
                 "cm33_ram_app": {
-                    "id": "cm33_ram_app",
-                    "required": false,
                     "type": "object",
                     "properties": {
                         "enable": {
-                            "id": "enable",
-                            "required": false,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Disable/Enable CM33 OEM RAM applications",
                             "properties": {
@@ -384,8 +414,9 @@
                             }
                         },
                         "address": {
-                            "id": "address",
-                            "required": false,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Start address of the CM33 OEM RAM application",
                             "properties": {
@@ -397,13 +428,12 @@
                     }
                 },
                 "cm33_rram_app": {
-                    "id": "cm33_rram_app",
-                    "required": false,
                     "type": "object",
                     "properties": {
                         "address": {
-                            "id": "address",
-                            "required": false,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Start address of the CM33 OEM RRAM application",
                             "properties": {
@@ -413,8 +443,9 @@
                             }
                         },
                         "size": {
-                            "id": "size",
-                            "required": false,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Size of the CM33 OEM RRAM application",
                             "properties": {
@@ -426,8 +457,9 @@
                     }
                 },
                 "oem_app_address": {
-                    "id": "oem_app_address",
-                    "required": false,
+                    "required": [
+                        "value"
+                    ],
                     "type": "object",
                     "description": "Starting location of OEM application",
                     "properties": {
@@ -437,8 +469,9 @@
                     }
                 },
                 "oem_alt_boot": {
-                    "id": "oem_alt_boot",
-                    "required": false,
+                    "required": [
+                        "value"
+                    ],
                     "type": "object",
                     "description": "Disable/Enable alternate boot",
                     "properties": {
@@ -448,8 +481,9 @@
                     }
                 },
                 "oem_alt_app_address": {
-                    "id": "oem_alt_app_start",
-                    "required": false,
+                    "required": [
+                        "value"
+                    ],
                     "type": "object",
                     "description": "Alternate starting location of OEM application",
                     "properties": {
@@ -459,13 +493,13 @@
                     }
                 },
                 "external_flash": {
-                    "id": "external_flash",
-                    "required": false,
                     "type": "object",
+                    "additionalProperties": false,
                     "properties": {
                         "smif_exflash": {
-                            "id": "smif_exflash",
-                            "required": false,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Disable/Enable search for SFDP compatible external flash device",
                             "properties": {
@@ -475,8 +509,9 @@
                             }
                         },
                         "smif_chip_select": {
-                            "id": "smif_chip_select",
-                            "required": false,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Chip select for primary external flash",
                             "properties": {
@@ -487,8 +522,9 @@
                             }
                         },
                         "smif_data_width": {
-                            "id": "smif_data_width",
-                            "required": false,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Select data width used to interface the external flash",
                             "properties": {
@@ -499,8 +535,9 @@
                             }
                         },
                         "smif_data_select": {
-                            "id": "smif_data_select",
-                            "required": false,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Select data IO pins for d0/d1",
                             "properties": {
@@ -511,8 +548,9 @@
                             }
                         },
                         "smif_addr_mode": {
-                            "id": "smif_addr_mode",
-                            "required": false,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Relative address size used to address the external flash",
                             "properties": {
@@ -523,25 +561,14 @@
                             }
                         },
                         "smif_offset": {
-                            "id": "smif_offset",
-                            "required": false,
+                            "required": [
+                                "value"
+                            ],
                             "type": "object",
                             "description": "Address offset to the external flash",
                             "properties": {
                                 "value": {
                                     "type": "string"
-                                }
-                            }
-                        },
-                        "smif_mode": {
-                            "id": "smif_mode",
-                            "required": false,
-                            "type": "object",
-                            "description": "Use configuration defined by SFDP data or limit the communication protocol to SDR",
-                            "properties": {
-                                "value": {
-                                    "type": "string",
-                                    "enum": ["AUTO", "SDR"]
                                 }
                             }
                         }
@@ -550,8 +577,9 @@
             }
         },
         "oem_key_revocation": {
-            "id": "oem_key_revocation",
-            "required": false,
+            "required": [
+                "value"
+            ],
             "type": "object",
             "description": "Request for OEM RoT key revocation.",
             "properties": {
@@ -561,8 +589,9 @@
             }
         },
         "boundary_scan": {
-            "id": "boundary_scan",
-            "required": false,
+            "required": [
+                "value"
+            ],
             "type": "object",
             "description": "Indicates whether boundary scan is enabled",
             "properties": {

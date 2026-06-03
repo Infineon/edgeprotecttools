@@ -1,19 +1,17 @@
-"""
-Copyright 2024-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2024-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import logging
 
 from cbor import cbor
@@ -44,7 +42,7 @@ class DLMPolicy:
             oem_cert = self.oem_packet.get(CoseSign1Packet.IFX_OEM_CERT)
             if packet_data:
                 self.policy = self.load_policy(packet_data)
-                self._debug = self.policy.get(CoseSign1Packet.DEBUG_ID)
+                self._debug = self.policy.get(0x14010001)
             if oem_cert:
                 self.oem_cert = OEMCert(oem_cert)
 
@@ -63,12 +61,5 @@ class DLMPolicy:
     def debug_system_ap(self):
         """System AP configuration"""
         if self._debug:
-            return self._debug.get(CoseSign1Packet.SYS_AP_ID)
-        return None
-
-    @property
-    def debug_cm33_ap(self):
-        """CM33 ap configuration"""
-        if self._debug:
-            return self._debug.get(CoseSign1Packet.CM33_AP_ID)
+            return self._debug.get(0x22000001)
         return None

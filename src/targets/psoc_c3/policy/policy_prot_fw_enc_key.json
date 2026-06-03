@@ -1,0 +1,20 @@
+{
+  "policy": {
+    "platform": "psoc_c3",
+    "version": 1.0,
+    "type": "prot_fw_enc_key"
+  },
+  "mode": {
+    "description": "Indicates which mode to use",
+    "applicable_conf": "KEY_GEN, KEY_INSTALL",
+    "value": "KEY_GEN"
+  },
+  "public_key": {
+    "description": "Path to the public key used for ECIES for KEY_INSTALL mode",
+    "value": ""
+  },
+  "ciphertext":{
+    "description": "Encrypted PROT_FW_KEY used for KEY_INSTALL mode",
+    "value": ""
+  }
+}

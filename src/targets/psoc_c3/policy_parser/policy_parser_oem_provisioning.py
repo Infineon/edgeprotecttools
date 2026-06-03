@@ -1,19 +1,17 @@
-"""
-Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import hashlib
 import os.path
 from typing import Union
@@ -261,10 +259,6 @@ class PolicyParserOemProvisioning(PolicyParserPrimitives):
         return self.enum_field(BootOdClk, ret_value, 'device_policy',
                                'boot_od_clk', 'value')
 
-    def pc1_ctl_valid(self):
-        """Gets a value of the device_policy.pc1_ctl_valid property"""
-        return self.field('device_policy', 'pc1_ctl_valid', 'value')
-
     def pc2_ctl_valid(self):
         """Gets a value of the device_policy.pc2_ctl_valid property"""
         return self.field('device_policy', 'pc2_ctl_valid', 'value')
@@ -275,12 +269,11 @@ class PolicyParserOemProvisioning(PolicyParserPrimitives):
 
     def pc_ctl_valid(self):
         """Gets a value that is a combination of the
-        pc1_ctl_valid, pc2_ctl_valid, and pc3_ctl_valid properties
+        pc2_ctl_valid, and pc3_ctl_valid properties
         """
-        pc1 = 1 if self.pc1_ctl_valid() is True else 0
         pc2 = 1 if self.pc2_ctl_valid() is True else 0
         pc3 = 1 if self.pc3_ctl_valid() is True else 0
-        return (pc1 << 1) | (pc2 << 2) | (pc3 << 3)
+        return (pc2 << 2) | (pc3 << 3)
 
     def pc1_handler(self) -> int:
         """Gets a value of the device_policy.pc1_handler property"""

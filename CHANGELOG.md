@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 1.7.0
+### Added
+- Support for LMS, XMSS, and ML-DSA PQC algorithms (key generation, signing, and verification)
+- Added "sign" command for signing any binary data
+- PSOC™ Control C3 secure key installation
+
 ## 1.6.1
 ### Changed
 - Optimized encryption algorithm for faster processing of large images using ECB cipher mode

@@ -23,7 +23,6 @@
     "boot_od_clk",
     "pc_ctl_valid",
     "reserved_3",
-    "pc1_handler",
     "pc2_handler",
     "pc3_handler",
     "n_ram_mpc",

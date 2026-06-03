@@ -1,19 +1,17 @@
-"""
-Copyright 2021-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2021-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import os
 import sys
 import shutil
@@ -34,7 +32,9 @@ from .core.logging_configurator import LoggingConfigurator
 from .core.project_base import ProjectInitializerBase
 from .core.mtb_tools_discovery import mtb_tool_dir, ptp_tool_dir
 from .execute.programmer.programmer import ProgrammingTool
-from .execute.imgtool.main import get_dependencies, validate_security_counter
+from .execute.imgtool.main import (
+    get_dependencies, validate_security_counter, valid_sha
+)
 from .targets import get_target_builder
 from .targets import print_targets, print_targets_extended
 
@@ -47,7 +47,7 @@ def require_target():
     commands = [
         'device-list', 'version', 'probe-list', 'set-ocd', 'bin2hex',
         'convert-key', 'sign-image', 'image-metadata', 'extract-payload',
-        'add-signature', 'verify-image', 'serial-config'
+        'add-signature', 'verify-image', 'serial-config', 'sign'
     ]
     return not any(x in sys.argv for x in commands)
 
@@ -840,11 +840,31 @@ def cose_verify(ctx, input_path, key, kid):
     return process
 
 
+@main.command('sign', help='Signs data from binary file or hex string')
+@click.option('-d', '--data', type=click.STRING, required=True,
+              help='Data to sign (hex string or file path)')
+@click.option('-k', '--key', '--key-path', 'key_path', type=click.Path(),
+              required=True, help='Private key path')
+@click.option('--password', type=click.STRING,
+              help='Password for encrypted private key')
+@click.option('-o', '--output', type=click.Path(),
+              help='Output file to save signature (binary format)')
+@click.pass_context
+def cmd_sign(_ctx, data, key_path, password, output):
+    """Signs data from binary file or hex string"""
+    @process_handler()
+    def process():
+        return CommonAPI.sign(data, key_path, password=password, output=output)
+
+    return process
+
+
 @main.command('create-key', help='Creates private and public key pair')
 @click.option('--key-type', type=click.Choice(
     ['ECDSA-P256', 'ECDSA-P384', 'ECDSA-P521', 'X25519',
      'RSA2048', 'RSA3072', 'RSA4096',
-     'AES128', 'AES256'],
+     'AES128', 'AES256',
+     'ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'],
     case_sensitive=False), required=True, help='Key type')
 @click.option('-o', '--output', type=click.Path(), nargs=get_output_nargs(),
               metavar='[private] [public] for pair, [key] for single key',
@@ -878,6 +898,10 @@ def cmd_create_key(ctx, key_type, output, template, fmt, kid, byteorder,
         if key_type == 'X25519' and template:
             sys.stderr.write("Error: The '--template' option is not supported "
                              "for X25519 key type.\n")
+            sys.exit(2)
+        if key_type in ('ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87') and fmt == 'JWK':
+            sys.stderr.write("Error: The JWK format is not supported for "
+                             "ML-DSA keys.\n")
             sys.exit(2)
     return process
 
@@ -928,8 +952,8 @@ def cmd_export_public_key(_ctx, key_path, output, fmt):
 
 @main.command('create-key-lms', help='Creates LMS private and public key pair')
 @click.option('--lms-type', type=click.Choice(
-    ['LMS-SHA256-M24-H5', 'LMS-SHA256-M24-H10', 'LMS-SHA256-M24-H15',
-     'LMS-SHA256-M32-H5', 'LMS-SHA256-M32-H10', 'LMS-SHA256-M32-H15'
+    ['LMS-SHA256-M24-H5', 'LMS-SHA256-M24-H10', 'LMS-SHA256-M32-H5',
+     'LMS-SHA256-M32-H10'
      ],
     case_sensitive=False), required=True, help='LM-OTS key type')
 @click.option('--lmots-type', type=click.Choice(
@@ -950,6 +974,25 @@ def cmd_create_lms_key(ctx, lms_type, lmots_type, output):
         if 'TOOL' not in ctx.obj:
             return False
         return ctx.obj['TOOL'].create_keys_lms(lms_type, lmots_type, output)
+    return process
+
+
+@main.command('create-key-xmss', help='Creates XMSS private and public key pair')
+@click.option('--xmss-type', type=click.Choice(
+    ['XMSS-SHA2_10_256'], case_sensitive=False),
+    required=True, help='XMSS key type')
+@click.option('-o', '--output', type=click.Path(), nargs=2,
+              metavar='[private] [public]',
+              required=True,
+              help='Private and public key paths')
+@click.pass_context
+def cmd_create_xmss_key(ctx, xmss_type, output):
+    """Creates XMSS key pair"""
+    @process_handler()
+    def process():
+        if 'TOOL' not in ctx.obj:
+            return False
+        return ctx.obj['TOOL'].create_keys_xmss(xmss_type, output)
     return process
 
 
@@ -1164,6 +1207,9 @@ def cmd_encrypt_aes(_ctx, cbor_input, output, key, iv, nonce, add_iv, iv_output,
               help='The signed image output file (bin or hex)')
 @click.option('--key', '--key-path', 'key', type=click.Path(), required=True,
               help='The path to the key used to sign the image')
+@click.option('--sha', 'user_sha', type=click.Choice(valid_sha), default='auto',
+              help='SHA algorithm for image hashing. "auto" selects '
+                   'the default algorithm for the signature type')
 @click.option('--image-config', type=click.Path(), hidden=True,
               help='The path to the image configuration file')
 @click.option('-R', '--erased-val', default='0',
@@ -1232,7 +1278,8 @@ def cmd_encrypt_aes(_ctx, cbor_input, output, key, iv, nonce, add_iv, iv_output,
               help='Removes TLV with the specified ID')
 @click.option('--enckey', type=click.Path(), help='Encryption key')
 @click.option('--enckey-role', default="XIP",
-              type=click.Choice(['XIP', 'AES-KW'], case_sensitive=False),
+              type=click.Choice(['XIP', 'AES-KW', 'CMAC-KDF'],
+                                case_sensitive=False),
               help='Encryption key role')
 @click.option('--encrypt-addr', help='Starting address for data encryption')
 @click.option('--nonce-output', type=click.Path(),
@@ -1241,7 +1288,7 @@ def cmd_encrypt_aes(_ctx, cbor_input, output, key, iv, nonce, add_iv, iv_output,
               type=click.Choice(['HKDF', 'KBKDFCMAC'], case_sensitive=False),
               help='Key derivation function name')
 @click.pass_context
-def cmd_sign_image(ctx, image, output, key, image_config, erased_val,
+def cmd_sign_image(ctx, image, output, key, user_sha, image_config, erased_val,
                    header_size, slot_size, min_erase_size, image_version,
                    security_counter, align, public_key_format, pubkey_encoding,
                    signature_encoding, pad, confirm, overwrite_only,
@@ -1258,6 +1305,7 @@ def cmd_sign_image(ctx, image, output, key, image_config, erased_val,
             image,
             output=output,
             key_path=key,
+            user_sha=user_sha,
             image_config=image_config,
             erased_val=erased_val,
             header_size=header_size,
@@ -1301,6 +1349,9 @@ def cmd_sign_image(ctx, image, output, key, image_config, erased_val,
               help='The user application file (bin or hex)')
 @click.option('-o', '--output', type=click.Path(), required=True,
               help='The path to the binary file to save the image with metadata')
+@click.option('--sha', 'user_sha', type=click.Choice(valid_sha), default='auto',
+              help='SHA algorithm for image hashing. '
+                   'Defaults to "auto" which is SHA-256')
 @click.option('--decrypted', type=click.Path(),
               help='The path where to save decrypted image payload')
 @click.option('--image-config', type=click.Path(), hidden=True,
@@ -1371,7 +1422,8 @@ def cmd_sign_image(ctx, image, output, key, image_config, erased_val,
               help='Removes TLV with the specified ID')
 @click.option('--enckey', type=click.Path(), help='Encryption key')
 @click.option('--enckey-role', default="XIP",
-              type=click.Choice(['XIP', 'AES-KW'], case_sensitive=False),
+              type=click.Choice(['XIP', 'AES-KW', 'CMAC-KDF'],
+                                case_sensitive=False),
               help='Encryption key role')
 @click.option('--encrypt-addr', help='Starting address for data encryption')
 @click.option('--nonce-output', type=click.Path(),
@@ -1380,7 +1432,8 @@ def cmd_sign_image(ctx, image, output, key, image_config, erased_val,
               type=click.Choice(['HKDF', 'KBKDFCMAC'], case_sensitive=False),
               help='Key derivation function name')
 @click.pass_context
-def cmd_image_metadata(ctx, image, output, decrypted, pubkey, image_config,
+def cmd_image_metadata(ctx, image, output, user_sha, decrypted, pubkey,
+                       image_config,
                        erased_val, header_size, slot_size, min_erase_size,
                        image_version, security_counter, align,
                        public_key_format, pubkey_encoding,
@@ -1397,6 +1450,7 @@ def cmd_image_metadata(ctx, image, output, decrypted, pubkey, image_config,
         result = ctx.obj['TOOL'].image_metadata(
             image,
             output=output,
+            user_sha=user_sha,
             decrypted=decrypted,
             pubkey=pubkey,
             image_config=image_config,
@@ -1442,7 +1496,7 @@ def cmd_image_metadata(ctx, image, output, decrypted, pubkey, image_config,
 
 @main.command('extract-payload', help='Extracts a part of image to be signed',
               short_help='Extracts a part of image to be signed')
-@click.option('--image', type=click.Path(), required=True,
+@click.option('-i', '--image', type=click.Path(), required=True,
               help='Image with MCUboot metadata (bin)')
 @click.option('-o', '--output', type=click.Path(), required=True,
               help='The path where to save the image to be signed (bin)')
@@ -1462,13 +1516,13 @@ def cmd_extract_payload(ctx, image, output):
 @main.command('add-signature',
               help='Adds signature to the existing MCUboot format image',
               short_help='Adds signature to the existing MCUboot format image')
-@click.option('--image', type=click.Path(), required=True,
+@click.option('-i', '--image', type=click.Path(), required=True,
               help='Image with MCUboot metadata (bin)')
 @click.option('-s', '--signature', type=click.Path(), required=True,
               help='Binary file containing signature')
 @click.option('--alg', type=click.Choice(
-              ['ECDSA-P256', 'ECDSA-P384', 'ECDSA-P521',
-               'RSA2048', 'RSA4096'], case_sensitive=False),
+              ['ECDSA-P256', 'ECDSA-P384', 'ECDSA-P521','RSA2048',
+               'RSA3072', 'RSA4096', 'LMS', 'XMSS'], case_sensitive=False),
               required=True, help='Signature algorithm')
 @click.option('-o', '--output', type=click.Path(), required=True,
               help='The path where to save the image with the signature (bin)')
@@ -1586,6 +1640,40 @@ def cmd_hex_relocate(_ctx, region, input_file, output):
                 sys.exit(2)
             regions.append((start_int, size_int, dest_int))
         return CommonAPI.hex_relocate(input_file, output, regions)
+    return process
+
+
+@main.command('ecies', help='Encrypts a file using ECIES scheme')
+@click.option('--private-key', type=click.Path(), required=True,
+              help='Path to the private key')
+@click.option('--public-key', type=click.Path(), required=True,
+              help='Path to the public key')
+@click.option('-i', '--input', 'input_file', type=click.Path(),
+              required=True, help='Input file')
+@click.option('-o', '--output', 'output_file', type=click.Path(),
+              required=True, help='Output file')
+@click.option('--kdf', required=True,
+              type=click.Choice(['HKDF'], case_sensitive=False),
+              help='Key derivation function to use')
+@click.option('--hkdf-hash',
+              type=click.Choice(['SHA256', 'SHA384', 'SHA512'],
+                                case_sensitive=False),
+              help='Hash function to use in HKDF')
+@click.option('--hkdf-length', type=click.Choice(['16', '32']),
+              help='Length of the derived key in bytes when HKDF is used')
+@click.option('--hkdf-salt', help='Salt for HKDF')
+@click.option('--hkdf-info', help='Info for HKDF')
+@click.pass_context
+def cmd_ecies(_ctx, private_key, public_key, input_file, output_file, kdf,
+              hkdf_hash, hkdf_length, hkdf_salt, hkdf_info):
+    """Encrypts a file using ECIES scheme"""
+    @process_handler()
+    def process():
+        return CommonAPI.ecies(
+            private_key, public_key, input_file, output_file, kdf,
+            hkdf_hash=hkdf_hash, hkdf_length=hkdf_length,
+            hkdf_salt=hkdf_salt, hkdf_info=hkdf_info
+        )
     return process
 
 

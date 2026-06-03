@@ -1,19 +1,17 @@
-"""
-Copyright 2023-2025 Cypress Semiconductor Corporation (an Infineon company)
-or an affiliate of Cypress Semiconductor Corporation. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
+# Technologies AG.  SPDX-License-Identifier: Apache-2.0
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import logging
 import os
 import tempfile
@@ -75,7 +73,7 @@ class SerialLoaderPsocC3:
 
                 if self.app.name.startswith('to_rma'):
                     return status
-                if self.app.name.startswith('prot_fw_dfu') \
+                if self._is_firmware_update() \
                         and status == ProvisioningStatus.OK:
                     pth = self.target.context.get('image')
                     if not pth:
@@ -93,7 +91,7 @@ class SerialLoaderPsocC3:
         """Handles reading app completion status and out results"""
         result = ProvisioningStatus.OK
         success_code = self.app_status_codes.code_by_name('CYAPP_SUCCESS')
-        n_attempts = 4
+        n_attempts = 10
         tmp_name = 'post_processing_data.bin'
 
         address = []
@@ -106,7 +104,11 @@ class SerialLoaderPsocC3:
 
         if self.app.out_results_path:
             out_results_addr = start_addr + self.app.out_results_offset
-            out_results_size = self.OUT_FILE_SIZE_MAX
+            out_results_size = (
+                self.app.out_results_size
+                if self.app.out_results_size
+                else self.OUT_FILE_SIZE_MAX
+            )
             address.append(out_results_addr)
             size.append(out_results_size)
 
@@ -118,6 +120,10 @@ class SerialLoaderPsocC3:
                     'Reading results of the application: attempt %s / %s ',
                     i, n_attempts
                 )
+                logger.debug(
+                    'Reading results from address: %s, size: %s',
+                    address, size
+                )
 
                 LoggingConfigurator.disable_logging()
                 try:
@@ -127,6 +133,7 @@ class SerialLoaderPsocC3:
                 except RuntimeError as e:
                     if i == n_attempts:
                         raise e
+                    time.sleep(0.1)
                     continue
                 except Exception as e:
                     raise e
@@ -194,3 +201,7 @@ class SerialLoaderPsocC3:
         logger.warning("Skip programming '%s' application. The device "
                        "lifecycle stage is %s", self.app.name, lcs)
         return False
+
+    def _is_firmware_update(self):
+        """ Check if the application is a protected firmware update """
+        return self.app.name.startswith('prot_fw_dfu')
