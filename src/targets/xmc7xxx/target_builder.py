@@ -18,7 +18,7 @@ from ...core.enums import KeyAlgorithm
 
 
 class XMC7xxxBuilder(TargetBuilder):
-    """ XMC7xxx target builder """
+    """ XMC7xxx/XMC5xxx target builder """
 
     def get_default_policy(self):
         return None

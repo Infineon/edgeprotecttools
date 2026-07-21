@@ -41,6 +41,16 @@
 * Signing user applications - Signs a user application with a private key locally or using a Hardware Security Module.
 * Debug token - The debug token is used to enable CM33 and/or the system access port when it is temporarily disabled.
 
+# Important notes
+* Examples in this document are provided for the EPC2 device (pse8xs2). For EPC4 (pse8xs4), use the `-t pse8xs4` target. Ensure you specify the correct device revision using the `--rev` option. If not specified, the tool will default to the latest revision (B1).
+* To explicitly specify a silicon revision, pass `--rev b0` or `--rev b1` to any command:
+  ```bash
+  # Use B0 silicon revision
+  $ edgeprotecttools -t pse8xs2 --rev b0 <COMMAND> [OPTIONS]
+
+  # Use B1 silicon revision (same as omitting --rev)
+  $ edgeprotecttools -t pse8xs2 --rev b1 <COMMAND> [OPTIONS]
+  ```
 
 # Quick start
 ## 1. Set a path to the On-Chip debugger
@@ -117,13 +127,14 @@ $ edgeprotecttools -t pse8xs2 <COMMAND> --help
 ## Common options
 The interface provides common options. These options are common for all commands and must precede them:
 
-| Name          | Description                                  |
-|---------------|----------------------------------------------|
-| -t, --target  | Device name or family                        |
-| -v, --verbose | Provides debug-level log                     |
-| -q, --quiet   | Quiet display option                         |
-| --logfile-off | Disabling logging to a file                  |
-| --timestamps  | Enable displaying timestamps in log messages |
+| Name          | Description                                                       |
+|---------------|-------------------------------------------------------------------|
+| -t, --target  | Device name or family                                             |
+| --rev         | Target device revision (`b0` or `b1`). Defaults to `b1` (latest). |
+| -v, --verbose | Provides debug-level log                                          |
+| -q, --quiet   | Quiet display option                                              |
+| --logfile-off | Disabling logging to a file                                       |
+| --timestamps  | Enable displaying timestamps in log messages                      |
 
 
 ## Create project

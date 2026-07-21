@@ -58,7 +58,9 @@ class TokenMXS22:
             'debug_token': 'Debug',
             'transit_to_rma': 'Transition to RMA',
             'open_rma': 'Open RMA',
-            'revoke': 'Revoke'
+            'revoke': 'Revoke',
+            'debug': 'OEM Debug',
+            'debug_ifx': ' IFX Debug'
         }
         dir_name = os.path.dirname(path)
         if dir_name:
@@ -66,8 +68,10 @@ class TokenMXS22:
         path = os.path.abspath(path)
         with open(path, 'wb') as f:
             f.write(cert)
-        logger.info(
-            '%s token created (%s)', token_types[token_type], path)
+        if token_type:
+            logger.info('%s token created (%s)', token_types[token_type], path)
+        else:
+            logger.info('Token created (%s)', path)
 
     @staticmethod
     def sign_token(token, priv_key):

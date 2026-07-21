@@ -13,4 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from .debug_token import DebugTokenPsocC3
+from .debug_token_v2 import DebugTokenPsocC3v2
 from .debug_token_parser import DebugTokenParserPsocC3
+from .token_template_validator import TokenTemplateValidatorPsocC3
+from .token_template_validator_v2 import TokenTemplateValidatorPsocC3v2

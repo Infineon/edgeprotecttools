@@ -16,7 +16,7 @@
 # Quick start
 
 ## 1. Define a target
-Run the following command and find the name of your target in the list of supported targets.
+Run the following command and find the name of your target in the list of supported targets (`xmc7100`, `xmc7200` or `xmc5000`).
 ```bash
 $ edgeprotecttools device-list
 ```
@@ -121,9 +121,6 @@ The file specified in the `--image` option will be signed and saved to the file 
 ```bash
 # Sign the image with the additional protected and non-protected TLVs
 $ edgeprotecttools -t xmc7200 sign-image --key-path private.jwk --image example-blinky.hex --output example-blinky-signed.hex  --tlv 0xbb 0xdddddddd --tlv 0xaa 0xff --protected-tlv 0xee 0x12345678
-
-# Sign the image and pad it with zeros up to the slot size
-$ edgeprotecttools -t cyw20829 -p policy/policy_secure.json sign-image --image example-blinky.hex --output example-blinky-signed.hex --key-path private.pem --pad --overwrite-only --slot-size 0x10000 --header-size 0x400
 ```
 
 ## Signing the image in the CySAF format

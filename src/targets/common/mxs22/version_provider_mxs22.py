@@ -16,6 +16,7 @@ import logging
 
 from .enums import LifecycleStage
 from ....core.version_provider import VersionProvider
+from ....execute.silicon_data_reader import si_rev_name
 
 logger = logging.getLogger(__name__)
 
@@ -108,5 +109,25 @@ class VersionProviderMXS22(VersionProvider):
         return None
 
     def check_compatibility(self, tool, **_):
-        """Verifies HW compatibility. N/A for MXS22 platform"""
+        """Verifies HW compatibility."""
+        expected = self.target.rev
+        if not expected:
+            return True
+
+        dev_info = self.target.silicon_data_reader.read_device_info(tool)
+        if dev_info.silicon_rev is None:
+            return True
+
+        actual = si_rev_name(dev_info.silicon_rev)
+
+        if actual.lower() != expected.lower():
+            logger.error(
+                "Incompatible device revision detected: %s (%s). "
+                "The selected target revision is %s",
+                actual,
+                hex(dev_info.silicon_rev),
+                expected.upper()
+            )
+            return False
+
         return True

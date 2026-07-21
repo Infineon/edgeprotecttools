@@ -72,8 +72,30 @@ class OcdSettings:
 
     @property
     def probe_type(self):
-        """Gets probe type"""
-        return  ProjectInitializerBase.get_probe_type()
+        """Gets the probe adapter type."""
+        probe_type = ProjectInitializerBase.get_probe_type()
+        if probe_type is None:
+            probe_type = self.json_data.get(
+                'programming_tool', {}).get('probe_type', '')
+        if not probe_type:
+            return None
+        probe_type = probe_type.lower()
+        supported = ProjectInitializerBase.supported_probe_types
+        if probe_type not in supported:
+            raise ValueError(
+                f"Unsupported probe type '{probe_type}'. "
+                f"Expected one of: {', '.join(supported)}"
+            )
+        return probe_type
+
+    @property
+    def adapter_speed_khz(self):
+        """Gets the probe communication speed in kHz."""
+        speed = ProjectInitializerBase.get_probe_speed_khz()
+        if speed is None:
+            speed = self.json_data.get(
+                'programming_tool', {}).get('probe_speed_khz')
+        return int(speed) if speed is not None else None
 
     @staticmethod
     def serial_config():

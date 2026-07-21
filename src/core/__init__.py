@@ -21,7 +21,3 @@ from .target_builder import TargetBuilder
 from .memory_area import MemoryArea
 from .key_data import KeyData
 from .ocd_settings import OcdSettings
-
-
-def package_name():
-    return __name__.rpartition('.')[0] if '.' in __name__ else None

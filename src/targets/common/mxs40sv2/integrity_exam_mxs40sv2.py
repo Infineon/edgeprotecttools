@@ -245,7 +245,9 @@ class IntegrityExamMXS40Sv2(EntranceExam):
         """Reads silicon data"""
         info = self.target.silicon_data_reader.read_device_info(tool)
         die_id = self.target.silicon_data_reader.read_die_id(tool)
-        lcs = self.target.version_provider.get_lifecycle_stage(tool)
+        lcs = self.target.version_provider.get_lifecycle_stage(
+            tool, alt_name=True
+        )
         return info.silicon_id, info.silicon_rev, info.family_id, die_id, lcs
 
     def log_silicon_data(self, tool):

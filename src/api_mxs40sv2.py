@@ -195,12 +195,19 @@ class Mxs40sv2API(CommonAPI):
             self.target.version_provider.log_version(self.tool)
 
             lcs = self.target.version_provider.get_lifecycle_stage(self.tool)
-            if lcs not in (LifecycleStage.NORMAL_PROVISIONED.name,
-                           LifecycleStage.SECURE.name):
-                logger.error('Unable to execute Device Integrity Check in the '
-                             'current LCS. Expected LCS is %s, %s',
-                             LifecycleStage.NORMAL_PROVISIONED.name,
-                             LifecycleStage.SECURE.name)
+
+            normal_provisioned = LifecycleStage.NORMAL_PROVISIONED.name
+            secure = LifecycleStage.SECURE.name
+
+            alt_names = getattr(self.target.version_provider, 'alt_names', {})
+
+            if lcs not in (normal_provisioned, secure):
+                logger.error(
+                    'Unable to execute Device Integrity Check in the '
+                    'current LCS. Expected LCS is %s, %s',
+                    alt_names.get(normal_provisioned, normal_provisioned),
+                    alt_names.get(secure, secure)
+                )
                 ConnectHelper.disconnect(self.tool)
                 return False
 

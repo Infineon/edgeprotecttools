@@ -31,6 +31,15 @@ class PkgData:
         return __pkg_name__
 
     @staticmethod
+    def package_root():
+        """Gets the root package name resolved at runtime.
+        Returns 'src' in a development layout and the installed package
+        name when the package is installed. Use this as the package
+        argument for dynamic imports.
+        """
+        return __name__.rpartition('.')[0] or None
+
+    @staticmethod
     def pkg_version():
         """Gets the package version"""
         return __version__

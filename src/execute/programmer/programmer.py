@@ -16,12 +16,14 @@ from .base import ProgrammerBase
 from .chipload_wrapper import ChipLoad
 from .openocd_wrapper import Openocd
 from .dfuht_wrapper import Dfuht
+from .jlink_wrapper import Jlink
 from ...core import OcdSettings
 
 tools = {
     'openocd': Openocd,
     'serial': Dfuht,
-    'chipload': ChipLoad
+    'chipload': ChipLoad,
+    'jlink': Jlink,
 }
 
 

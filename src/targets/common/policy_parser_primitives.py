@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import re
+
+from .mxs22.custom_keys_packet import CustomKeysPacket
 
 
 class PolicyParserPrimitives:
@@ -113,6 +116,17 @@ class PolicyParserPrimitives:
                     f"Error parsing data: '{'.'.join(keys)}'"
                 ) from e
         return data
+
+    def psa_key_payload(self, *keys):
+        """Gets a payload of a PSA key specified as hex string or file path."""
+        key = self.field(*keys)
+
+        if not (re.fullmatch(r'^([0-9A-Fa-f]{2})+$', key)
+                or os.path.isabs(key)):
+            key = os.path.abspath(os.path.join(self.policy_dir, key))
+
+        loaded_key = CustomKeysPacket.load_key(key)
+        return CustomKeysPacket.key_data(loaded_key)
 
     def int_field(self, *keys):
         """Gets an integer field"""

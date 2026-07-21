@@ -3,7 +3,8 @@
         "name": "openocd",
         "path": "",
         "config": "",
-        "probe_type": "kitprog3"
+        "probe_type": "kitprog3",
+        "probe_speed_khz": 1000
     },
     "serial_interface": {
         "protocol": "",

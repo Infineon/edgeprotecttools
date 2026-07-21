@@ -96,12 +96,20 @@ class RamAppStatusPsocC3(RamAppStatusMXS40Sv2):
                 "desc": "EFUSE data check failed"
             },
             0x4500010C: {
-                "status": "CYAPP_CBOR_INVALID",
-                "desc": "CBOR packet invalid"
+                "status": "CYAPP_RESPONSE_PACKET_FAILED",
+                "desc": "Fail to generate response packet"
             },
             0x4500010D: {
                 "status": "CYAPP_PROT_FW_POLICY_INVALID",
                 "desc": "PROT_FW_POLICY is invalid after a decryption"
+            },
+            0x4500010E: {
+                "status": "CYAPP_PROV_IFX_OEM_CERT_NOT_ALLOWED",
+                "desc": "Injection of IFX_OEM_CERT is not allowed in SECURE LCS"
+            },
+            0x4500010F: {
+                "status": "CYAPP_PACKET_SIGN_VERIFY_FAILED",
+                "desc": "Signature verification failed"
             },
             0x45000200: {
                 "status": "CYAPP_ECDH_KEYGEN_FAILED",

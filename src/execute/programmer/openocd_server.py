@@ -150,6 +150,9 @@ class OpenocdServer(OcdConfig):
         if settings.probe_type:
             self.probe_interface = settings.probe_type
 
+        if settings.adapter_speed_khz is not None:
+            self.adapter_speed_khz = settings.adapter_speed_khz
+
         if self.custom_config['interface']:
             self.probe_interface = self.custom_config['interface']
 

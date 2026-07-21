@@ -15,7 +15,7 @@
 import os
 from importlib import import_module
 
-from ..core import package_name
+from ..pkg_globals import PkgData
 
 
 def __target_map() -> dict:
@@ -27,7 +27,7 @@ def __target_map() -> dict:
     consolidates the parts from all available targets
     """
     full_target_map = {}
-    pkg_name = package_name()
+    pkg_name = PkgData.package_root()
     for entry in os.scandir(os.path.dirname(__file__)):
         if entry.is_dir() and 'target_builder.py' in os.listdir(entry.path):
             module = import_module(f'.targets.{entry.name}', package=pkg_name)
@@ -55,6 +55,23 @@ def target_data(target_name, rev=None):
     if 'default' in target_map[target_name]:
         return target_map[target_name]['default']
     return next(iter(target_map[target_name].items()))[1]
+
+
+def default_rev(target_name):
+    """Gets the default revision name for a target.
+    Returns None if the target has no revisions.
+    """
+    target_name = target_name.lower()
+    revisions = __target_map()[target_name]
+    if 'class' in revisions:
+        return None
+    default_entry = revisions.get('default')
+    if default_entry is None:
+        return None
+    for rev, entry in revisions.items():
+        if rev != 'default' and entry == default_entry:
+            return rev
+    return None
 
 
 def print_targets():
@@ -129,7 +146,3 @@ def is_cyw559xx(target):
 def is_psb3xxx(target):
     """Gets a value indicating whether the target is PSB3xxx"""
     return target.lower() == 'psb3xxx'
-
-def is_pse8x7(target):
-    """Gets a value indicating whether the target is pse8x7"""
-    return target.lower() == 'pse8x7'

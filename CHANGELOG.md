@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.0.0
+### Added
+- PSOC™ Edge E8x B1 revision support
+- PSOC™ Edge E8x B1 is now the default revision for pse8xs2 and pse8xs4 target families
+- Support for XMC5000 device
+
 ## 1.7.0
 ### Added
 - Support for LMS, XMSS, and ML-DSA PQC algorithms (key generation, signing, and verification)

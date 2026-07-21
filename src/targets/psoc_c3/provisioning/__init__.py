@@ -14,6 +14,9 @@
 # limitations under the License.
 from .ram_app_loader import RamAppLoaderPsocC3
 from .swd_loader import SwdLoaderPsocC3
+from .swd_loader_v2 import SwdLoaderPsocC3v2
 from .serial_loader import SerialLoaderPsocC3
+from .serial_loader_v2 import SerialLoaderPsocC3v2
+from .ram_app_loader_v2 import RamAppLoaderPsocC3v2
 from .provision_device import ProvisioningPsocC3
 from .provision_device_v2 import ProvisioningPsocC3v2

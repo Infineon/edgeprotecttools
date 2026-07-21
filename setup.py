@@ -46,13 +46,14 @@ if sys.version_info.major == 3 and sys.version_info.minor == 8:
         'pyserial>=3.5',
         'pyhsslms>=2.0.0,<3.0.0',
         'ecdsa',
+        'pylink-square>=1.0.0',
         'backports.tarfile'
     ]
     python_requires = '>=3.8,<3.9'
 else:
     install_requires = [
         'setuptools>=80.9.0,<83.0.0',
-        'cryptography>=44.0.2',
+        'cryptography>=44.0.2,<47',
         'click>=8.0.4',
         'intelhex>=2.3.0',
         'python-jose>=3.3.0',
@@ -63,7 +64,8 @@ else:
         'pyelftools>=0.31',
         'pyserial>=3.5',
         'pyhsslms>=2.0.0,<3.0.0',
-        'ecdsa'
+        'ecdsa',
+        'pylink-square>=1.0.0'
     ]
     python_requires = '>=3.9'
 

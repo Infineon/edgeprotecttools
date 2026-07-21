@@ -109,6 +109,9 @@ def main(ctx, target, rev, policy, verbose, quiet, logfile_off, timestamps,
         log_file = False
     else:
         policy_path = policy.name if policy else None
+        if rev is None:
+            rev = ProjectInitializerBase.get_target_rev(target_name=target)
+            logger.debug("Target '%s' revision: %s", target, rev)
     try:
         ctx.obj['TOOL'] = ProvisioningPackage(
             target=target,
@@ -425,17 +428,34 @@ def cmd_probe_list(_ctx):
 
 @main.command('set-ocd', help='Sets on-chip debugger')
 @click.option('-n', '--name', required=True, help='Tool name',
-              type=click.Choice(['openocd', 'serial', 'chipload']))
+              type=click.Choice(['openocd', 'serial', 'chipload', 'jlink']))
 @click.option('-p', '--path', default='',
               help='Path to the tool root directory')
 @click.option('-c', '--config', default='', help='Path to the target config')
+@click.option('--probe-type',
+              type=click.Choice(['kitprog3', 'jlink'], case_sensitive=False),
+              help='Debug probe adapter (default: derived from --name)')
+@click.option('--speed-khz', type=click.INT,
+              help='Debug adapter communication speed in kHz')
 @click.pass_context
-def cmd_set_ocd(_ctx, name, path, config):
+def cmd_set_ocd(_ctx, name, path, config, probe_type, speed_khz):
     @process_handler()
     def process():
         ocd_config = config
         ocd_path = path
         tool = ProgrammingTool.create(name)
+
+        if name == 'jlink' and ocd_path:
+            logger.warning(
+                "The '--path' option is not applicable for J-Link: "
+                "the JLinkARM library is discovered automatically"
+            )
+            ocd_path = ''
+
+        # Derive default probe type from the OCD name when not explicit
+        effective_probe_type = probe_type or (
+            'jlink' if name == 'jlink' else 'kitprog3'
+        )
 
         if not os.path.isfile(PkgData.pkg_settings()):
             os.makedirs(PkgData.pkg_user_data_dir(), exist_ok=True)
@@ -458,7 +478,11 @@ def cmd_set_ocd(_ctx, name, path, config):
                 if not validate_mtb(name, ocd_path):
                     return False
 
-            ProjectInitializerBase.set_ocd_data(name, ocd_path, ocd_config)
+            ProjectInitializerBase.set_ocd_data(
+                name, ocd_path, ocd_config,
+                probe_type=effective_probe_type,
+                probe_speed_khz=speed_khz
+            )
             logger.info('Data in the project settings file changed')
         else:
             with open(PkgData.pkg_settings(), 'r', encoding='utf-8') as f:
@@ -466,6 +490,9 @@ def cmd_set_ocd(_ctx, name, path, config):
             data['programming_tool']['name'] = name
             data['programming_tool']['path'] = ocd_path
             data['programming_tool']['config'] = ocd_config
+            data['programming_tool']['probe_type'] = effective_probe_type
+            if speed_khz is not None:
+                data['programming_tool']['probe_speed_khz'] = speed_khz
 
             if not (validate_mtb(name, ocd_path)
                     or validate_ptp(name, ocd_path)):
@@ -1226,8 +1253,12 @@ def cmd_encrypt_aes(_ctx, cbor_input, output, key, iv, nonce, add_iv, iv_output,
 @click.option('-s', '--security-counter', callback=validate_security_counter,
               help='Specify the value of security counter. Use the `auto` '
                    'keyword to automatically generate it from the image version')
-@click.option('--align', type=click.Choice(['1', '2', '4', '8']), default='8',
-              help='Flash alignment. Default: 8')
+@click.option('--align', type=click.Choice(['1', '2', '4', '8', '16', '32']),
+              default='8', help='Flash alignment. Default: 8')
+@click.option('--max-align', type=click.Choice(['8', '16', '32']),
+              help='Maximum flash alignment. Set if flash alignment of the '
+              'primary and secondary slot differ and any of them is larger '
+              'than 8')
 @click.option('--public-key-format', type=click.Choice(['hash', 'full']),
               default='hash', help='The public key format in the image TLV - '
                                    'full key or hash of the key. Default: hash')
@@ -1238,6 +1269,9 @@ def cmd_encrypt_aes(_ctx, cbor_input, output, key, iv, nonce, add_iv, iv_output,
               default='asn1', help='The image signature encoding. Default: asn1')
 @click.option('--pad', is_flag=True, help='Add padding to the image trailer')
 @click.option('--confirm', is_flag=True, help='Add image OK status to trailer')
+@click.option('--test', default=False, is_flag=True,
+              help='When padding the image, mark it for a test swap (implies '
+                   '--pad)')
 @click.option('--overwrite-only', is_flag=True,
               help='Use overwrite mode instead of swap')
 @click.option('--boot-record', metavar='sw_type', help='Create CBOR encoded '
@@ -1290,10 +1324,10 @@ def cmd_encrypt_aes(_ctx, cbor_input, output, key, iv, nonce, add_iv, iv_output,
 @click.pass_context
 def cmd_sign_image(ctx, image, output, key, user_sha, image_config, erased_val,
                    header_size, slot_size, min_erase_size, image_version,
-                   security_counter, align, public_key_format, pubkey_encoding,
-                   signature_encoding, pad, confirm, overwrite_only,
-                   boot_record, hex_addr, load_addr, rom_fixed, max_sectors,
-                   save_enctlv, dependencies, encrypt,
+                   security_counter, align, max_align, public_key_format,
+                   pubkey_encoding, signature_encoding, pad, confirm, test,
+                   overwrite_only, boot_record, hex_addr, load_addr, rom_fixed,
+                   max_sectors, save_enctlv, dependencies, encrypt,
                    protected_tlv, tlv, remove_tlv, enckey, enckey_role,
                    encrypt_addr, nonce_output, kdf):
     """Signs application image"""
@@ -1314,11 +1348,13 @@ def cmd_sign_image(ctx, image, output, key, user_sha, image_config, erased_val,
             image_version=image_version,
             security_counter=security_counter,
             align=align,
+            max_align=max_align,
             public_key_format=public_key_format,
             pubkey_encoding=pubkey_encoding,
             signature_encoding=signature_encoding,
             pad=pad,
             confirm=confirm,
+            test=test,
             overwrite_only=overwrite_only,
             boot_record=boot_record,
             hex_addr=hex_addr,
@@ -1370,8 +1406,12 @@ def cmd_sign_image(ctx, image, output, key, user_sha, image_config, erased_val,
 @click.option('-s', '--security-counter', callback=validate_security_counter,
               help='Specify the value of security counter. Use the `auto` '
                    'keyword to automatically generate it from the image version')
-@click.option('--align', type=click.Choice(['1', '2', '4', '8']), default='8',
-              help='Flash alignment. Default: 8')
+@click.option('--align', type=click.Choice(['1', '2', '4', '8', '16', '32']),
+              default='8', help='Flash alignment. Default: 8')
+@click.option('--max-align', type=click.Choice(['8', '16', '32']),
+              help='Maximum flash alignment. Set if flash alignment of the '
+              'primary and secondary slot differ and any of them is larger '
+              'than 8')
 @click.option('--pubkey', type=click.Path(),
               help='The public key to be added to the image')
 @click.option('--public-key-format', type=click.Choice(['hash', 'full']),
@@ -1382,6 +1422,9 @@ def cmd_sign_image(ctx, image, output, key, user_sha, image_config, erased_val,
               'the image manifest: full key or hash of the key. Default: der')
 @click.option('--pad', is_flag=True, help='Add padding to the image trailer')
 @click.option('--confirm', is_flag=True, help='Add image OK status to trailer')
+@click.option('--test', default=False, is_flag=True,
+              help='When padding the image, mark it for a test swap (implies '
+                   '--pad)')
 @click.option('--overwrite-only', is_flag=True,
               help='Use overwrite mode instead of swap')
 @click.option('--boot-record', metavar='sw_type', help='Create CBOR encoded '
@@ -1433,11 +1476,10 @@ def cmd_sign_image(ctx, image, output, key, user_sha, image_config, erased_val,
               help='Key derivation function name')
 @click.pass_context
 def cmd_image_metadata(ctx, image, output, user_sha, decrypted, pubkey,
-                       image_config,
-                       erased_val, header_size, slot_size, min_erase_size,
-                       image_version, security_counter, align,
-                       public_key_format, pubkey_encoding,
-                       pad, confirm, overwrite_only, boot_record, hex_addr,
+                       image_config, erased_val, header_size, slot_size,
+                       min_erase_size, image_version, security_counter, align,
+                       max_align, public_key_format, pubkey_encoding, pad,
+                       confirm, test, overwrite_only, boot_record, hex_addr,
                        load_addr, rom_fixed, max_sectors, save_enctlv,
                        dependencies, encrypt, protected_tlv, tlv, remove_tlv,
                        enckey, enckey_role, encrypt_addr, nonce_output, kdf):
@@ -1461,10 +1503,12 @@ def cmd_image_metadata(ctx, image, output, user_sha, decrypted, pubkey,
             image_version=image_version,
             security_counter=security_counter,
             align=align,
+            max_align=max_align,
             public_key_format=public_key_format,
             pubkey_encoding=pubkey_encoding,
             pad=pad,
             confirm=confirm,
+            test=test,
             overwrite_only=overwrite_only,
             boot_record=boot_record,
             hex_addr=hex_addr,

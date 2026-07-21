@@ -53,11 +53,13 @@ class SignTool(SignToolBase):
         self.image_version = '0.0.0'
         self.security_counter = None
         self.align = 8
+        self.max_align = None
         self.public_key_format = None
         self.pubkey_encoding = None
         self.signature_encoding = None
         self.pad = False
         self.confirm = False
+        self.test = False
         self.overwrite_only = False
         self.boot_record = None
         self.min_erase_size = self.DEFAULT_MIN_ERASE_SIZE
@@ -100,6 +102,8 @@ class SignTool(SignToolBase):
             self.header_size = int(str(kwargs.get('header_size')), 0)
         if kwargs.get('align'):
             self.align = int(str(kwargs.get('align')), 0)
+        if kwargs.get('max_align'):
+            self.max_align = int(str(kwargs.get('max_align')), 0)
 
         self.public_key_format = str(
             kwargs.get('public_key_format', 'hash')
@@ -121,6 +125,7 @@ class SignTool(SignToolBase):
 
         self.pad = kwargs.get('pad', self.pad)
         self.confirm = kwargs.get('confirm', self.confirm)
+        self.test = kwargs.get('test', self.test)
         self.overwrite_only = kwargs.get('overwrite_only', self.overwrite_only)
         self.boot_record = kwargs.get('boot_record', self.boot_record)
         if kwargs.get('min_erase_size'):
@@ -465,6 +470,7 @@ class SignTool(SignToolBase):
             'key': self.key if self.key else None,
             'public_key_format': self.public_key_format,
             'align': self.align,
+            'max_align': self.max_align,
             'version': self.image_version,
             'pad_sig': False,
             'header_size': self.header_size,
@@ -472,6 +478,7 @@ class SignTool(SignToolBase):
             'slot_size': self.slot_size,
             'pad': self.pad,
             'confirm': self.confirm,
+            'test': self.test,
             'max_sectors': self.max_sectors,
             'overwrite_only': self.overwrite_only,
             'endian': self.endian,

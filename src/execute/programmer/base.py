@@ -221,3 +221,18 @@ class ProgrammerBase(metaclass=ABCMeta):
         @param filename: Image file path
         @return: True if verification success, otherwise False
         """
+
+
+    def reconnect(self):
+        """Reconnect to the target after a connection-breaking event.
+
+        Called after operations that reset the debug port (e.g., writing
+        to RES_SOFT_CTL). Different programmers handle this differently:
+        - OpenOCD: may need to re-examine AP
+        - J-Link: needs to reinitialize DAP via CoreSight
+
+        @return: True on success, False on failure.
+
+        Default implementation is a no-op that returns True.
+        """
+        return True

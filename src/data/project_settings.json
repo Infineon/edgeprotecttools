@@ -5,6 +5,7 @@
         "ocd_path": "",
         "ocd_config": "",
         "probe_type": "kitprog3",
+        "probe_speed_khz": 1000,
         "default_policy": null
     },
     "serial_interface": {

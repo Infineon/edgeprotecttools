@@ -15,14 +15,7 @@
 from .target_builder import PSE8xS2Builder
 
 target_map = {
-    "pse84": {
-        'default': {
-            'class': PSE8xS2Builder,
-            'family': 'PSOC™ Edge Family',
-            'display_name': 'PSOC™ Edge E84',
-            'type': 'family',
-            'platform': 'mxs22'
-        },
+    'pse84': {
         'b0': {
             'class': PSE8xS2Builder,
             'family': 'PSOC™ Edge Family',
@@ -31,14 +24,7 @@ target_map = {
             'platform': 'mxs22'
         }
     },
-    "pse8xs2": {
-        'default': {
-            'class': PSE8xS2Builder,
-            'family': 'PSOC™ Edge Family',
-            'display_name': 'PSOC™ Edge E8x',
-            'type': 'family',
-            'platform': 'mxs22'
-        },
+    'pse8xs2': {
         'b0': {
             'class': PSE8xS2Builder,
             'family': 'PSOC™ Edge Family',

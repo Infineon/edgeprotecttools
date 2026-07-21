@@ -59,6 +59,8 @@ class CustomFormatter(logging.Formatter):
 
         if 'openocd' in record.name:
             package = 'O'
+        elif 'jlink' in record.name:
+            package = 'J'
         elif record.name.startswith(self.package_name):
             package = self.package_short_name
             if record.levelno == logging.ERROR:

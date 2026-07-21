@@ -87,12 +87,19 @@
                         "default": "auto"
                     },
                     "align": {
-                        "title": "Flash alignment. Applicable values: 1, 2, 4, 8",
+                        "title": "Flash alignment. Applicable values: 1, 2, 4, 8, 16, 32",
                         "type": [
                             "integer",
                             "string"
                         ],
                         "default": 8
+                    },
+                    "max-align": {
+                        "title": "Maximum flash alignment. Applicable values: 8, 16, 32",
+                        "type": [
+                            "integer",
+                            "string"
+                        ]
                     },
                     "pubkey-format": {
                         "title": "The public key format in the image TLV - full key or hash of the key. Applicable values: 'hash', or 'full'",
@@ -127,6 +134,10 @@
                     },
                     "confirm": {
                         "title": "Indicates whether to add image OK status to trailer",
+                        "type": "boolean"
+                    },
+                    "test": {
+                        "title": "When padding the image, mark it for a test swap",
                         "type": "boolean"
                     },
                     "overwrite-only": {

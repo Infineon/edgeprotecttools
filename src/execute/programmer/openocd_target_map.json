@@ -26,7 +26,9 @@
 
   "pse84": {"target": "infineon/pse84xgxs2", "mcu": "pse84", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "pse84_b0": {"target": "infineon/pse84xgxs2", "mcu": "pse84", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
-  "pse8x7": {"target": "infineon/pse8x7", "mcu": "pse8x7", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
+  "pse84_b1": {"target": "infineon/pse84xgxs2", "mcu": "pse84", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
+  "pse8x7s2": {"target": "infineon/pse8x7nxs2", "mcu": "pse8x7nxs2", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
+  "pse8x7s4": {"target": "infineon/pse8x7nxs4", "mcu": "pse8x7nxs4", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "pse8xs2": {"target": "infineon/pse84xgxs2", "mcu": "pse84xgxs2", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "pse8xs2_b0": {"target": "infineon/pse84xgxs2", "mcu": "pse84xgxs2", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "pse8xs2_b1": {"target": "infineon/pse84xgxs2", "mcu": "pse84xgxs2", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
@@ -34,12 +36,14 @@
   "pse8xs4_b0": {"target": "infineon/pse84xgxs4", "mcu": "pse84xgxs4", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "pse8xs4_b1": {"target": "infineon/pse84xgxs4", "mcu": "pse84xgxs4", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "psoc_c3": {"target": "infineon/psc3", "mcu": "psc3", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
+  "psoc_c3x4": {"target": "infineon/psc3m4", "mcu": "psc3", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "psoc_c3x6": {"target": "infineon/psc3x6", "mcu": "psc3", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
+  "mammoth": {"target": "infineon/ms33", "mcu": "psc3", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "psoc_c3p8": {"target": "infineon/psc3x8", "mcu": "psc3", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "psoc_c3x7": {"target": "infineon/psc3x8", "mcu": "psc3", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "psoc_c3x8": {"target": "infineon/psc3x8", "mcu": "psc3", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "psb3xxx": {"target": "infineon/psb3xxx", "mcu": "psb3xxx", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "acw64xx": {"target": "infineon/psoc1208", "mcu": "psoc1208", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "acw74xx": {"target": "infineon/psoc1208", "mcu": "psoc1208", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
-  "acw76xx": {"target": "infineon/psoc1208", "mcu": "psoc1208", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"}
+  "acw76xx": {"target": "infineon/acw76xx", "mcu": "acw76xx", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"}
 }

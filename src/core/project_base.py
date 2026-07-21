@@ -21,11 +21,12 @@ from shutil import copyfile
 from abc import ABC, abstractmethod
 
 from ..pkg_globals import PkgData
+from ..targets import default_rev
 from .enums import Protocol
 
 logger = logging.getLogger(__name__)
 
-OcdData = namedtuple('OcdData', 'name path config')
+OcdData = namedtuple('OcdData', 'name path config probe_type probe_speed_khz')
 
 
 class ProjectInitializerBase(ABC):
@@ -111,6 +112,9 @@ class ProjectInitializerBase(ABC):
                 data = json.load(f)
 
         data['user_settings']['target'] = self.target.name
+        rev = self.target_rev()
+        if rev is not None:
+            data['user_settings']['rev'] = rev
         data['user_settings']['ocd_name'] = ocd_name
         data['user_settings']['ocd_path'] = ocd_path
         data['user_settings']['default_policy'] = policy
@@ -122,6 +126,36 @@ class ProjectInitializerBase(ABC):
             json.dump(data, f, indent=4)
         self.remove_legacy_metadata_files()
 
+    def target_rev(self):
+        """Gets the target revision to store in the project metadata file.
+        Falls back to the target's default revision when none was given on
+        the command line.
+        Returns None to omit the 'rev' field.
+        """
+        rev = self.target.rev
+        if rev is None:
+            rev = default_rev(self.target.name)
+        return rev
+
+    @staticmethod
+    def get_target_rev(target_name=None, cwd=None):
+        """Gets target revision from the project metadata file.
+        Returns None when metadata or revision is not available.
+        """
+        metadata_file = ProjectInitializerBase.get_medatada_file(cwd=cwd)
+        if metadata_file is None:
+            return None
+        with open(metadata_file, encoding='utf-8') as f:
+            data = json.load(f)
+        user_settings = data.get('user_settings', {})
+        project_target = user_settings.get('target')
+        if target_name and project_target is None:
+            return None
+        rev = user_settings.get('rev')
+        if rev is None and project_target:
+            rev = default_rev(project_target)
+        return rev
+
     def remove_legacy_metadata_files(self):
         """Removes legacy metadata files"""
         for filename in self.supported_matadata_files:
@@ -132,68 +166,72 @@ class ProjectInitializerBase(ABC):
                     pass
 
     @staticmethod
-    def get_probe_type():
-        """
-        Retrieves the probe type from the metadata file.
-        Returns:
-            str or None: The probe type if specified and valid, None otherwise.
-        Raises:
-            ValueError: If the probe type is specified but not supported.
-
-        """
-        probe_type = None
-        metadata_file = ProjectInitializerBase.get_medatada_file()
-        global_settings_file = ProjectInitializerBase.get_global_settings_file()
-
-        if metadata_file:
-            with open(metadata_file, encoding='utf-8') as f:
-                data = json.load(f)
-                probe_type = data.get(
-                    'user_settings', {}).get('probe_type', '')
-        elif global_settings_file:
-            with open(global_settings_file, encoding='utf-8') as f:
-                data = json.load(f)
-                probe_type = data.get(
-                    'programming_tool', {}).get('probe_type', '')
-
-        if probe_type:
-            probe_type = probe_type.lower()
-        else:
-            return None
-
-        if probe_type not in ProjectInitializerBase.supported_probe_types:
-            supported = ', '.join(ProjectInitializerBase.supported_probe_types)
-            raise ValueError(
-                f"Unsupported probe type '{probe_type}'. "
-                f"Expected one of: {supported}"
-            )
-
-        return probe_type
-
-    @staticmethod
     def get_ocd_data(cwd=None):
-        """Gets OCD name and path from the project metadata file
-        :return: A named tuple OcdData(name, path, config)
+        """Gets OCD configuration from the project metadata file.
+
+        :return: A named tuple OcdData(name, path, config,
+                 probe_type, probe_speed_khz)
         """
         metadata_file = ProjectInitializerBase.get_medatada_file(cwd=cwd)
         with open(metadata_file, encoding='utf-8') as f:
             data = json.load(f)
-        try:
-            ocd_name = data['user_settings']['ocd_name']
-            ocd_path = data['user_settings']['ocd_path']
-            ocd_config = data['user_settings'].get('ocd_config')
-        except KeyError:
-            ocd_name = None
-            ocd_path = None
-            ocd_config = None
+        settings = data.get('user_settings', {})
+        ocd_name = settings.get('ocd_name')
+        ocd_path = settings.get('ocd_path')
+        ocd_config = settings.get('ocd_config')
+        probe_type = settings.get('probe_type')
+        probe_speed_khz = settings.get('probe_speed_khz')
 
         if ocd_path:
             ocd_path = os.path.abspath(ocd_path)
-        return OcdData(ocd_name, ocd_path, ocd_config)
+        speed = int(probe_speed_khz) if probe_speed_khz is not None else None
+        return OcdData(ocd_name, ocd_path, ocd_config, probe_type, speed)
 
     @staticmethod
-    def set_ocd_data(ocd_name, ocd_path, ocd_config=None, cwd=None):
-        """Sets OCD name and path to the project metadata file"""
+    def get_probe_type():
+        """Gets probe type from project or global settings.
+
+        :return: str or None
+        """
+        if ProjectInitializerBase.is_project():
+            return ProjectInitializerBase.get_ocd_data().probe_type
+        global_settings_file = ProjectInitializerBase.get_global_settings_file()
+        if global_settings_file:
+            with open(global_settings_file, encoding='utf-8') as f:
+                data = json.load(f)
+            return data.get('programming_tool', {}).get('probe_type')
+        return None
+
+    @staticmethod
+    def get_probe_speed_khz():
+        """Gets probe speed in kHz from project or global settings.
+
+        :return: int or None
+        """
+        if ProjectInitializerBase.is_project():
+            return ProjectInitializerBase.get_ocd_data().probe_speed_khz
+        global_settings_file = ProjectInitializerBase.get_global_settings_file()
+        if global_settings_file:
+            with open(global_settings_file, encoding='utf-8') as f:
+                data = json.load(f)
+            speed = data.get('programming_tool', {}).get('probe_speed_khz')
+            return int(speed) if speed is not None else None
+        return None
+
+    @staticmethod
+    def set_ocd_data(ocd_name, ocd_path, ocd_config=None,
+                     probe_type=None, probe_speed_khz=None, cwd=None):
+        """Sets OCD data to the project metadata file.
+
+        @param ocd_name: OCD tool name (e.g. ``'openocd'``, ``'jlink'``).
+        @param ocd_path: Path to the OCD tool root directory.
+        @param ocd_config: Path to the OCD target config file.
+        @param probe_type: Debug probe adapter (e.g. ``'kitprog3'``,
+            ``'jlink'``). When ``None`` the existing value is unchanged.
+        @param probe_speed_khz: Probe communication speed in kHz. When
+            ``None`` the existing value is unchanged.
+        @param cwd: Directory containing the metadata file.
+        """
         metadata_file = ProjectInitializerBase.get_medatada_file(cwd=cwd)
         with open(metadata_file, 'r+', encoding='utf-8') as f:
             data = json.load(f)
@@ -201,9 +239,15 @@ class ProjectInitializerBase(ABC):
                 data['user_settings']['ocd_name'] = ocd_name
                 data['user_settings']['ocd_path'] = ocd_path
                 data['user_settings']['ocd_config'] = ocd_config
+                if probe_type is not None:
+                    data['user_settings']['probe_type'] = probe_type
+                if probe_speed_khz is not None:
+                    data['user_settings']['probe_speed_khz'] = probe_speed_khz
             except KeyError as e:
-                raise KeyError(f'Invalid project configuration file structure '
-                               f'({metadata_file})') from e
+                raise KeyError(
+                    f'Invalid project configuration file structure '
+                    f'({metadata_file})'
+                ) from e
             f.seek(0)
             json.dump(data, f, indent=4)
             f.truncate()
@@ -322,6 +366,7 @@ class ProjectInitializerBase(ABC):
             f.seek(0)
             json.dump(data, f, indent=4)
             f.truncate()
+
 
     @staticmethod
     def get_default_policy(cwd=None):

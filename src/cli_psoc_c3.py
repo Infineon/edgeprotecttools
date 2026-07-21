@@ -40,7 +40,9 @@ def cmd_device_info(ctx, probe_id):
         ConnectHelper.do_not_disconnect = True
         dev_info = ctx.obj['TOOL'].get_device_info(probe_id)
         ConnectHelper.do_not_disconnect = False
-        lifecycle = ctx.obj['TOOL'].get_device_lifecycle(probe_id)
+        lifecycle = ctx.obj['TOOL'].get_device_lifecycle(
+            probe_id, alt_name=True
+        )
 
         logger.info('*' * 39)
         if dev_info:

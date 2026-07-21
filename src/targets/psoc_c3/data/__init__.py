@@ -15,3 +15,4 @@
 from .ram_app_status_codes import RamAppStatusPsocC3
 from .rom_boot_status_codes import RomBootStatusPsocC3
 from .status_codes import StatusPsocC3
+from .status_codes_v2 import StatusPsocC3v2

@@ -15,14 +15,7 @@
 from .target_builder import PSE8xS4Builder
 
 target_map = {
-    "pse8xs4": {
-        'default': {
-            'class': PSE8xS4Builder,
-            'family': 'PSOC™ Edge Family',
-            'display_name': 'PSOC™ Edge E8x',
-            'type': 'family',
-            'platform': 'mxs22'
-        },
+    'pse8xs4': {
         'b0': {
             'class': PSE8xS4Builder,
             'family': 'PSOC™ Edge Family',

@@ -28,5 +28,12 @@ target_map = {
         'display_name': 'XMC7xxx',
         'type': 'family',
         'platform': 'traveo_t2g'
+    },
+    'xmc5000': {
+        'class': XMC7xxxBuilder,
+        'family': 'XMC5000 Family',
+        'display_name': 'XMC5xxx',
+        'type': 'family',
+        'platform': 'traveo_t2g'
     }
 }

@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # Copyright 2017-2020 Linaro Limited
-# Copyright 2019-2020 Arm Limited
+# Copyright 2019-2023 Arm Limited
 # (c) 2022-2026, Infineon Technologies AG, or an affiliate of Infineon
 # Technologies AG.  SPDX-License-Identifier: Apache-2.0
 # 
@@ -309,6 +309,9 @@ def extend(align, version, header_size, slot_size, infile, outfile,
 @click.option('--confirm', default=False, is_flag=True,
               help='When padding the image, mark it as confirmed (implies '
                    '--pad)')
+@click.option('--test', default=False, is_flag=True,
+              help='When padding the image, mark it for a test swap (implies '
+                   '--pad)')
 @click.option('--pad', default=False, is_flag=True,
               help='Pad image to --slot-size bytes, adding trailer magic')
 @click.option('-S', '--slot-size', type=BasedIntParamType(), required=True,
@@ -329,8 +332,15 @@ def extend(align, version, header_size, slot_size, infile, outfile,
               help='Specify the value of security counter. Use the `auto` '
               'keyword to automatically generate it from the image version.')
 @click.option('-v', '--version', callback=validate_version,  required=True)
-@click.option('--align', type=click.Choice(['1', '2', '4', '8']),
-              required=True)
+@click.option('--align', type=click.Choice(['1', '2', '4', '8', '16', '32']),
+              default='1',
+              required=False,
+              help='Alignment used by swap update modes.')
+@click.option('--max-align', type=click.Choice(['8', '16', '32']),
+              required=False,
+              help='Maximum flash alignment. Set if flash alignment of the '
+              'primary and secondary slot differ and any of them is larger '
+              'than 8.')
 @click.option('--public-key-format', type=click.Choice(['hash', 'full']),
               default='hash', help='In what format to add the public key to '
               'the image manifest: full key or hash of the key.')
@@ -355,11 +365,12 @@ def extend(align, version, header_size, slot_size, infile, outfile,
                    'which is 256 if no cryptographic signature is used, '
                    'or default for signature type')
 def sign(key, public_key_format, align, version, pad_sig, header_size,
-         pad_header, slot_size, pad, confirm, max_sectors, overwrite_only,
+         pad_header, slot_size, pad, confirm, test, max_sectors, overwrite_only,
          endian, encrypt, infile, outfile, dependencies, load_addr, hex_addr,
          erased_val, save_enctlv, security_counter, boot_record, custom_tlv,
-         custom_tlv_unprotected, rom_fixed, use_random_iv, image_addr, kdf=None,
-         encryptor=None, enckey_role=None, user_sha='auto'):
+         custom_tlv_unprotected, rom_fixed, max_align, use_random_iv,
+         image_addr, kdf=None, encryptor=None, enckey_role=None,
+         user_sha='auto'):
 
     if confirm:
         # Confirmed but non-padded images don't make much sense, because
@@ -367,12 +378,12 @@ def sign(key, public_key_format, align, version, pad_sig, header_size,
         pad = True
     img = image.Image(version=decode_version(version), header_size=header_size,
                       pad_header=pad_header, pad=pad, confirm=confirm,
-                      align=int(align), slot_size=slot_size,
+                      test=test, align=int(align), slot_size=slot_size,
                       max_sectors=max_sectors, overwrite_only=overwrite_only,
                       endian=endian, load_addr=load_addr, rom_fixed=rom_fixed,
                       erased_val=erased_val, save_enctlv=save_enctlv,
-                      security_counter=security_counter, image_addr=image_addr,
-                      kdf=kdf, enckey_role=enckey_role)
+                      security_counter=security_counter, max_align=max_align,
+                      image_addr=image_addr, kdf=kdf, enckey_role=enckey_role)
     img.load(infile)
     key = load_key(key) if key else None
     if isinstance(encrypt, bytes):

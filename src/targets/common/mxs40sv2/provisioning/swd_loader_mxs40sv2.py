@@ -92,10 +92,7 @@ class SwdLoaderMXS40SV2:
             time.sleep(0.1)
         debug_sts = self.tool.read32(self.target.register_map.TST_DEBUG_STATUS)
         if debug_sts != self.TST_DBG_STS_APP_WFA_SET:
-            logger.error('TST_DEBUG_STATUS: 0x%x',
-                         self.target.register_map.TST_DEBUG_STATUS)
-            logger.error(
-                'TST_DEBUG_CTL: 0x%x', self.target.register_map.TST_DEBUG_CTL)
+            logger.error('TST_DEBUG_STATUS: 0x%x', debug_sts)
             logger.error('ROM_BOOT did not set expected TST_DEBUG_STATUS')
             status = ProvisioningStatus.FAIL
         else:
@@ -203,14 +200,16 @@ class SwdLoaderMXS40SV2:
                     os.path.abspath(self.app.out_results_path))
 
     def reset(self):
-        """ Reset device using RES_SOFT_CTL register """
+        """Reset device using RES_SOFT_CTL register."""
         logger.debug('Reset device')
         try:
             self.tool.write32(self.target.register_map.RES_SOFT_CTL,
                               self.RES_SOFT_CTL_RESET_RQST)
         except RuntimeError:
-            pass  # the mww command fails so catch this fail and continue
+            pass  # the write may fail because reset happens immediately
         time.sleep(0.1)
+        # After soft reset, reconnect to re-establish the DAP connection
+        self.tool.reconnect()
 
     def print_ram_app_status(self, code, severity='error'):
         """

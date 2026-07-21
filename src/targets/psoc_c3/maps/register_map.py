@@ -45,6 +45,7 @@ class RegisterMapPsocC3:
     def RES_SOFT_CTL(self):
         return 0x52200410
 
+
     #
     # LVD registers
     #

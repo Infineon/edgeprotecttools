@@ -1,3 +1,4 @@
+
 # (c) 2023-2026, Infineon Technologies AG, or an affiliate of Infineon
 # Technologies AG.  SPDX-License-Identifier: Apache-2.0
 # 
@@ -18,7 +19,7 @@ from importlib import import_module
 
 import click
 
-from .core import package_name
+from .pkg_globals import PkgData
 from .targets import target_data
 from . import cli as base_cli
 
@@ -37,7 +38,8 @@ class CliCreator:
         if platform == 'mxs40sv2':
             if target == 'psoc_c3':
                 module_name = 'cli_psoc_c3x5'
-            elif target in ('psoc_c3p8', 'psoc_c3x7', 'psoc_c3x8', 'psoc_c3x6'):
+            elif target in ('psoc_c3p8', 'psoc_c3x7', 'psoc_c3x8', 'psoc_c3x6',
+                            'psoc_c3x4', 'mammoth'):
                 module_name = 'cli_psoc_c3p8'
             else:
                 if not is_help:
@@ -54,7 +56,7 @@ class CliCreator:
                 module_name = 'cli_pse8x'
             elif target == 'psb3xxx':
                 module_name = 'cli_psb3xxx'
-            elif target == 'pse8x7':
+            elif target in ('pse8x7s4', 'pse8x7s2'):
                 module_name = 'cli_pse8x7'
             else:
                 module_name = 'cli_mxs22'
@@ -66,7 +68,8 @@ class CliCreator:
             module_name = None if target else 'cli'
 
         try:
-            module = import_module(f'.{module_name}', package=package_name())
+            module = import_module(
+                f'.{module_name}', package=PkgData.package_root())
         except ModuleNotFoundError:
             CliCreator.unknown_target_error(target)
             sys.exit(2)
