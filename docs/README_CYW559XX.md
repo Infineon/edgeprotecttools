@@ -243,6 +243,15 @@ Provisioning and transferring the device to the SECURE LCS.
   }
 }
 ```
+
+### Set a path to the On-Chip debugger
+```bash
+$ edgeprotecttools set-ocd --name chipload --path <PATH_TO_CHIPLOAD_EXECUTABLE>
+```
+
+Note that this target supports only `chipload` option for `set-ocd` command. 
+Details how to use them are available in [README_GENERAL.md](README_GENERAL.md)
+
 ### Configure Serial Port
 Provide the information about the protocol and the serial port.
 ```bash

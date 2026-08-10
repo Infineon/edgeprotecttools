@@ -494,8 +494,8 @@ def cmd_set_ocd(_ctx, name, path, config, probe_type, speed_khz):
             if speed_khz is not None:
                 data['programming_tool']['probe_speed_khz'] = speed_khz
 
-            if not (validate_mtb(name, ocd_path)
-                    or validate_ptp(name, ocd_path)):
+            if tool.require_path and (not (validate_mtb(name, ocd_path)
+                    or validate_ptp(name, ocd_path))):
                 return False
 
             with open(PkgData.pkg_settings(), 'w', encoding='utf-8') as f:

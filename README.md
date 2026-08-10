@@ -48,14 +48,15 @@ $ python -m pip install --upgrade --force-reinstall tools/edgeprotecttools/src
 
 
 # Supported Devices
-| Device                   | Documentation                                                   |
-|--------------------------|-----------------------------------------------------------------|
-| PSOC™ 64 Secure MCU      | [README_PSOC64.md](docs/README_PSOC64.md)                       |
-| XMC7000 Industrial MCU   | [README_XMC7XXX.md](docs/README_XMC7XXX.md)                     |
-| AIROC™ CYW20829/CYW89829 | [README_CYW20829_CYW89829.md](docs/README_CYW20829_CYW89829.md) |
-| AIROC™ CYW559xx          | [README_CYW559XX.md](docs/README_CYW559XX.md)                   |
-| PSOC™ Control C3         | [README_PSOCC3.md](docs/README_PSOCC3.md)                       |
-| PSOC™ Edge 84 MCU        | [README_PSE8X.md](docs/README_PSE8X.md)                         |
+| Device                          | Documentation                                                   |
+|---------------------------------|-----------------------------------------------------------------|
+| PSOC™ 64 Secure MCU             | [README_PSOC64.md](docs/README_PSOC64.md)                       |
+| XMC5000, XMC7000 Industrial MCU | [README_XMC.md](docs/README_XMC.md)                             |
+| AIROC™ CYW20829/CYW89829        | [README_CYW20829_CYW89829.md](docs/README_CYW20829_CYW89829.md) |
+| AIROC™ CYW559xx                 | [README_CYW559XX.md](docs/README_CYW559XX.md)                   |
+| PSOC™ Control C3                | [README_PSOCC3.md](docs/README_PSOCC3.md)                       |
+| PSOC™ Control C3 M6/P6          | [README_PSOCC3X6.md](docs/README_PSOCC3X6.md)                   |
+| PSOC™ Edge E81/E82/E83/E84      | [README_PSE8X.md](docs/README_PSE8X.md)                         |
 
 Use `device-list` command for output of the supported devices list.
 ```bash

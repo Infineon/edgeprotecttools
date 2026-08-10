@@ -60,6 +60,9 @@ $ edgeprotecttools set-ocd --name openocd --path <PATH_TO_OPENOCD_ROOT_DIRECTORY
 Ensure that you provide the path to the root directory of OpenOCD (NOT _bin_ directory).
 Specifying the path is not mandatory if you have ModusToolbox™ installed on your machine. OpenOCD from the ModusToolbox™ directory is used by default.
 
+Note that this target supports `openocd`, `jlink` and `serial` options for `set-ocd` command. 
+Details how to use them are available in [README_GENERAL.md](README_GENERAL.md)
+
 _Example:_
 ```bash
 $ edgeprotecttools set-ocd --name openocd --path /Users/username/tools/openocd
@@ -115,7 +118,7 @@ $ edgeprotecttools sign-image --image image.bin --output image_signed.bin --key 
 This section contains the main CLI commands. More commands can be found in the tool help.
 
 ## Tool help
-To see the list of commands supported for PSoC Edge E84:
+To see the list of commands supported for PSOC™ Edge E84:
 ```bash
 $ edgeprotecttools -t pse8xs2 --help
 ```
@@ -138,7 +141,7 @@ The interface provides common options. These options are common for all commands
 
 
 ## Create project
-Creates a new project for PSoC Edge E84.
+Creates a new project for PSOC™ Edge E84.
 ### Command: `init`
 ### Usage example
 ```bash

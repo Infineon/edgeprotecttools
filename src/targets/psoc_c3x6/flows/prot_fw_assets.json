@@ -1,0 +1,28 @@
+{
+  "Assets": [
+    "access_restrict",
+    "access_restrict_2",
+    "boot_cfg_id",
+    "boot_hash_locking",
+    "boot_auth",
+    "boot_app_layout",
+    "pc_ctl_valid",
+    "padding_3",
+    "pc2_handler",
+    "prot_fw_addr",
+    "prot_fw_size",
+    "prot_fw_rw_addr",
+    "prot_fw_rw_size",
+    "prot_fw_ram_addr",
+    "prot_fw_ram_size",
+    "prot_fw_complete",
+    "failed_signature_counter",
+    "nv_counter_a1",
+    "padding_1",
+    "prot_fw_rot_key_0",
+    "prot_fw_rot_key_1",
+    "prot_fw_debug_key",
+    "prot_fw_enc_key",
+    "prot_fw_rot_key_rev"
+  ]
+}

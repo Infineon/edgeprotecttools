@@ -851,14 +851,53 @@ $ edgeprotecttools ecies --private-key private.pem --public-key public.pem -i en
 # Set a path to the On-Chip debugger
 
 ### Command: `set-ocd`
+Sets a path to the On-Chip debugger (OCD) tool. The tool can be one of the following: `openocd`, `serial`, `chipload`, or `jlink`. 
 ### Parameters
-| Name         | Optional/Required | Description                                  |
-|--------------|:-----------------:|----------------------------------------------|
-| -n, --name   |     required      | Tool name:  `openocd`, `serial`, `chipload`  |
-| -p, --path   |     optional      | Path to the tool root directory.             |
-| -c, --config |     optional      | Path to the target config.                   |
+| Name          | Optional/Required | Description                                                                                                   |
+|---------------|:-----------------:|---------------------------------------------------------------------------------------------------------------|
+| -n, --name    |     required      | Tool name: `openocd`, `serial`, `chipload`, `jlink`                                                           |
+| -p, --path    |     optional      | Path to the tool root directory. Not applicable for J-Link: the JLinkARM library is discovered automatically. |
+| -c, --config  |     optional      | Path to the target config.                                                                                    |
+| --probe-type  |     optional      | Debug probe adapter. Available values: `kitprog3`, `jlink`. Default: derived from `--name`.                   |
+| --speed-khz   |     optional      | Debug adapter communication speed in kHz.                                                                     |
+
 
 ### Usage example
+**OpenOCD**
+
 ```bash
 $ edgeprotecttools set-ocd --name openocd --path <PATH_TO_OPENOCD_ROOT_DIRECTORY>
+$ edgeprotecttools set-ocd --name openocd --path <PATH_TO_OPENOCD_ROOT_DIRECTORY> --probe-type kitprog3 --speed-khz 1000
 ```
+
+**Serial**
+
+`set-ocd` command with `serial` option is used to set the path to the DFU Host tool. 
+
+The DFU Host tool is used to communicate with the target device over serial interface. 
+Serial interface can be UART, I2C, or SPI. 
+
+Serial interface configuration is done using the `serial-config` [command](#serial-interface-configuration). 
+
+```bash
+$ edgeprotecttools set-ocd --name serial --path <PATH_TO_DFUH_TOOL_ROOT_DIRECTORY>
+```
+
+**Chipload**
+
+```bash
+$ edgeprotecttools set-ocd --name chipload --path <PATH_TO_CHIPLOAD_EXECUTABLE>
+```
+
+**J-Link**
+
+In order to use J-Link as a probe you need to install J-Link Software and Documentation Pack from [Segger](https://www.segger.com/downloads/jlink/).
+
+Note for Windows users:
+- For system-wide J-Link Software and Documentation Pack installation, the path to the J-Link executable is automatically detected.
+- For single-user J-Link Software and Documentation Pack installation, the path to the J-Link installation folder (e.g. `C:\Users\%USERNAME%\SEGGER\JLink_V956`) needs to be exported to your PATH variable.
+
+```bash
+$ edgeprotecttools set-ocd --name jlink --probe-type jlink --speed-khz 4000
+```
+

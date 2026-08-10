@@ -18,6 +18,7 @@ import time
 
 from intelhex import IntelHex
 
+from .....execute.programmer.jlink_wrapper import Jlink
 from .app_result_validator import AppResultsValidator
 from ...dlm_package import DLMPackage
 from ..asset_enums import ApPermission
@@ -117,6 +118,9 @@ class SwdLoaderMXS22:
                               self.REQUEST_SOFT_RESET)
         except RuntimeError:
             logger.debug('Failed to write REQUEST_SOFT_RESET')
+        time.sleep(0.1)
+        # After soft reset, reconnect to re-establish the DAP connection
+        self.tool.reconnect()
 
     def _trims_processing(self, in_params):
         logger.info('Trims processing started...')
@@ -184,6 +188,8 @@ class SwdLoaderMXS22:
             self.tool.write32(self.target.register_map.boot_dlm_ctl, 0)
         except RuntimeError:
             time.sleep(0.001 * self.DLM_VALIDATE_SLEEP_MS)
+        if isinstance(self.tool, Jlink):
+            time.sleep(0.005 * self.DLM_VALIDATE_SLEEP_MS)
 
         timeout = time.time() + self.DLM_VALIDATE_TIMEOUT_S
         while time.time() < timeout:

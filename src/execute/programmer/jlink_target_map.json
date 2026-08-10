@@ -1,5 +1,13 @@
 {
   "psoc_c3x6": {
-    "device": "PSC3P6F"
+    "device": "PSC3M6GES3AH"
+  },
+  "pse8xs4": {
+    "device": "PSE846GP_EPC4_M33",
+    "check_domain_security": true
+  },
+  "pse8xs2": {
+    "device": "PSE846GP_EPC2_M33",
+    "check_domain_security": true
   }
 }

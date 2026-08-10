@@ -1,0 +1,46 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Device Firmware Update Policy Schema",
+    "type": "object",
+    "required": [
+        "policy",
+        "iv"
+    ],
+    "properties": {
+        "policy": {
+            "type": "object",
+            "required": [
+                "platform",
+                "version",
+                "type"
+            ],
+            "properties": {
+                "platform": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "number",
+                    "minimum": 1.0,
+                    "maximum": 99.99
+                },
+                "type": {
+                    "type": "string",
+                    "const": "dfu"
+                }
+            }
+        },
+        "iv": {
+            "type":"object",
+            "required": [
+                "value"
+            ],
+            "properties": {
+                "value": {
+                    "type": "string",
+                    "minLength": 32,
+                    "maxLength": 32
+                }
+            }
+        }
+    }
+}

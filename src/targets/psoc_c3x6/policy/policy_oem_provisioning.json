@@ -1,0 +1,438 @@
+{
+  "policy": {
+    "platform": "psoc_c3x6",
+    "version": 2.0,
+    "type": "oem_provisioning"
+  },
+  "device_policy": {
+    "program_sflash_assets": {
+      "description": "Indicates whether to program the assets which are placed into SFLASH",
+      "value": true
+    },
+    "program_hash": {
+      "description": "Enables ASSET_HASH and FACTORY_HASH validation in DEVELOPMENT LCS",
+      "value": false
+    },
+    "nv_counter_a1": {
+      "description": "NV counter slot 1. 0, if no update",
+      "value": 0
+    },
+    "nv_counter_a2": {
+      "description": "NV counter slot 2. 0, if no update",
+      "value": 0
+    },
+    "failed_signature_counter": {
+      "comment_1": "If a counter value is 0, a signature check is not performed, but a signature is treated as failed.",
+      "comment_2": "If a counter value is 1 to 65534, a signature is checked, and if a signature check fails then decrease a counter",
+      "comment_3": "If a counter value is 65535, the counter is ignored, but a signature is checked each time",
+      "ram_app": {
+        "description": "Failed signature counter for RAM application",
+        "value": 65535
+      },
+      "boot_app_layout_0": {
+        "description": "Failed signature counter for application in BOOT_APP_LAYOUT[0] slot",
+        "value": 65535
+      },
+      "boot_app_layout_1": {
+        "description": "Failed signature counter for application in BOOT_APP_LAYOUT[1] slot",
+        "value": 65535
+      }
+    },
+    "iak": {
+      "cfg": {
+        "description": "IAK generation config",
+        "applicable_conf": "NONE, AES256, ECC256, ECC384, ECC521",
+        "value": "NONE"
+      }
+    },
+    "prov_oem_complete": {
+      "description": "Indicates OEM assets are finalized in SFLASH",
+      "warning": "Once the 'prov_oem_complete' parameter value is set to true, it cannot be changed! No further updates to SFLASH are allowed",
+      "value": false
+    },
+    "debug": {
+      "cpu": {
+        "ap_cm33": {
+          "description": "Configures the CM33 debug access port availability in the PRODUCTION and DEVELOPMENT LCS",
+          "applicable_conf": "Enable, Disable, Permanently Disable",
+          "value": "Enable"
+        },
+        "listen_window": {
+          "description": "Configures the listen window time to acquire the CM33 debug access port in the PRODUCTION LCS (in milliseconds). Valid range: 0-127",
+          "value": 2
+        },
+        "cm33_dbg": {
+          "description": "Configures the invasive debug of CM33 core",
+          "applicable_conf": "Enable, Disable, Permanently Disable",
+          "value": "Enable"
+        },
+        "cm33_nid": {
+          "description": "Configures the non-invasive debug of CM33 core",
+          "applicable_conf": "Enable, Disable, Permanently Disable",
+          "value": "Enable"
+        },
+        "cm33_spid": {
+          "description": "Configures the secure privileged invasive debug of CM33 core",
+          "applicable_conf": "Enable, Disable, Permanently Disable",
+          "value": "Enable"
+        },
+        "cm33_spnid": {
+          "description": "Configures the secure privileged non-invasive debug of CM33 core",
+          "applicable_conf": "Enable, Disable, Permanently Disable",
+          "value": "Enable"
+        },
+        "cm33_secure": {
+          "description": "Enables the CM33 secure AP interface",
+          "applicable_conf": "Enable, Disable, Permanently Disable",
+          "value": "Enable"
+        }
+      },
+      "system": {
+        "ap": {
+          "description": "Configures the System debug access port availability in the PRODUCTION and DEVELOPMENT LCS",
+          "applicable_conf": "Enable, Disable, Permanently Disable",
+          "value": "Enable"
+        },
+        "secure": {
+          "description": "Enables the system secure AP interface",
+          "applicable_conf": "Enable, Disable, Permanently Disable",
+          "value": "Enable"
+        },
+        "mmio_restrictions": {
+          "description": "MMIO restrictions for System AP",
+          "applicable_conf": "No restrictions, SRSS_GENERAL2 only, No access",
+          "value": "No restrictions"
+        },
+        "debug_pins": {
+          "description": "Configures debug pins and interface",
+          "comment_1": "0000 - 2 pins (TMS, TCLK), JTAG is disabled",
+          "comment_2": "0011 - 2 pins (TMS, TCLK), JTAG is enabled",
+          "comment_3": "0101 - 4 pins (TMS, TCLK, TDO, TDI)",
+          "comment_4": "0110 - 5 pins (TMS, TCLK, TDO, TDI, TRSTN)",
+          "comment_5": "1001 - SWJ pins disabled, JTAG is enabled",
+          "comment_6": "1010 - SWJ pins disabled, JTAG is disabled",
+          "applicable_conf": "0000, 0011, 0101, 0110, 1001, 1010",
+          "value": "0000"
+        }
+      }
+    },
+    "boot": {
+      "boot_cfg_id": {
+        "description": "A behavior for BOOT_APP_LAYOUT",
+        "applicable_conf": "SIMPLE_APP, SECURE_APP, DUAL_BANK_SIMPLE_APP, DUAL_BANK_SECURE_APP, PROT_FW",
+        "value": "SIMPLE_APP"
+      },
+      "boot_bank_ctr_offset": {
+        "description": "An offset from the start of each flash bank where a 32-bit counter for flash dual bank switching is placed",
+        "value": "0xC39D5455"
+      },
+      "boot_hash_locking": {
+        "description": "Enable hash locking, fast authentication (compare a hash) instead of ECDSA",
+        "applicable_conf": "Enable, Disable, Permanently Lock",
+        "value": "Enable"
+      },
+      "boot_auth_images": {
+        "description": "Configures the images authentication and moving from a SSS after DFU update",
+        "applicable_conf": "NONE, ONE, ALL, ALL_MOVE",
+        "comment_1": "NONE - Disable all authentications",
+        "comment_2": "ONE - Authenticate the first image, ignore the other images",
+        "comment_3": "ALL - Authenticate all images",
+        "comment_4": "ALL_MOVE - Authenticate all images, move from SSS on a successful DFU update",
+        "value": "ALL_MOVE"
+      },
+      "boot_auth_signature": {
+        "description": "Signature type for Boot Authentication",
+        "applicable_conf": "ES256, ES384, ES512",
+        "value": "ES512"
+      },
+      "boot_app_layout": {
+        "description": "The memory layout for the applications defined by BOOT_CFG_ID. 0x32000000 - 0x33FFFFFF for secure addresses; 0x22000000 - 0x23FFFFFF for non-secure addresses",
+        "value": [
+          {
+            "address": "0x32000000",
+            "size": "0x40000"
+          },
+          {
+            "address": "0x00000000",
+            "size": "0x00"
+          },
+          {
+            "address": "0x00000000",
+            "size": "0x00"
+          }
+        ]
+      },
+      "boot_od_clk": {
+        "description": "CM33 boot frequency",
+        "applicable_conf": "48 MHz, 100 MHz, 180 MHz",
+        "value": "180 MHz"
+      }
+    },
+    "dfu": {
+      "dfu_enable": {
+        "description": "Indicates whether Device Firmware Update is enabled",
+        "value": false
+      },
+      "dfu_if": {
+        "description": "DFU interface",
+        "applicable_conf": "UART, SPI, I2C",
+        "value": "UART"
+      },
+      "dfu_pins_ctl": {
+        "description": "DFU pins control",
+        "primary_port": {
+          "description": "Primary DFU interface port number (0, 1, ..., 13)",
+          "value": 0
+        },
+        "alternate_port": {
+          "description": "Alternate DFU interface port number (0, 1, ..., 13), 0 for single-port SCBs",
+          "value": 0
+        }
+      },
+      "dfu_en_pin": {
+        "description": "DFU enable pin. Format: Px_y, where x is port number (0, 1, ..., 13) and y is pin number (0, 1, ..., 7)",
+        "value": "P0_0"
+      },
+      "dfu_config": {
+        "description": "DFU interface configuration",
+        "UART": {
+          "scb": {
+            "description": "SCB instance number (0-5)",
+            "value": 0
+          },
+          "rx": {
+            "description": "RX pin. num is the pin number (0-7); alternate_port is false for the primary port or true for the alternate port",
+            "num": 0,
+            "alternate_port": false
+          },
+          "tx": {
+            "description": "TX pin. num is the pin number (0-7); alternate_port is false for the primary port or true for the alternate port",
+            "num": 0,
+            "alternate_port": false
+          }
+        },
+        "SPI": {
+          "scb": {
+            "description": "SCB instance number (0-5)",
+            "value": 0
+          },
+          "spi_clk_mode": {
+            "description": "SPI SCLK mode (0-3)",
+            "value": 0
+          },
+          "mosi": {
+            "description": "MOSI pin. num is the pin number (0-7); alternate_port is false for the primary port or true for the alternate port",
+            "num": 0,
+            "alternate_port": false
+          },
+          "miso": {
+            "description": "MISO pin. num is the pin number (0-7); alternate_port is false for the primary port or true for the alternate port",
+            "num": 0,
+            "alternate_port": false
+          },
+          "clk": {
+            "description": "CLK pin. num is the pin number (0-7); alternate_port is false for the primary port or true for the alternate port",
+            "num": 0,
+            "alternate_port": false
+          },
+          "nss": {
+            "description": "NSS pin. num is the pin number (0-7); alternate_port is false for the primary port or true for the alternate port",
+            "num": 0,
+            "alternate_port": false
+          }
+        },
+        "I2C": {
+          "scb": {
+            "description": "SCB instance number (0-5)",
+            "value": 0
+          },
+          "address": {
+            "description": "I2C slave address, 7 bits (0-127)",
+            "value": 0
+          },
+          "sda": {
+            "description": "SDA pin. num is the pin number (0-7); alternate_port is false for the primary port or true for the alternate port",
+            "num": 0,
+            "alternate_port": false
+          },
+          "scl": {
+            "description": "SCL pin. num is the pin number (0-7); alternate_port is false for the primary port or true for the alternate port",
+            "num": 0,
+            "alternate_port": false
+          }
+        }
+      }
+    },
+    "gpio": {
+      "P0": {
+        "description": "GPIO port 0 configuration",
+        "cfg": "0x00",
+        "out": "0x00000000"
+      },
+      "P1": {
+        "description": "GPIO port 1 configuration",
+        "cfg": "0x00",
+        "out": "0x00000000"
+      },
+      "P2": {
+        "description": "GPIO port 2 configuration",
+        "cfg": "0x00",
+        "out": "0x00000000"
+      },
+      "P3": {
+        "description": "GPIO port 3 configuration",
+        "cfg": "0x00",
+        "out": "0x00000000"
+      },
+      "P4": {
+        "description": "GPIO port 4 configuration",
+        "cfg": "0x00",
+        "out": "0x00000000"
+      },
+      "P5": {
+        "description": "GPIO port 5 configuration",
+        "cfg": "0x00",
+        "out": "0x00000000"
+      },
+      "P6": {
+        "description": "GPIO port 6 configuration",
+        "cfg": "0x00",
+        "out": "0x00000000"
+      },
+      "P7": {
+        "description": "GPIO port 7 configuration",
+        "cfg": "0x00",
+        "out": "0x00000000"
+      },
+      "P8": {
+        "description": "GPIO port 8 configuration",
+        "cfg": "0x00",
+        "out": "0x00000000"
+      },
+      "P9": {
+        "description": "GPIO port 9 configuration",
+        "cfg": "0x00",
+        "out": "0x00000000"
+      },
+      "P10": {
+        "description": "GPIO port 10 configuration",
+        "cfg": "0x00",
+        "out": "0x00000000"
+      },
+      "P11": {
+        "description": "GPIO port 11 configuration",
+        "cfg": "0x00",
+        "out": "0x00000000"
+      },
+      "P12": {
+        "description": "GPIO port 12 configuration",
+        "cfg": "0x00",
+        "out": "0x00000000"
+      },
+      "P13": {
+        "description": "GPIO port 13 configuration",
+        "cfg": "0x00",
+        "out": "0x00000000"
+      }
+    },
+    "reprovisioning": {
+      "revoke_ifx_rot_key_0": {
+        "description": "Indicates whether to revoke IFX_ROT_KEY_0",
+        "value": false
+      },
+      "revoke_ifx_rma_master_key_0": {
+        "description": "Indicates whether to revoke IFX_RMA_MASTER_KEY_0",
+        "value": false
+      },
+      "revoke_oem_rot_key_0": {
+        "description": "Indicates whether to revoke OEM_ROT_KEY_0",
+        "value": false
+      },
+      "nonce": {
+        "description": "Hex string or path to a binary file containing nonce for revocation of IFX_ROT_KEY_0 or IFX_RMA_MASTER_KEY_0",
+        "value": ""
+      },
+      "ifx_revocation_signature": {
+        "description": "Hex string or binary file containing IFX_REVOCATION_SIGNATURE for revocation of IFX_ROT_KEY_0 or IFX_RMA_MASTER_KEY_0",
+        "value": ""
+      }
+    },
+    "pc2_ctl_valid": {
+      "description": "True when 'pc2_handler' is valid",
+      "value": false
+    },
+    "pc3_ctl_valid": {
+      "description": "True when 'pc3_handler' is valid",
+      "value": false
+    },
+    "pc2_handler": {
+      "description": "Used to switch to PC2 when it is a 'Special' PC",
+      "value": "0xFFFFFFFF"
+    },
+    "pc3_handler": {
+      "description": "Used to switch to PC3 when it is a 'Special' PC",
+      "value": "0xFFFFFFFF"
+    },
+    "oem_device_cert_addr": {
+      "description": "OEM_DEVICE_CERT address",
+      "value": "0x00000000"
+    },
+    "oem_device_cert_blocks": {
+      "description": "OEM_DEVICE_CERT size in blocks",
+      "value": "0x00"
+    },
+    "boundary_scan": {
+      "description": "Indicates whether Boundary Scan is enabled",
+      "value": true
+    },
+    "disable_ramapp": {
+      "description": "Indicates whether RAM application execution is disabled",
+      "value": false
+    },
+    "mpc": {
+      "mpc_struct_flash": {
+        "description": "Flash MPC structures. The total number of RAM and Flash MPC structures must be less than 32",
+        "value": [
+          {
+            "description": "Offset and size in KB. The values must be multiple of 2 (e.g. 0 KB, 2 KB, 4 KB, 8 KB, ...)",
+            "offset": "2 KB",
+            "size": "2 KB",
+            "attr": {
+              "description": "The MPC attributes for this memory region",
+              "comment_1": "WRN allow read, write, and NS only access",
+              "comment_2": "-RN allow read, NS-only access",
+              "comment_3": "--- and --N, no access",
+              "comment_4": "WR- read and write access, but NS=0 only",
+              "value": {
+                "pc0": "WR-",
+                "pc1": "WR-",
+                "pc2": "WR-",
+                "pc3": "WR-",
+                "pc4": "WR-",
+                "pc5": "WR-",
+                "pc6": "WR-",
+                "pc7": "WR-"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "pre_build": {
+    "keys": {
+      "oem_debug_public_key": {
+        "description": "Path to the OEM debug public key",
+        "value": ""
+      },
+      "oem_enc_key": {
+        "description": "Path to the DFU OEM encryption key (256-bit)",
+        "value": ""
+      }
+    }
+  },
+  "raw_data_pc012": {
+    "description": "Path to a binary file containing custom data accessible in PC0, PC1, and PC2. Up to 84 bytes",
+    "value": ""
+  }
+}

@@ -39,7 +39,7 @@ class PSE8xS2Builder(TargetBuilder):
         return None
 
     def get_ocds(self):
-        return ['openocd', 'serial']
+        return ['openocd', 'serial', 'jlink']
 
     def get_ocd_config(self):
         return {

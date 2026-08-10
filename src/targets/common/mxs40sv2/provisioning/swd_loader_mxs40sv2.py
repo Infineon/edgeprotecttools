@@ -53,7 +53,6 @@ class SwdLoaderMXS40SV2:
         self.tool.set_ap(AP.SYS)
         time.sleep(0.2)
         self.tool.reset()
-
         ctrl_reg = self.tool.read32(self.target.register_map.TST_DEBUG_CTL)
         if (ctrl_reg & self.TST_DBG_CTL_WFA_Msk) == 0:
             self.tool.write32(self.target.register_map.TST_DEBUG_CTL,

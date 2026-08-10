@@ -1,0 +1,41 @@
+{
+  "flows": {
+    "oem_provisioning": {
+      "desc": "OEM Provisioning. Transition to SECURE or NORMAL_PROVISIONED LCS",
+      "apps": [
+        "prov_oem"
+      ]
+    },
+    "rma": {
+      "desc": "Converts a part to RMA LCS",
+      "apps": [
+        "to_rma"
+      ]
+    },
+    "device_integrity_exam": {
+      "desc": "Device Integrity Exam app ensures that there is a genuine Infineon device and it is in a known state",
+      "apps": [
+        "device_integrity_exam"
+      ]
+    },
+    "prot_fw_policy": {
+      "desc": "Protected FW Policy",
+      "apps": [
+        "prot_fw_policy"
+      ]
+    },
+    "dfu": {
+      "desc": "Protected FW DFU",
+      "apps": [
+        "dfu"
+      ]
+    }
+  },
+  "paths": {
+    "prov_oem": "../packets/apps/prov_oem/config.json",
+    "to_rma": "../packets/apps/to_rma/config.json",
+    "prot_fw_policy": "../packets/apps/prot_fw_policy/config.json",
+    "dfu": "../packets/apps/dfu/config.json",
+    "device_integrity_exam": "../packets/apps/device_integrity_exam/config.json"
+  }
+}

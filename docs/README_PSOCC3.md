@@ -91,7 +91,7 @@ $ edgeprotecttools sign-image --image image.bin --output image_signed.bin --key 
 This section contains the main CLI commands. More commands can be found in the tool help.
 
 ## Tool help
-To see the list of commands supported for PSoC C3:
+To see the list of commands supported for PSOC™ C3:
 ```bash
 $ edgeprotecttools -t psoc_c3 --help
 ```
@@ -113,7 +113,7 @@ The interface provides common options. These options are common for all commands
 
 
 ## Create project
-Creates a new project for PSoC C3.
+Creates a new project for PSOC™ C3.
 ### Command: `init`
 ### Usage example
 ```bash

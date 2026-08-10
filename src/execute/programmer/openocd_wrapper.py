@@ -20,6 +20,7 @@ import json
 import socket
 import signal
 import logging
+import time
 
 from .openocd_server import OpenocdServer
 from .base import ProgrammerBase, ResetType, AP
@@ -27,6 +28,10 @@ from ...core.target_director import TargetDirector
 
 TARGET_MAP = os.path.join(os.path.dirname(__file__), 'openocd_target_map.json')
 logger = logging.getLogger(__name__)
+
+RECEIVE_TIMEOUT = 10.0
+RECEIVE_POLL_INTERVAL = 0.001
+DISCONNECT_DELAY = 0.1
 
 
 class Openocd(ProgrammerBase):
@@ -187,6 +192,11 @@ class Openocd(ProgrammerBase):
     def disconnect(self):
         """Closes active connection"""
         self.halt()  # halted core before disconnecting from it
+        try:
+            self._send("shutdown", receive_timeout=DISCONNECT_DELAY)
+        except ConnectionError:
+            time.sleep(DISCONNECT_DELAY)
+            logger.debug("Connection aborted")
         if self.sock:
             self.sock.close()
             self.sock = None
@@ -414,11 +424,12 @@ class Openocd(ProgrammerBase):
         value = int(value, 16)
         return value
 
-    def _send(self, cmd):
+    def _send(self, cmd, receive_timeout: float = RECEIVE_TIMEOUT):
         """Send a command to TCL RPC
         Note: This command also check command status and if it is not
         SUCCESS raise ValueError exception
         @param cmd: String with command for OpenOCD server
+        @param receive_timeout: Timeout in seconds for receiving response
         @return: String with response on sent command to the server
         """
         if self.sock is None:
@@ -433,10 +444,10 @@ class Openocd(ProgrammerBase):
         logger.debug("Sending command '%s'", cmd)
         # 1. Send command and save status code and message
         send_cmd = 'set cmd_status [catch {{ {0} }} cmd_msg]'.format(cmd)
-        cmd_status = self._send_cmd(send_cmd)
+        cmd_status = self._send_cmd(send_cmd, receive_timeout=receive_timeout)
         # 2. Send set command to get message
         send_cmd = 'set cmd_response "$cmd_msg"'
-        cmd_message = self._send_cmd(send_cmd)
+        cmd_message = self._send_cmd(send_cmd, receive_timeout=receive_timeout)
 
         # Check if command status is OK (_CMD_SUCCESS)
         err_code = int(cmd_status, 16)
@@ -448,25 +459,32 @@ class Openocd(ProgrammerBase):
             logger.debug(cmd_message)
         return cmd_message
 
-    def _send_cmd(self, cmd):
+    def _send_cmd(self, cmd, receive_timeout: float = RECEIVE_TIMEOUT):
         """Send a command string to TCL RPC
         @param cmd: String with command for OpenOCD server
+        @param receive_timeout: Timeout in seconds for receiving response
         @return: String with response on sent command
         """
         data = (cmd + self._command_token).encode("utf-8")
         self.sock.send(data)
-        return self._receive()
+        return self._receive(receive_timeout=receive_timeout)
 
-    def _receive(self):
+    def _receive(self, receive_timeout: float = RECEIVE_TIMEOUT):
         """Read from the stream until the token (\x1a) was received
+        @param receive_timeout: Timeout in seconds for receiving response
         @return: String with response on sent command to the server
         """
         data = bytes()
-        while True:
+        timeout = time.time() + receive_timeout
+        while time.time() < timeout:
             chunk = self.sock.recv(self.sock_buffer_size)
             data += chunk
             if bytes(self._command_token, encoding="utf-8") in chunk:
                 break
+            time.sleep(RECEIVE_POLL_INTERVAL)
+        else:
+            raise ConnectionError(
+                f'Receive timeout after {receive_timeout} seconds')
         data = data.decode("utf-8").strip()
         data = data[:-1]  # strip trailing command token \x1a
         if self.verbose:
