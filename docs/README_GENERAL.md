@@ -691,19 +691,20 @@ $ edgeprotecttools verify-x509-cert --cert cert.pem --verifier ca_cert.pem
 Configures serial interface connection.
 ### Command: `serial-config`
 ### Parameters
-| Name              | Optional/Required | Description                                                                                                                          |
-|-------------------|:-----------------:|--------------------------------------------------------------------------------------------------------------------------------------|
-| --protocol        |     optional      | Serial communication protocol. Available values: "uart", "i2c", "spi".                                                               |
-| --hwid            |     optional      | Specifies the ID of the hardware. If this option is skipped, the first appropriate device found will be used.                        |
-| --uart-baudrate   |     optional      | Sets the baud rate for the UART protocol.                                                                                            |
-| --uart-databits   |     optional      | Sets the number of data bits for the UART protocol.                                                                                  |
-| --uart-paritytype |     optional      | Sets the parity type for the UART protocol. Available values: "None", "Odd", "Even".                                                 |
-| --uart-stopbits   |     optional      | Sets the stop bits for the UART protocol. Available values: 1, 1.5, 2.                                                               |
-| --i2c-address     |     optional      | Sets the address for the I2C protocol. An integer value in the range 8 - 120.                                                        |
-| --i2c-speed       |     optional      | Sets the speed for the I2C protocol in kHz. Available values: 50, 100, 400, 1000.                                                    |
-| --spi-clockspeed  |     optional      | Sets the clock speed for the SPI protocol in MHz.                                                                                    |
-| --spi-mode        |     optional      | Sets the mode for the SPI protocol in binary. Available values: "00", "01", "10", "11".                                              |
-| --spi-lsb-first   |     optional      | Specifies that the least-significant bit be sent first for the SPI protocol. Otherwise, the most-significant bit will be sent first. |
+| Name                          | Optional/Required | Description                                                                                                                          |
+|-------------------------------|:-----------------:|--------------------------------------------------------------------------------------------------------------------------------------|
+| --protocol                    |     optional      | Serial communication protocol. Available values: `uart`, `i2c`, `spi`.                                                               |
+| --hwid                        |     optional      | Specifies the ID of the hardware. If this option is skipped, the first appropriate device found will be used.                        |
+| --data-length                 |     optional      | Sets the data length for the serial communication protocol. If not specified, `dfuh-tool` will use default value of 0x10             |
+| --uart-baudrate               |     optional      | Sets the baud rate for the UART protocol.                                                                                            |
+| --uart-databits               |     optional      | Sets the number of data bits for the UART protocol.                                                                                  |
+| --uart-paritytype             |     optional      | Sets the parity type for the UART protocol. Available values: `None`, `Odd`, `Even`.                                                 |
+| --uart-stopbits               |     optional      | Sets the stop bits for the UART protocol. Available values: 1, 1.5, 2.                                                               |
+| --i2c-address                 |     optional      | Sets the address for the I2C protocol. An integer value in the range 8 - 120.                                                        |
+| --i2c-speed                   |     optional      | Sets the speed for the I2C protocol in kHz. Available values: 50, 100, 400, 1000.                                                    |
+| --spi-clockspeed              |     optional      | Sets the clock speed for the SPI protocol in MHz.                                                                                    |
+| --spi-mode                    |     optional      | Sets the mode for the SPI protocol in binary. Available values: "00", "01", "10", "11".                                              |
+| --spi-lsb-first               |     optional      | Specifies that the least-significant bit be sent first for the SPI protocol. Otherwise, the most-significant bit will be sent first. |
 ### Usage example
 ```bash
 # UART configuration

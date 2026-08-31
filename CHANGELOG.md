@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.2.0
+### Added
+- Added native Apple Silicon (ARM) support for the macOS package
+- Added configurable DFU transfer data length for serial interfaces; default remains 0x10
+
 ## 2.1.0
 ### Added
 - PSOC™ Control C3 P6/M6 support

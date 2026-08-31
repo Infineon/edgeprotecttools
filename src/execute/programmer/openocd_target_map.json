@@ -47,5 +47,6 @@
   "psb3xxx_a1": {"target": "infineon/psb3xxx", "mcu": "psb3xxx", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "acw64xx": {"target": "infineon/psoc1208", "mcu": "psoc1208", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
   "acw74xx": {"target": "infineon/psoc1208", "mcu": "psoc1208", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
-  "acw76xx": {"target": "infineon/acw76xx", "mcu": "acw76xx", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"}
+  "acw76xx": {"target": "infineon/acw76xx", "mcu": "acw76xx", "cm33": "cm33", "cm55": "cm55", "sysap": "sys"},
+  "helium": {"target": "infineon/psw11xx", "mcu": "psw", "cm33": "cm33"}
 }

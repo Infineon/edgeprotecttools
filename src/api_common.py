@@ -1127,8 +1127,10 @@ class CommonAPI:
                 logger.error("Cannot find bootloader file '%s'", bootloader)
                 return False
 
+        acquire = kwargs.get('acquire', True)
+
         if ConnectHelper.connect(self.tool, self.target, probe_id=probe_id,
-                                 ap=ap):
+                                 ap=ap, acquire=acquire):
             if not self.target.version_provider.check_compatibility(self.tool):
                 ConnectHelper.disconnect(self.tool)
                 return False

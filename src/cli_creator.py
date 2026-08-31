@@ -64,6 +64,8 @@ class CliCreator:
             module_name = 'cli_traveo_t2g'
         elif platform == 'cyw559xx':
             module_name = 'cli_cyw559xx'
+        elif platform == 'helium':
+            module_name = 'cli_helium'
         else:
             module_name = None if target else 'cli'
 

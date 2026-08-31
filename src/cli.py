@@ -550,6 +550,8 @@ def cmd_set_ocd(_ctx, name, path, config, probe_type, speed_khz):
 @click.option('--hwid', help='Specifies the ID of the hardware. If this option '
                              'is skipped, the first appropriate device found '
                              'will be used.')
+@click.option('--data-length', help='Sets the data length in bytes '
+                                    'for the serial communication protocol')
 @click.option('--uart-baudrate', type=click.INT,
               help='Sets the baud rate for the UART protocol')
 @click.option('--uart-databits', type=click.INT,
@@ -585,7 +587,8 @@ def cmd_set_ocd(_ctx, name, path, config, probe_type, speed_khz):
 @click.option('--canfd-ext-frame', is_flag=True,
               help='Enables extended frame support for CAN-FD protocol')
 @click.pass_context
-def cmd_serial_config(_ctx, protocol, hwid, uart_baudrate, uart_paritytype,
+def cmd_serial_config(_ctx, protocol, hwid, data_length,
+                      uart_baudrate, uart_paritytype,
                       uart_databits, uart_stopbits, i2c_address, i2c_speed,
                       spi_clockspeed, spi_mode, spi_lsb_first,
                       canfd_bitrate, canfd_data_bitrate, canfd_output_frame_id,
@@ -596,7 +599,7 @@ def cmd_serial_config(_ctx, protocol, hwid, uart_baudrate, uart_paritytype,
     def process():
         def set_serial_data(filename=None):
             ProjectInitializerBase.set_serial_config(
-                filename, protocol=protocol, hwid=hwid,
+                filename, protocol=protocol, hwid=hwid, data_length=data_length,
                 uart_baudrate=uart_baudrate, uart_paritytype=uart_paritytype,
                 uart_stopbits=uart_stopbits, uart_databits=uart_databits,
                 i2c_address=i2c_address, i2c_speed=i2c_speed,

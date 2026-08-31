@@ -140,13 +140,15 @@ class Dfuht(ProgrammerBase):
         @param address: N/A
         @return: True if success, otherwise False
         """
+        add_data_length = False
         if file_format == 'hex':
             cmd = ['--program-device', filename]
+            add_data_length = True
         elif file_format == 'mtbdfu':
             cmd = ['--custom-command', filename]
         else:
             raise ValueError('File format is not specified or unsupported')
-        stdout, _ = self.runner.run(cmd)
+        stdout, _ = self.runner.run(cmd, add_data_length=add_data_length)
         return self._result_check(stdout)
 
     def read(self, address, length):

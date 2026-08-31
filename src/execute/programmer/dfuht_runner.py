@@ -20,6 +20,7 @@ import platform
 from subprocess import Popen, PIPE
 
 from ...core.enums import Protocol
+from ...core.ocd_settings import OcdSettings
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class DfuhtRunner:
 
     executable = 'dfuh-cli'
 
-    def __init__(self, settings):
+    def __init__(self, settings: OcdSettings):
         self.dfuht_path = settings.ocd_path
         self.proc = None
         self.serial_config = settings.serial_config()
@@ -48,7 +49,8 @@ class DfuhtRunner:
         if platform.system() not in ['Windows', 'Linux', 'Darwin']:
             raise ValueError(f'Unsupported OS platform: {platform.system()}')
 
-    def run(self, args, add_protocol_args=True, print_output=True):
+    def run(self, args,
+            add_protocol_args=True, print_output=True, add_data_length=False):
         """Executes the dfuht-cli application
         @param args: List of arguments
         @param add_protocol_args: Indicates whether to add the
@@ -79,6 +81,11 @@ class DfuhtRunner:
             self.log_protocol_args(protocol_args)
             command.extend(protocol_args)
             command.extend(['--hwid', self.serial_port])
+
+        if add_data_length:
+            data_length = self.serial_config.get('data_length')
+            if data_length is not None:
+                command.extend(['--data-length', hex(data_length)])
 
         logger.debug('Execute command: %s', command)
         with Popen(command, stdout=PIPE, stderr=PIPE) as self.proc:

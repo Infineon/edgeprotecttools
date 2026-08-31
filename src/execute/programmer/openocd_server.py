@@ -268,7 +268,7 @@ class OpenocdServer(OcdConfig):
 
         openocd_config_cmd += [
             f'debug_level {self.debug_level}',
-            f'set ENABLE_ACQUIRE {enable_acquire}',
+            f'set ENABLE_ACQUIRE {enable_acquire}' if acquire is not None else '',
             f'set ENABLE_POWER_SUPPLY {self.enable_power_supply}',
             'set ACQUIRE_TIMEOUT 5000',
             self.custom_config['variables'],

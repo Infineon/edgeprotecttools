@@ -275,6 +275,8 @@ class ProjectInitializerBase(ABC):
         @param cwd: A directory where to look for a project metadata file
         @param kwargs: Arbitrary keyword arguments.
             protocol - Serial communication protocol (uart, i2c, spi, usb)
+            data_length - The data length for the serial communication protocol
+            hwid - The hardware ID for the serial communication protocol
             uart_baudrate - The baud rate for the UART protocol
             uart_databits - The number of data bits for the UART protocol
             uart_paritytype - The parity type for the UART protocol
@@ -311,6 +313,24 @@ class ProjectInitializerBase(ABC):
                 serial['protocol'] = protocol
             if kwargs.get('hwid'):
                 serial['hwid'] = kwargs.get('hwid')
+            if kwargs.get('data_length'):
+                data_length = kwargs.get('data_length')
+
+                try:
+                    data_length = int(str(data_length), 0)
+                except ValueError as e:
+                    raise ValueError(
+                        f"Invalid '--data-length' format: '{data_length}'. "
+                        f"Must be an integer."
+                    ) from e
+
+                if data_length <= 0:
+                    raise ValueError(
+                        f"Invalid '--data-length' value: '{data_length}'. "
+                        f"Must be a positive integer."
+                    )
+
+                serial['data_length'] = data_length
 
             if protocol == Protocol.UART:
                 if kwargs.get('uart_baudrate'):
