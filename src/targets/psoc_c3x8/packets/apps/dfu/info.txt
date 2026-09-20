@@ -1,0 +1,4 @@
+name: cyapp_dfu
+description: DFU app for loading FW.
+type: Firmware application
+version: 1.0.0.5494

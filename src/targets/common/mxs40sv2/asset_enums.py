@@ -25,6 +25,25 @@ ApPermission = Enum(
     ]
 )
 
+ApPermissionV2 = Enum(
+    value='Permissions',
+    names=[
+        ('Enabled', 0),
+        ('Disabled', 1),
+        ('Allowed', 3),
+    ]
+)
+
+DebugAllowed = Enum(
+    value='Allowed',
+    names=[
+        ('Firmware', 0),
+        ('Certificate', 1),
+        ('Open', 2),
+        ('None', 2),
+    ]
+)
+
 MpcPpcPermission = Enum(
     value='Permissions',
     names=[

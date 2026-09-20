@@ -3,5 +3,6 @@ include CHANGELOG.md
 include EULA
 include LICENSE
 include docs/*
+prune .internal
 recursive-include src *
 global-exclude .DS_Store

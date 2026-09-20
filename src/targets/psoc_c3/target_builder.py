@@ -47,6 +47,11 @@ class PsocC3Builder(TargetBuilder):
     def get_ocd_config(self):
         return {
             'openocd': {
+                'target': 'infineon/psc3',
+                'mcu': 'psc3',
+                'cm33': 'cm33',
+                'cm55': 'cm55',
+                'sysap': 'sys',
                 'variables': 'set ENABLE_CM33 0',
                 'before_init': '',
                 'after_init': 'targets psc3.sys'

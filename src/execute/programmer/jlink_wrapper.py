@@ -19,11 +19,9 @@ providing direct communication with a J-Link probe through the
 ``JLinkARM`` shared library.
 """
 
-import json
 import logging
-import os
 import time
-from enum import IntEnum, IntFlag
+from enum import Enum, IntEnum, IntFlag
 from typing import Optional
 
 import pylink as _pylink
@@ -32,8 +30,6 @@ from pylink.errors import JLinkException
 
 from .base import AP, Interface, ProgrammerBase, ResetType
 from ...core.progress_bar import update_progress
-
-TARGET_MAP = os.path.join(os.path.dirname(__file__), 'jlink_target_map.json')
 logger = logging.getLogger(__name__)
 
 
@@ -49,6 +45,32 @@ def _jlink_log_handler(msg: str) -> None:
         msg = msg.rstrip('\n')
         if msg:
             logger.debug('J-Link DLL: %s', msg)
+
+
+def _jlink_error_handler(msg: str) -> None:
+    """Handle error messages from the J-Link DLL.
+
+    Suppresses expected errors that occur during normal operation:
+    - InitTarget errors when CM33 AP is closed
+    - JTAG communication errors during device reset/transitions
+
+    Other J-Link DLL errors are logged at warning level.
+    """
+    if not msg:
+        return
+    msg = msg.rstrip('\n')
+    if not msg:
+        return
+    # Suppress InitTarget errors - expected when CM33 AP is closed
+    if 'InitTarget' in msg:
+        logger.debug('J-Link DLL (expected): %s', msg)
+        return
+    # Suppress JTAG communication errors - expected during device reset
+    if 'Bad JTAG communication' in msg:
+        logger.debug('J-Link DLL (expected): %s', msg)
+        return
+    # Log other J-Link DLL errors at warning level
+    logger.warning('J-Link DLL: %s', msg)
 
 
 # -----------------------------------------------------------------------------
@@ -124,8 +146,11 @@ class APAddr(IntEnum):
     SYS = 0xF0000000
     CM33 = 0xF0002000
 
-# DP.SELECT mask
-DP_SELECT_MASK = 0xFFFFFFF0
+class DPSelect(IntEnum):
+    """DP.SELECT register constants."""
+
+    MASK = 0xFFFFFFF0
+    INVALID = 0xFFFFFFFF  # Cache invalidation / unset marker
 
 
 class AddrMask(IntEnum):
@@ -141,7 +166,7 @@ class DomainTestAddr(IntEnum):
     Used to determine security domain by probing memory access.
     """
 
-    SECURE = 0x52400418
+    SECURE = 0x52404B14
     NON_SECURE = SECURE & AddrMask.NON_SECURE
 
 
@@ -156,6 +181,25 @@ class DomainCheckRange(IntEnum):
     MAX = 0x5FFFFFFF
 
 
+class Delay(float, Enum):
+    """Timing delays for J-Link operations (in seconds).
+
+    POLL: 10ms - short polling/retry interval
+    JTAG_RETRY: 20ms - delay between JTAG retries
+    RECONNECT_WAIT: 50ms - wait before reconnect attempt
+    DAP_RECOVERY: 50ms - DAP recovery after errors
+    JTAG_STABILIZE: 100ms - JTAG chain stabilization
+    RECONNECT_TIMEOUT: 3000ms - reconnect timeout
+    """
+
+    POLL = 0.010
+    JTAG_RETRY = 0.020
+    RECONNECT_WAIT = 0.050
+    DAP_RECOVERY = 0.050
+    JTAG_STABILIZE = 0.100
+    RECONNECT_TIMEOUT = 3.0
+
+
 class Jlink(ProgrammerBase):
     """J-Link wrapper using pylink-square.
 
@@ -163,24 +207,24 @@ class Jlink(ProgrammerBase):
     pylink-square, bypassing OpenOCD entirely.
     """
 
+
     def __init__(self, name: str, settings) -> None:
         """Initialize the wrapper."""
         super().__init__(name, path=None, require_path=False)
+        self._settings = settings
         speed = settings.adapter_speed_khz if settings else None
         self.speed_khz: int = int(speed) if speed is not None else 1000
         self.probe_id = None
         self._jlink = None
         self.current_ap: AP = AP.SYS
         self._device_name: Optional[str] = None
+        self._interface: Interface = Interface.SWD  # Default to SWD
         # DAP state tracking
-        self._dp_select_last: int = 0xFFFFFFFF
+        self._dp_select_last: int = DPSelect.INVALID
         self._current_ap_index: int = APIndex.SYS
         # Track if device has been configured with J-Link
         # (to avoid redundant messages)
         self._device_configured: bool = False
-        # Reconnect timing parameters
-        self.reconnect_wait_ms: int = 50
-        self.reconnect_timeout_ms: int = 3000
 
         # Domain security checking for TrustZone-enabled devices (e.g., PSE84)
         # When enabled, addresses are adjusted based on CPU's current domain
@@ -189,17 +233,18 @@ class Jlink(ProgrammerBase):
         self._domain_secure: Optional[bool] = None
         # Tracks if domain detection failed
         self._domain_detect_failed: bool = False
+        # Domain test address - configurable per target via configure_domain_detection()
+        # Default uses DomainTestAddr for backwards compatibility
+        self._domain_test_addr: int = DomainTestAddr.SECURE
 
     def connect(
         self,
-        target_name: Optional[str] = None,
-        interface: Optional[Interface] = None,
+        target,
         probe_id: Optional[str] = None,
         ap: str = 'sysap',
         acquire: bool = True,
         power: Optional[str] = None,
         voltage: Optional[int] = None,
-        rev: Optional[str] = None,
     ) -> bool:
         """Connect to the target via J-Link.
 
@@ -207,10 +252,7 @@ class Jlink(ProgrammerBase):
         CoreSight. InitTarget() may run and fail if CM33 AP is closed,
         but the connection continues using SysAP for register access.
 
-        @param target_name: Target name; looked up in
-            ``jlink_target_map.json``.
-        @param interface: Accepted for API compatibility; not used.
-            Only SWD is supported.
+        @param target: Target object with name, rev, register_map attributes.
         @param probe_id: J-Link probe ID.  When ``None`` the
             first detected probe is used.
         @param ap: Accepted for API compatibility; not used.
@@ -218,48 +260,28 @@ class Jlink(ProgrammerBase):
         @param acquire: Run device acquisition sequence.
         @param power: Accepted for API compatibility; not used.
         @param voltage: Accepted for API compatibility; not used.
-        @param rev: Optional silicon revision suffix.
         @return: ``True`` on success.
         @raises ImportError: When ``pylink-square`` is not installed.
-        @raises ValueError: When ``target_name`` is missing or not
-            found in the J-Link target map.
+        @raises ValueError: When ``target`` is not found in the J-Link target map.
         """
         if _pylink is None:
             raise ImportError(
                 'pylink-square is required for J-Link support. '
                 'Install it with: pip install pylink-square'
             )
-        if target_name is None:
-            raise ValueError("Parameter 'target_name' is required")
 
-        full_name = f'{target_name}_{rev}' if rev else target_name
         if not self._device_name:
-            config = (
-                self._lookup_target_config(full_name)
-                or self._lookup_target_config(target_name)
-            )
-            if config:
-                self._device_name = config.get('device')
-                # Enable domain security checking if specified in target map
-                if config.get('check_domain_security'):
-                    self.check_domain_security = True
-                    logger.info('Domain security checking enabled for %s',
-                                target_name)
-        if not self._device_name:
-            raise ValueError(
-                f"Target '{target_name}' not found in J-Link target"
-                f' map ({TARGET_MAP}).  Add an entry to'
-                ' jlink_target_map.json'
-            )
+            self._load_jlink_config(target)
 
         self.current_ap = AP.SYS
-        iface = Interface.SWD
-        speed_khz = self.speed_khz
 
-        self._jlink = _pylink.JLink(log=_jlink_log_handler)
+        self._jlink = _pylink.JLink(
+            log=_jlink_log_handler,
+            error=_jlink_error_handler
+        )
         self._open_probe(probe_id)
         self.probe_id = probe_id
-        self._configure_interface(iface, speed_khz)
+        self._configure_interface(self._interface, self.speed_khz)
 
         # Connect to the device. InitTarget() will run but may fail if
         # CM33 AP is closed. We catch the failure and continue with
@@ -278,9 +300,14 @@ class Jlink(ProgrammerBase):
         logger.info(
             "J-Link connected to '%s' (device: %s, interface: %s,"
             ' speed: %d kHz, probe: %s)',
-            target_name, self._device_name, iface.name,
-            speed_khz, probe_id or 'auto',
+            target.name, self._device_name, self._interface.name,
+            self.speed_khz, probe_id or 'auto',
         )
+
+        # Configure domain detection from target's register map
+        if target.register_map is not None:
+            self.configure_domain_detection(target.register_map)
+
         return True
 
     def disconnect(self) -> None:
@@ -329,11 +356,8 @@ class Jlink(ProgrammerBase):
         """
         logger.info('Performing hardware reset via J-Link reset pin')
 
-        # Invalidate DAP state before reset
-        self._dp_select_last = 0xFFFFFFFF
-        self._current_ap_index = -1
-        self._domain_secure = None
-        self._domain_detect_failed = False
+        # Invalidate all cached state before reset
+        self._invalidate_dap_state(full=True, include_domain=True)
 
         try:
             # Assert reset (drive nRESET low)
@@ -352,7 +376,7 @@ class Jlink(ProgrammerBase):
             raise RuntimeError(f'Hardware reset failed: {exc}') from exc
 
         # Wait for device to stabilize after hardware reset
-        time.sleep(self.reconnect_wait_ms / 1000.0)
+        time.sleep(Delay.RECONNECT_WAIT)
 
         # Try to reconnect (best effort - failure is OK)
         if self._try_reconnect_after_reset():
@@ -387,44 +411,8 @@ class Jlink(ProgrammerBase):
 
         # Try to reconnect - use full reconnect timeout since hardware reset
         # may require longer recovery time than software reset
-        start = time.time()
-        timeout_s = self.reconnect_timeout_ms / 1000.0
-
-        while (time.time() - start) < timeout_s:
-            try:
-                # Clear sticky errors
-                try:
-                    self._jlink.coresight_write(
-                        DPReg.ABORT, DPAbort.CLEAR_ALL, ap=False)
-                except JLinkException:
-                    pass
-
-                # Power up DAP
-                self._jlink.coresight_write(
-                    DPReg.CTRL_STAT, DPCtrl.POWER_UP, ap=False)
-
-                # Invalidate SELECT cache
-                self._dp_select_last = 0xFFFFFFFF
-
-                # Try to read SysAP CSW to verify access
-                csw = self._read_apv2(APIndex.SYS, APv2Reg.CSW)
-                if csw is not None:
-                    prot = self._get_csw_prot(csw)
-                    csw_val = prot | APCsw.ADDRINC_OFF | APCsw.SIZE_WORD
-                    if self._write_apv2(APIndex.SYS, APv2Reg.CSW, csw_val) >= 0:
-                        self._current_ap_index = APIndex.SYS
-                        self._domain_secure = None
-                        logger.info(
-                            'Hardware reset complete, reconnected '
-                            '(CSW=0x%08X)', csw_val)
-                        return True
-
-            except JLinkException as exc:
-                logger.debug('Reconnect attempt failed: %s', exc)
-
-            time.sleep(0.010)
-
-        return False
+        timeout_s = Delay.RECONNECT_TIMEOUT
+        return self._reconnect_sysap_loop(timeout_s)
 
 
     def set_frequency(self, value_khz: int) -> None:
@@ -676,7 +664,7 @@ class Jlink(ProgrammerBase):
 
         # Pre-calculate the DRW register address for DP.SELECT
         drw_addr = APAddr.SYS + APv2Reg.DRW
-        drw_select = drw_addr & DP_SELECT_MASK
+        drw_select = drw_addr & DPSelect.MASK
         drw_reg_idx = (drw_addr >> 2) & 0x03
 
         # Set DP.SELECT for DRW access (will stay the same for all writes)
@@ -688,12 +676,12 @@ class Jlink(ProgrammerBase):
         # Write in chunks to handle TAR auto-increment rollover.
         # APv2 TAR auto-increment typically works within 1KB boundaries
         # (TARINC=10 bits). Using 1KB chunks ensures we don't overflow.
-        CHUNK_SIZE = 256
+        chunk_size = 256
         start_time = time.time()
         last_progress = -1
 
-        for chunk_start in range(0, total_words, CHUNK_SIZE):
-            chunk_end = min(chunk_start + CHUNK_SIZE, total_words)
+        for chunk_start in range(0, total_words, chunk_size):
+            chunk_end = min(chunk_start + chunk_size, total_words)
             chunk_words = chunk_end - chunk_start
             chunk_addr = address + (chunk_start * 4)
 
@@ -724,7 +712,7 @@ class Jlink(ProgrammerBase):
                 last_progress = pct
 
             # Log detailed progress every 10 chunks
-            chunks_done = chunk_start // CHUNK_SIZE
+            chunks_done = chunk_start // chunk_size
             if chunk_end == total_words or chunks_done % 10 == 0:
                 elapsed = time.time() - start_time
                 rate = (chunk_end * 4) / elapsed if elapsed > 0 else 0
@@ -760,7 +748,10 @@ class Jlink(ProgrammerBase):
         if _pylink is None:
             return []
         try:
-            jlink = _pylink.JLink(log=_jlink_log_handler)
+            jlink = _pylink.JLink(
+                log=_jlink_log_handler,
+                error=_jlink_error_handler
+            )
             emulators = jlink.connected_emulators()
             return [str(emu.SerialNumber) for emu in emulators]
         except JLinkException as exc:
@@ -786,7 +777,6 @@ class Jlink(ProgrammerBase):
         @param addr: Region start address.
         @param size: Region size in bytes.
         """
-
         data = self._read_block_via_sysap(addr, size)
         with open(filename, 'wb') as f:
             f.write(data)
@@ -880,28 +870,46 @@ class Jlink(ProgrammerBase):
         exec_command. It only runs once to avoid redundant 'Device selected'
         messages from the J-Link DLL.
         """
-        if self._device_configured or not self._device_name:
-            return
-        try:
-            self._jlink.exec_command(f'device = {self._device_name}')
-            self._jlink.exec_command('CORESIGHT_IndexAHBAPToUse = 0')
-            self._device_configured = True
-            logger.debug('Device configured: %s', self._device_name)
-        except JLinkException as exc:
-            logger.debug('exec_command during device config: %s', exc)
+        self._configure_device_via_exec()
 
-    def _lookup_target_config(self, target_key: str) -> Optional[dict]:
-        """Return the target configuration for *target_key*.
+    def _load_jlink_config(self, target) -> None:
+        """Load J-Link configuration from target.
 
-        @param target_key: Target name as used in the project.
-        @return: Target config dict from ``jlink_target_map.json``, or
-            ``None`` when the entry is not present.
+        Loads device name and domain security settings from target's
+        ocd_config['jlink']. Interface is read from user settings first,
+        with fallback to target config.
+
+        @param target: Target object with name, ocd_config attributes.
+        @raises ValueError: When no J-Link configuration found.
         """
-        if not os.path.exists(TARGET_MAP):
-            return None
-        with open(TARGET_MAP, encoding='utf-8') as f:
-            data = json.load(f)
-        return data.get(target_key.lower().strip())
+        target_name = target.name
+        ocd_config = getattr(target, 'ocd_config', None) or {}
+        config = ocd_config.get('jlink')
+
+        if not config:
+            raise ValueError(
+                f"Target '{target_name}' has no J-Link configuration. "
+                f"Add 'jlink' config to get_ocd_config() in the target builder"
+            )
+
+        self._device_name = config.get('device')
+
+        # Enable domain security checking if specified
+        if config.get('check_domain_security'):
+            self.check_domain_security = True
+            logger.info('Domain security checking enabled for %s', target_name)
+
+        # Read interface from user settings first, fallback to target config
+        iface_str = ''
+        if self._settings:
+            iface_str = (self._settings.debug_interface or '').lower()
+        if not iface_str:
+            iface_str = config.get('interface', '').lower()
+
+        if iface_str == 'jtag':
+            self._interface = Interface.JTAG
+        elif iface_str == 'swd':
+            self._interface = Interface.SWD
 
 
     def _acquire(self) -> None:
@@ -911,7 +919,13 @@ class Jlink(ProgrammerBase):
         which returns an empty list for a no-op.  Family-specific
         subclasses override the sequence method to drive the SWD
         pins through Infineon's Test Mode pattern.
+
+        Note: Acquisition is SWD-specific and skipped for JTAG interface.
         """
+        if self._interface == Interface.JTAG:
+            logger.debug('Skipping SWD acquisition sequence (JTAG interface)')
+            return
+
         sequence = self._acquire_sequence()
         if not sequence:
             logger.debug(
@@ -942,11 +956,24 @@ class Jlink(ProgrammerBase):
     # -------------------------------------------------------------------------
 
     def _configure_coresight(self, critical: bool = True) -> bool:
-        """Configure CoreSight for SWD access.
+        """Configure CoreSight for DAP access.
+
+        For JTAG interface, coresight_configure() is typically handled by
+        the initial connect() call. Calling it redundantly can interfere
+        with the JTAG scan chain state. Only reconfigure when the device
+        hasn't been configured yet.
 
         @param critical: If True, log error on failure; if False, log warning.
         @return: True on success, False on error.
         """
+        # For JTAG, skip redundant coresight_configure if already connected.
+        # The JTAG connect() already initializes CoreSight and calling it
+        # again can corrupt the TAP state machine.
+        if self._interface == Interface.JTAG and self._device_configured:
+            logger.debug(
+                'Skipping coresight_configure for JTAG (already connected)')
+            return True
+
         try:
             self._jlink.coresight_configure()
             return True
@@ -984,13 +1011,176 @@ class Jlink(ProgrammerBase):
             return APCsw.PROT_SECURE
         return APCsw.PROT_NONSECURE
 
+    def _invalidate_dap_state(
+            self, full: bool = False, include_domain: bool = False
+    ) -> None:
+        """Invalidate cached DAP state.
+
+        Call this after operations that may disrupt DAP state (reset, errors).
+
+        @param full: If True, also invalidate AP index forcing full reinit.
+        @param include_domain: If True, also invalidate domain security cache.
+        """
+        self._dp_select_last = DPSelect.INVALID
+        if full:
+            self._current_ap_index = -1
+        if include_domain:
+            self._domain_secure = None
+            self._domain_detect_failed = False
+
+    def _clear_sticky_errors_swd(self) -> None:
+        """Clear DAP sticky errors for SWD interface.
+
+        SWD requires sticky error clearing before each operation.
+        JTAG handles this differently via _jtag_init_sysap().
+        """
+        if self._interface != Interface.JTAG:
+            self._coresight_write_dp(DPReg.ABORT, DPAbort.CLEAR_ALL)
+
+    def _configure_sysap_csw(self, csw: int) -> int:
+        """Configure SysAP CSW for word access.
+
+        @param csw: Current CSW value (used to determine protection bits).
+        @return: Configured CSW value, or -1 on write failure.
+        """
+        prot = self._get_csw_prot(csw)
+        csw_val = prot | APCsw.ADDRINC_OFF | APCsw.SIZE_WORD
+        result = self._write_apv2(APIndex.SYS, APv2Reg.CSW, csw_val)
+        return csw_val if result >= 0 else -1
+
+    def _configure_device_via_exec(self) -> bool:
+        """Configure device via exec_command without triggering InitTarget.
+
+        @return: True if configuration was applied or already done.
+        """
+        if not self._device_name or self._device_configured:
+            return True
+        try:
+            self._jlink.exec_command(f'device = {self._device_name}')
+            self._jlink.exec_command('CORESIGHT_IndexAHBAPToUse = 0')
+            self._device_configured = True
+            logger.debug('Device configured via exec_command: %s',
+                         self._device_name)
+            return True
+        except JLinkException as exc:
+            logger.debug('exec_command device config failed: %s', exc)
+            return False
+
+    def _configure_coresight_aps(self) -> None:
+        """Configure CoreSight AP addresses via exec_command.
+
+        Configures SysAP (AP[0]) and CM33 AP (AP[1]) base addresses.
+        Failure is logged but not fatal - some firmware versions
+        don't support CORESIGHT_AddAP.
+        """
+        try:
+            self._jlink.exec_command(
+                'CORESIGHT_AddAP = Index=0 Type=AHB-AP BaseAddr=0xF0000000'
+            )
+            self._jlink.exec_command(
+                'CORESIGHT_AddAP = Index=1 Type=AHB-AP BaseAddr=0xF0002000'
+            )
+            logger.debug('CoreSight APs configured')
+        except JLinkException as exc:
+            logger.debug('CoreSight AP config skipped: %s', exc)
+
+    def _wait_for_idcode(self, timeout_s: float) -> bool:
+        """Wait for valid IDCODE to be readable.
+
+        @param timeout_s: Timeout in seconds.
+        @return: True if valid IDCODE read, False on timeout.
+        """
+        start = time.time()
+        while (time.time() - start) < timeout_s:
+            try:
+                idcode = self._jlink.coresight_read(0, ap=False)
+                if idcode is not None and idcode != 0 and idcode != DPSelect.INVALID:
+                    logger.debug('Handshake OK, IDCODE=0x%08X', idcode)
+                    return True
+            except JLinkException as exc:
+                logger.debug('IDCODE read failed: %s', exc)
+            time.sleep(Delay.POLL)
+        return False
+
+    def _jtag_coresight_write_retry(
+            self, reg: int, value: int, ap: bool = False, attempts: int = 3
+    ) -> bool:
+        """Write to CoreSight register with JTAG retry logic.
+
+        @param reg: Register index.
+        @param value: Value to write.
+        @param ap: True for AP access, False for DP.
+        @param attempts: Number of retry attempts.
+        @return: True on success, False after all attempts fail.
+        """
+        for attempt in range(attempts):
+            try:
+                self._jlink.coresight_write(reg, value, ap=ap)
+                return True
+            except JLinkException as exc:
+                if attempt < attempts - 1:
+                    time.sleep(Delay.JTAG_RETRY)
+                else:
+                    logger.debug('coresight_write failed after %d attempts: %s',
+                                 attempts, exc)
+        return False
+
+    def _reconnect_sysap_loop(self, timeout_s: float) -> bool:
+        """Attempt to reconnect to SysAP with retry loop.
+
+        Common reconnect logic used after reset or connection-breaking events.
+        Clears errors, powers up DAP, configures CSW, and verifies access.
+
+        @param timeout_s: Timeout in seconds.
+        @return: True on successful reconnect, False on timeout.
+        """
+        start = time.time()
+
+        while (time.time() - start) < timeout_s:
+            try:
+                # Clear sticky errors (best effort)
+                try:
+                    self._jlink.coresight_write(
+                        DPReg.ABORT, DPAbort.CLEAR_ALL, ap=False)
+                except JLinkException:
+                    pass
+
+                # Power up DAP
+                self._jlink.coresight_write(
+                    DPReg.CTRL_STAT, DPCtrl.POWER_UP, ap=False)
+
+                # Invalidate SELECT cache
+                self._invalidate_dap_state()
+
+                # Try to read SysAP CSW to verify access
+                csw = self._read_apv2(APIndex.SYS, APv2Reg.CSW)
+                if csw is not None:
+                    # Configure CSW for word access
+                    csw_val = self._configure_sysap_csw(csw)
+                    if csw_val >= 0:
+                        self._current_ap_index = APIndex.SYS
+                        # Invalidate domain cache after reconnect
+                        self._domain_secure = None
+                        logger.debug(
+                            'Reconnect via SysAP successful (CSW=0x%08X)',
+                            csw_val
+                        )
+                        return True
+
+            except JLinkException as exc:
+                logger.debug('Reconnect attempt failed: %s', exc)
+
+            time.sleep(Delay.POLL)
+
+        return False
+
     def _detect_security_domain(self) -> Optional[bool]:
         """Determine current security domain by probing memory access.
 
         Determines the domain by attempting to read from secure and
-        non-secure memory aliases:
-        - If DomainTestAddr.SECURE is readable -> secure domain
-        - If only DomainTestAddr.NON_SECURE is readable -> non-secure
+        non-secure memory aliases using the configured domain test address:
+        - If secure address is readable -> secure domain
+        - If only non-secure alias is readable -> non-secure
 
         @return: True if secure domain, False if non-secure.
         """
@@ -998,25 +1188,29 @@ class Jlink(ProgrammerBase):
         if self._domain_detect_failed:
             return False
 
+        # Calculate secure and non-secure test addresses
+        secure_addr = self._domain_test_addr
+        non_secure_addr = secure_addr & AddrMask.NON_SECURE
+
         try:
 
             # Try reading from secure address first
-            secure_val = self.sysap_read32(DomainTestAddr.SECURE)
+            secure_val = self.sysap_read32(secure_addr)
             if secure_val is not None:
                 logger.debug(
                     'Domain detection: secure read OK (0x%08X=0x%08X) -> secure',
-                    DomainTestAddr.SECURE, secure_val)
+                    secure_addr, secure_val)
                 return True
 
             # Clear sticky errors after failed secure read before trying NS
             self._coresight_write_dp(DPReg.ABORT, DPAbort.CLEAR_ALL)
 
             # Secure failed, try non-secure
-            ns_val = self.sysap_read32(DomainTestAddr.NON_SECURE)
+            ns_val = self.sysap_read32(non_secure_addr)
             if ns_val is not None:
                 logger.debug(
                     'Domain detection: non-secure read OK (0x%08X=0x%08X) -> non-secure',
-                    DomainTestAddr.NON_SECURE, ns_val)
+                    non_secure_addr, ns_val)
                 return False
 
             # Both failed
@@ -1051,7 +1245,7 @@ class Jlink(ProgrammerBase):
             return address
 
         # Only adjust addresses in peripheral space with S/NS aliasing
-        if not (DomainCheckRange.MIN <= address <= DomainCheckRange.MAX):
+        if address < DomainCheckRange.MIN or address > DomainCheckRange.MAX:
             return address
 
 
@@ -1084,7 +1278,19 @@ class Jlink(ProgrammerBase):
         self._domain_secure = None
         self._domain_detect_failed = False
         # Force DP.SELECT refresh
-        self._dp_select_last = 0xFFFFFFFF
+        self._dp_select_last = DPSelect.INVALID
+
+    def configure_domain_detection(self, register_map) -> None:
+        """Configure domain detection using target's register map.
+
+        Uses boot_status register address for TrustZone domain detection.
+
+        @param register_map: Target's register map object with boot_status.
+        """
+        if hasattr(register_map, 'boot_status'):
+            self._domain_test_addr = register_map.boot_status
+            logger.debug('Domain test address configured: 0x%08X',
+                         self._domain_test_addr)
 
     def _coresight_write_dp(self, reg_index: int, value: int) -> int:
         """Write to a Debug Port register.
@@ -1094,16 +1300,16 @@ class Jlink(ProgrammerBase):
         @return: 0 on success, negative on error.
         """
         start = time.time()
-        while (time.time() - start) < self.reconnect_timeout_ms / 1000:
+        while (time.time() - start) < Delay.RECONNECT_TIMEOUT:
             try:
                 self._jlink.coresight_write(reg_index, value, ap=False)
                 return 0
             except JLinkException as exc:
                 logger.debug('coresight_write(DP) failed: %s, retrying', exc)
-                time.sleep(0.01)
+                time.sleep(Delay.POLL)
                 continue
         logger.error('coresight_write(DP) failed: timeout after %d ms',
-                     self.reconnect_timeout_ms)
+                     int(Delay.RECONNECT_TIMEOUT * 1000))
         return -1
 
     def _coresight_read_dp(self, reg_index: int) -> Optional[int]:
@@ -1118,31 +1324,67 @@ class Jlink(ProgrammerBase):
             logger.debug('coresight_read(DP) failed: %s', exc)
             return None
 
+    def _jtag_retry_delay(self) -> float:
+        """Return retry delay for JTAG operations.
+
+        JTAG may need brief delays between retries due to DAP state
+        transitions that don't affect SWD.
+
+        @return: Delay in seconds (0 for SWD, 0.02 for JTAG).
+        """
+        return 0.020 if self._interface == Interface.JTAG else 0
+
     def _coresight_write_ap(self, reg_index: int, value: int) -> int:
         """Write to an Access Port register (low-level).
+
+        For JTAG interface, retries up to 3 times with delays since
+        the DAP may be temporarily unavailable during state transitions.
 
         @param reg_index: Bits[3:2] of the AP register address.
         @param value: Value to write.
         @return: 0 on success, negative on error.
         """
-        try:
-            self._jlink.coresight_write(reg_index, value, ap=True)
-            return 0
-        except JLinkException as exc:
-            logger.error('coresight_write(AP) failed: %s', exc)
-            return -1
+        max_attempts = 3 if self._interface == Interface.JTAG else 1
+        delay = self._jtag_retry_delay()
+
+        for attempt in range(max_attempts):
+            try:
+                self._jlink.coresight_write(reg_index, value, ap=True)
+                return 0
+            except JLinkException as exc:
+                if attempt < max_attempts - 1:
+                    logger.debug('coresight_write(AP) attempt %d failed: %s',
+                                 attempt + 1, exc)
+                    time.sleep(delay)
+                else:
+                    logger.debug('coresight_write(AP) failed after %d attempts: %s',
+                                 max_attempts, exc)
+        return -1
 
     def _coresight_read_ap(self, reg_index: int) -> Optional[int]:
         """Read from an Access Port register (low-level).
 
+        For JTAG interface, retries up to 3 times with delays since
+        the DAP may be temporarily unavailable during state transitions.
+
         @param reg_index: Bits[3:2] of the AP register address.
         @return: Value read, or None on error.
         """
-        try:
-            return self._jlink.coresight_read(reg_index, ap=True)
-        except JLinkException as exc:
-            logger.debug('coresight_read(AP) failed: %s', exc)
-            return None
+        max_attempts = 3 if self._interface == Interface.JTAG else 1
+        delay = self._jtag_retry_delay()
+
+        for attempt in range(max_attempts):
+            try:
+                return self._jlink.coresight_read(reg_index, ap=True)
+            except JLinkException as exc:
+                if attempt < max_attempts - 1:
+                    logger.debug('coresight_read(AP) attempt %d failed: %s',
+                                 attempt + 1, exc)
+                    time.sleep(delay)
+                else:
+                    logger.debug('coresight_read(AP) failed after %d attempts: %s',
+                                 max_attempts, exc)
+        return None
 
     def _write_apv2(self, ap_num: int, reg_offset: int, value: int) -> int:
         """Write to an APv2 (CoreSight SoC-600) register.
@@ -1155,7 +1397,7 @@ class Jlink(ProgrammerBase):
         @return: 0 on success, negative on error.
         """
         reg_addr = APAddr[APIndex(ap_num).name] + reg_offset
-        select_value = reg_addr & DP_SELECT_MASK
+        select_value = reg_addr & DPSelect.MASK
         reg_index = (reg_addr >> 2) & 0x03
 
         # Update DP.SELECT if needed
@@ -1179,7 +1421,7 @@ class Jlink(ProgrammerBase):
         @return: Value read, or None on error.
         """
         reg_addr = APAddr[APIndex(ap_num).name] + reg_offset
-        select_value = reg_addr & DP_SELECT_MASK
+        select_value = reg_addr & DPSelect.MASK
         reg_index = (reg_addr >> 2) & 0x03
 
         # Update DP.SELECT if needed
@@ -1202,7 +1444,6 @@ class Jlink(ProgrammerBase):
         @param ap_num: Access Port index (APIndex.SYS=0, APIndex.CM33=1).
         @return: True on success, False on error.
         """
-
         logger.debug('DAP init for AP%d', ap_num)
 
         # Send SWD line reset to ensure clean DAP state
@@ -1229,7 +1470,7 @@ class Jlink(ProgrammerBase):
             return False
 
         # Invalidate SELECT cache
-        self._dp_select_last = 0xFFFFFFFF
+        self._dp_select_last = DPSelect.INVALID
 
         # Read CSW to determine secure/non-secure access
         csw = self._read_apv2(ap_num, APv2Reg.CSW)
@@ -1272,14 +1513,13 @@ class Jlink(ProgrammerBase):
             self, address: int, retry: bool = True
     ) -> Optional[int]:
         """Internal implementation of sysap_read32 with retry support."""
-
         # Ensure SysAP is initialized
         if self._current_ap_index != APIndex.SYS:
             if not self.init_sysap():
                 return None
 
-        # Clear sticky errors before read
-        self._coresight_write_dp(DPReg.ABORT, DPAbort.CLEAR_ALL)
+        # Clear sticky errors before read (SWD only)
+        self._clear_sticky_errors_swd()
 
         # Write address to TAR
         result = self._write_apv2(APIndex.SYS, APv2Reg.TAR, address)
@@ -1288,14 +1528,11 @@ class Jlink(ProgrammerBase):
                 logger.debug(
                     'sysap_read32: TAR write failed for 0x%08X, '
                     'reinitializing DAP and retrying', address)
-                # DAP may be in bad state - reinitialize
-                time.sleep(0.050)
-                # Force full reinit
-                self._current_ap_index = -1
-                self._dp_select_last = 0xFFFFFFFF
+                time.sleep(Delay.DAP_RECOVERY)
+                self._invalidate_dap_state(full=True)
                 if self.init_sysap():
                     return self._sysap_read32_impl(address, retry=False)
-            logger.error('sysap_read32: TAR write failed for 0x%08X', address)
+            logger.warning('sysap_read32: TAR write failed for 0x%08X', address)
             return None
 
         # Read RDBUFF to ensure the TAR write is complete before reading DRW
@@ -1310,9 +1547,8 @@ class Jlink(ProgrammerBase):
             logger.debug(
                 'sysap_read32: DRW read failed for 0x%08X, '
                 'reinitializing DAP and retrying', address)
-            time.sleep(0.050)
-            self._current_ap_index = -1
-            self._dp_select_last = 0xFFFFFFFF
+            time.sleep(Delay.DAP_RECOVERY)
+            self._invalidate_dap_state(full=True)
             if self.init_sysap():
                 return self._sysap_read32_impl(address, retry=False)
 
@@ -1355,12 +1591,12 @@ class Jlink(ProgrammerBase):
             self.invalidate_domain_cache()
             adjusted_addr = self._adjust_address_for_domain(address)
             # Delay after domain detection to let DAP settle
-            time.sleep(0.010)
+            time.sleep(Delay.POLL)
         else:
             adjusted_addr = address
 
-        # Clear any sticky errors before write
-        self._coresight_write_dp(DPReg.ABORT, DPAbort.CLEAR_ALL)
+        # Clear sticky errors before write (SWD only)
+        self._clear_sticky_errors_swd()
 
         # Write address to TAR
         result = self._write_apv2(APIndex.SYS, APv2Reg.TAR, adjusted_addr)
@@ -1369,12 +1605,11 @@ class Jlink(ProgrammerBase):
                 logger.debug(
                     'sysap_write32: TAR write failed for 0x%08X, '
                     'reinitializing DAP and retrying', adjusted_addr)
-                time.sleep(0.050)
-                self._current_ap_index = -1
-                self._dp_select_last = 0xFFFFFFFF
+                time.sleep(Delay.DAP_RECOVERY)
+                self._invalidate_dap_state(full=True)
                 if self.init_sysap():
                     return self._sysap_write32_impl(address, value, retry=False)
-            logger.error('sysap_write32: TAR write failed for 0x%08X', adjusted_addr)
+            logger.warning('sysap_write32: TAR write failed for 0x%08X', adjusted_addr)
             return False
 
         # IMPORTANT: Read RDBUFF to ensure the TAR write is complete
@@ -1394,9 +1629,8 @@ class Jlink(ProgrammerBase):
                 logger.debug(
                     'sysap_write32: DRW write failed for 0x%08X, '
                     'reinitializing DAP and retrying', adjusted_addr)
-                time.sleep(0.050)
-                self._current_ap_index = -1
-                self._dp_select_last = 0xFFFFFFFF
+                time.sleep(Delay.DAP_RECOVERY)
+                self._invalidate_dap_state(full=True)
                 if self.init_sysap():
                     return self._sysap_write32_impl(address, value, retry=False)
             logger.error('sysap_write32: DRW write failed for 0x%08X', adjusted_addr)
@@ -1415,6 +1649,59 @@ class Jlink(ProgrammerBase):
         logger.debug('sysap_write32(0x%08X) = 0x%08X OK', adjusted_addr, value)
         return True
 
+    def _jtag_init_sysap(self) -> bool:
+        """Initialize SysAP for JTAG interface after connect().
+
+        This is a simplified initialization path for JTAG. After
+        _jlink.connect() successfully initializes the JTAG scan chain
+        and DAP, we only need to configure the AP CSW register for
+        our memory access pattern. We skip _swd_line_reset() and
+        _configure_coresight() which are already done by connect()
+        and could corrupt the JTAG TAP state if called again.
+
+        @return: True on success, False on error.
+        """
+        logger.debug('JTAG: Initializing SysAP')
+
+        # Clear sticky errors via DP.ABORT
+        self._jtag_coresight_write_retry(
+            DPReg.ABORT, DPAbort.CLEAR_ALL, ap=False)
+
+        # Power up DAP (may already be powered by connect())
+        self._jtag_coresight_write_retry(
+            DPReg.CTRL_STAT, DPCtrl.POWER_UP, ap=False)
+
+        # Invalidate SELECT cache
+        self._invalidate_dap_state()
+
+        # Read CSW to determine secure/non-secure access
+        # Retry a few times since DAP might need time to stabilize
+        csw = None
+        for _ in range(5):
+            csw = self._read_apv2(APIndex.SYS, APv2Reg.CSW)
+            if csw is not None:
+                break
+            time.sleep(Delay.DAP_RECOVERY)
+
+        if csw is None:
+            logger.warning('JTAG: Failed to read SysAP CSW')
+            # Don't fail - try to continue with default CSW
+            csw = APCsw.PROT_SECURE | APCsw.SIZE_WORD
+
+        logger.info('JTAG: SysAP CSW read = 0x%08X', csw)
+
+        # Configure CSW for word access
+        csw_val = self._configure_sysap_csw(csw)
+        if csw_val < 0:
+            logger.debug('JTAG: CSW write failed (may still work)')
+            csw_val = self._get_csw_prot(csw) | APCsw.ADDRINC_OFF | APCsw.SIZE_WORD
+
+        # Read back CSW to verify
+        csw_verify = self._read_apv2(APIndex.SYS, APv2Reg.CSW)
+        logger.info('JTAG: SysAP initialized (CSW=0x%08X)', csw_verify or csw_val)
+
+        self._current_ap_index = APIndex.SYS
+        return True
 
     def init_sysap(self) -> bool:
         """Initialize direct SysAP access.
@@ -1425,13 +1712,17 @@ class Jlink(ProgrammerBase):
 
         @return: True on success, False on error.
         """
-
         logger.debug('Initializing SysAP for direct access')
 
         self._patch_target_connected()
 
         # Ensure device is configured to prevent InitTarget from running
         self._ensure_device_configured()
+
+        # For JTAG interface with device already configured, use the
+        # simplified JTAG-specific path that doesn't call coresight_configure
+        if self._interface == Interface.JTAG and self._device_configured:
+            return self._jtag_init_sysap()
 
         # Configure CoreSight for DAP access
         if not self._configure_coresight():
@@ -1451,14 +1742,11 @@ class Jlink(ProgrammerBase):
         calling JLINKARM_Connect() (which would trigger InitTarget() and
         potentially fail if CM33 AP is closed).
 
-        Uses self.reconnect_wait_ms and self.reconnect_timeout_ms attributes.
+        Uses Delay.RECONNECT_WAIT and Delay.RECONNECT_TIMEOUT constants.
 
         @return: True on success, False on failure.
         """
-        wait_ms = self.reconnect_wait_ms
-        timeout_ms = self.reconnect_timeout_ms
-
-        time.sleep(wait_ms / 1000.0)
+        time.sleep(Delay.RECONNECT_WAIT)
         logger.debug('Reconnecting after soft reset (SysAP only)...')
 
         self._patch_target_connected()
@@ -1475,28 +1763,26 @@ class Jlink(ProgrammerBase):
 
         # Wait for DAP to become accessible with retries
         start = time.time()
-        timeout_s = timeout_ms / 1000.0
 
-        while (time.time() - start) < timeout_s:
+        while (time.time() - start) < Delay.RECONNECT_TIMEOUT:
             try:
                 # Clear sticky errors
                 self._coresight_write_dp(DPReg.ABORT, DPAbort.CLEAR_ALL)
 
                 # Power up DAP
                 if self._coresight_write_dp(DPReg.CTRL_STAT, DPCtrl.POWER_UP) < 0:
-                    time.sleep(0.010)
+                    time.sleep(Delay.POLL)
                     continue
 
                 # Invalidate SELECT cache
-                self._dp_select_last = 0xFFFFFFFF
+                self._invalidate_dap_state()
 
                 # Try to read SysAP CSW to verify access
                 csw = self._read_apv2(APIndex.SYS, APv2Reg.CSW)
                 if csw is not None:
-                    # Configure CSW for word access with NO address increment
-                    prot = self._get_csw_prot(csw)
-                    csw_val = prot | APCsw.ADDRINC_OFF | APCsw.SIZE_WORD
-                    if self._write_apv2(APIndex.SYS, APv2Reg.CSW, csw_val) >= 0:
+                    # Configure CSW for word access
+                    csw_val = self._configure_sysap_csw(csw)
+                    if csw_val >= 0:
                         self._current_ap_index = APIndex.SYS
                         # Invalidate domain cache after reconnect
                         self._domain_secure = None
@@ -1509,23 +1795,47 @@ class Jlink(ProgrammerBase):
             except JLinkException as exc:
                 logger.debug('Reconnect attempt failed: %s', exc)
 
-            time.sleep(0.010)
+            time.sleep(Delay.POLL)
 
-        logger.error('Reconnect timeout after %d ms', timeout_ms)
+        logger.error('Reconnect timeout after %d ms',
+                     int(Delay.RECONNECT_TIMEOUT * 1000))
         return False
 
     def _swd_line_reset(self) -> None:
-        """Send SWD line reset sequence to reinitialize the Debug Port.
+        """Send line reset sequence to reinitialize the Debug Port.
 
-        Sends at least 50 clock cycles with SWDIO high followed by
-        idle cycles, which resets the SWD state machine in the target.
+        For SWD: Sends at least 50 clock cycles with SWDIO high followed
+        by idle cycles, which resets the SWD state machine in the target.
+        For JTAG: Skip if already configured (scan chain is already set up).
+        If a reset is truly needed, use exec_command to request TAP reset.
         """
+        if self._interface == Interface.JTAG:
+            # For JTAG, the scan chain is initialized by connect().
+            # Skip line reset if already configured to avoid interfering
+            # with the established JTAG connection.
+            if self._device_configured:
+                logger.debug(
+                    'Skipping line reset for JTAG (already configured)')
+                return
+            # If not yet configured (should not happen normally), try JTAG reset
+            logger.debug('JTAG: attempting TAP reset via exec_command')
+            try:
+                # Try to reset TAP via TRST pin (may not be connected)
+                self._jlink.exec_command('JTAG_ResetPin = 0')
+                time.sleep(Delay.POLL)
+                self._jlink.exec_command('JTAG_ResetPin = 1')
+                time.sleep(Delay.POLL)
+            except JLinkException as exc:
+                # TRST may not be available - this is OK
+                logger.debug('JTAG TAP reset via TRST not available: %s', exc)
+            return
+
         logger.debug('Sending SWD line reset sequence')
         try:
             # Send 56 bits of all 1s (SWDIO high) to reset the line
             # Using two 32-bit writes to avoid 64-bit integer issues
             # Parameters: (trn_after_data, data, num_bits)
-            self._jlink.swd_write(0, 0xFFFFFFFF, 32)
+            self._jlink.swd_write(0, DPSelect.INVALID, 32)
             self._jlink.swd_write(0, 0x00FFFFFF, 24)
             # Send idle cycles (SWDIO low) - at least 2 cycles
             self._jlink.swd_write(0, 0x00, 8)
@@ -1537,14 +1847,16 @@ class Jlink(ProgrammerBase):
     def _connect_sysap_only(self, timeout_ms: int = 5000) -> bool:
         """Connect directly to SysAP without using CM33 at all.
 
-        This method bypasses J-Link's InitTarget() entirely by using
-        exec_command to set the device without triggering the connect
-        sequence. Then it configures CoreSight directly and initializes
-        SysAP for register access.
+        This method bypasses J-Link's InitTarget() entirely for both SWD
+        and JTAG interfaces. For SWD, it uses exec_command to set the
+        device without triggering connect(). For JTAG, it configures the
+        JTAG chain via coresight_configure() with explicit chain parameters,
+        avoiding the acquisition loop in InitTarget() that can hang when
+        CM33 AP is closed.
 
-        This avoids any CM33 AP involvement during the initial connection,
-        which is critical for provisioning devices in NORMAL_PROVISIONED
+        This is critical for provisioning devices in NORMAL_PROVISIONED
         lifecycle where CM33 may be closed.
+
 
         @param timeout_ms: Timeout for handshake in milliseconds.
         @return: True on success, False on failure.
@@ -1552,42 +1864,95 @@ class Jlink(ProgrammerBase):
         logger.debug(
             '_connect_sysap_only: starting pure SysAP connection (no CM33)')
 
-        # Set device via exec_command to avoid triggering InitTarget().
-        # This registers the device with J-Link without running the
-        # JLinkScript's InitTarget() which would try to use CM33.
-        if self._device_name and not self._device_configured:
-            logger.debug(
-                'Setting device via exec_command: %s', self._device_name)
-            try:
-                # First set device name - this does NOT trigger InitTarget
-                self._jlink.exec_command(f'device = {self._device_name}')
-                self._jlink.exec_command('CORESIGHT_IndexAHBAPToUse = 0')
-                self._device_configured = True
-                logger.debug('Device configured: %s', self._device_name)
-            except JLinkException as exc:
-                logger.debug('exec_command device failed: %s', exc)
+        # For both JTAG and SWD, use the low-level bypass approach that
+        # avoids connect() and InitTarget() entirely.
+        # This allows provisioning when CM33 AP is closed.
+        if self._interface == Interface.JTAG:
+            return self._connect_jtag_sysap_only()
+        return self._connect_sysap_fallback(timeout_ms)
 
-        # Configure CoreSight APs manually (equivalent to ConfigTargetSettings)
-        # These commands configure the AP addresses without triggering
-        # InitTarget
+    def _connect_jtag_sysap_only(self) -> bool:
+        """Connect via JTAG bypassing InitTarget() entirely.
+
+        This method uses exec_command to configure the J-Link to skip
+        the JLinkScript's InitTarget() acquisition sequence, then calls
+        connect() to initialize the JTAG chain. This avoids the infinite
+        loop when CM33 AP is closed.
+
+        Based on the PSE8x7/PSC3_P6 JLinkScript approach.
+
+        @return: True on success, False on failure.
+        """
+        logger.info('JTAG: connecting via SysAP (skipping InitTarget)')
+
+        # Configure J-Link to skip InitTarget and prevent retries
         try:
-            # Configure SysAP (AP[0]) - this is the only AP we need
-            # for provisioning
-            self._jlink.exec_command(
-                'CORESIGHT_AddAP = Index=0 Type=AHB-AP BaseAddr=0xF0000000'
-            )
-            logger.debug('Configured SysAP (AP[0]) at 0xF0000000')
-            # Configure CM33 AP (AP[1]) for completeness,
-            # though we won't use it
-            self._jlink.exec_command(
-                'CORESIGHT_AddAP = Index=1 Type=AHB-AP BaseAddr=0xF0002000'
-            )
-            logger.debug('Configured CM33 AP (AP[1]) at 0xF0002000')
+            self._jlink.exec_command('SkipProgOnConn = 1')
+            self._jlink.exec_command('InhibitConnectRetries=1')
+            self._jlink.exec_command('SetDormantModeHandling=1')
+            logger.debug('JTAG: Configured to skip InitTarget')
         except JLinkException as exc:
-            # Some J-Link firmware versions don't support
-            # CORESIGHT_AddAP command
-            # This is expected - we fall back to direct CoreSight operations
-            logger.debug('CoreSight AP configuration skipped: %s', exc)
+            logger.debug('JTAG: exec_command config: %s', exc)
+
+        # Set device via exec_command
+        self._configure_device_via_exec()
+
+        # Configure CoreSight APs manually
+        self._configure_coresight_aps()
+
+        # Now call connect() - with SkipProgOnConn=1, InitTarget should
+        # be skipped. This initializes the JTAG chain properly.
+        try:
+            self._jlink.connect(self._device_name)
+            self._device_configured = True
+            logger.info('JTAG: connect() successful (InitTarget skipped)')
+        except JLinkException as exc:
+            # Expected failure when CM33 AP is closed - InitTarget fails
+            # but JTAG chain is still initialized, allowing SysAP access
+            logger.debug('JTAG: connect() raised (expected): %s', exc)
+            # Mark as configured and continue with SysAP access
+            self._device_configured = True
+
+        # Wait for JTAG to stabilize
+        time.sleep(Delay.JTAG_STABILIZE)
+
+        # Configure CoreSight for DAP access
+        try:
+            self._jlink.coresight_configure(
+                ir_pre=0, dr_pre=0, ir_post=4, dr_post=0,
+                perform_tif_init=False
+            )
+            logger.info('JTAG: CoreSight configured')
+        except JLinkException as exc:
+            logger.debug('JTAG: coresight_configure: %s', exc)
+            # Try without chain params
+            try:
+                self._jlink.coresight_configure()
+            except JLinkException:
+                pass
+
+        # Perform JTAG handshake - wait for IDCODE to be readable
+        if not self._wait_for_idcode(5.0):
+            logger.error('JTAG: Handshake failed - IDCODE not readable')
+            return False
+
+        # Initialize DAP and SysAP directly
+        return self._jtag_init_sysap()
+
+
+    def _connect_sysap_fallback(self, timeout_ms: int = 5000) -> bool:
+        """Fallback connection method using direct CoreSight access.
+
+        Used when standard connect() fails or for SWD interface.
+
+        @param timeout_ms: Timeout for handshake in milliseconds.
+        @return: True on success, False on failure.
+        """
+        # Set device via exec_command to avoid triggering InitTarget().
+        self._configure_device_via_exec()
+
+        # Configure CoreSight APs manually
+        self._configure_coresight_aps()
 
         # Now initialize SysAP directly via CoreSight
         # This works regardless of whether InitTarget succeeded or failed
@@ -1601,32 +1966,8 @@ class Jlink(ProgrammerBase):
             return False
 
         # Handshake: wait for IDCODE to be readable
-        # Similar to _Handshake() in JLinkScript
-        start = time.time()
         timeout_s = timeout_ms / 1000.0
-        idcode_ok = False
-
-        while (time.time() - start) < timeout_s:
-            try:
-                # Try to read IDCODE via DP (reg 0)
-                # In SWD, IDCODE is accessible after line reset
-                idcode = self._jlink.coresight_read(0, ap=False)
-                if idcode is not None and idcode != 0 and idcode != 0xFFFFFFFF:
-                    # Expected IDCODE for PSoC C3x6: 0x4C013477
-                    logger.debug('Handshake OK, IDCODE=0x%08X', idcode)
-                    idcode_ok = True
-                    break
-            except JLinkException as exc:
-                logger.debug('IDCODE read attempt failed: %s', exc)
-                # Try SWD line reset and reconfigure
-                self._swd_line_reset()
-                try:
-                    self._jlink.coresight_configure()
-                except JLinkException:
-                    pass
-            time.sleep(0.010)
-
-        if not idcode_ok:
+        if not self._wait_for_idcode(timeout_s):
             logger.error(
                 'Handshake failed: IDCODE not readable within %d ms',
                 timeout_ms
@@ -1634,10 +1975,9 @@ class Jlink(ProgrammerBase):
             return False
 
         # Invalidate DP.SELECT cache
-        self._dp_select_last = 0xFFFFFFFF
+        self._invalidate_dap_state()
 
         # Clear sticky errors via DP.ABORT
-        # Similar to _DAP_Init() in JLinkScript
         if self._coresight_write_dp(DPReg.ABORT, DPAbort.CLEAR_ALL) < 0:
             logger.error('Failed to clear sticky errors')
             return False
@@ -1655,11 +1995,9 @@ class Jlink(ProgrammerBase):
 
         logger.debug('SysAP CSW initial value: 0x%08X', csw)
 
-        # Configure CSW for word access with appropriate protection
-        # and NO address auto-increment
-        prot = self._get_csw_prot(csw)
-        csw_val = prot | APCsw.ADDRINC_OFF | APCsw.SIZE_WORD
-        if self._write_apv2(APIndex.SYS, APv2Reg.CSW, csw_val) < 0:
+        # Configure CSW for word access
+        csw_val = self._configure_sysap_csw(csw)
+        if csw_val < 0:
             logger.error('Failed to configure SysAP CSW')
             return False
 

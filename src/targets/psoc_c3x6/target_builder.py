@@ -45,11 +45,25 @@ class PsocC3x6Builder(TargetBuilder):
 
     def get_ocd_config(self):
         return {
-            'openocd': {
-                'variables': 'set ENABLE_CM33 0',
-                'before_init': '',
-                'after_init': 'targets psc3.sys'
-            }
+            'openocd': self._get_openocd_config(),
+            'jlink': self._get_jlink_config()
+        }
+
+    def _get_openocd_config(self):
+        return {
+            'target': 'infineon/psc3x6',
+            'mcu': 'psc3',
+            'cm33': 'cm33',
+            'cm55': 'cm55',
+            'sysap': 'sys',
+            'variables': 'set ENABLE_CM33 0',
+            'before_init': '',
+            'after_init': 'targets psc3.sys'
+        }
+
+    def _get_jlink_config(self):
+        return {
+            'device': 'PSC3M6GES3AH'
         }
 
     def get_memory_map(self):

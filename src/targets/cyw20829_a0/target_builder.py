@@ -45,6 +45,10 @@ class CYW20829A0Builder(TargetBuilder):
     def get_ocd_config(self):
         return {
             'openocd': {
+                'target': 'infineon/cyw20829',
+                'mcu': 'cyw20829',
+                'cm33': 'cm33ap',
+                'sysap': 'sysap',
                 'before_init': 'cyw20829.cm33 configure -defer-examine',
                 'after_init': 'targets cyw20829.sysap'
             }

@@ -19,5 +19,23 @@ from ..pse8xs2 import PSE8xS2Builder
 class PSE8xS4Builder(PSE8xS2Builder):
     """ PSoC Edge E8x S4 target builder """
 
+    def _get_openocd_config(self):
+        return {
+            'target': 'infineon/pse84xgxs4',
+            'mcu': 'pse84xgxs4',
+            'cm33': 'cm33',
+            'cm55': 'cm55',
+            'sysap': 'sys',
+            'variables': 'set ENABLE_CM33 0; set ENABLE_CM55 0',
+            'before_init': '',
+            'after_init': 'reset init; targets'
+        }
+
+    def _get_jlink_config(self):
+        return {
+            'device': 'PSE846GP_EPC4_M33',
+            'check_domain_security': True
+        }
+
     def get_project_initializer(self):
         return ProjectInitPse8xs4

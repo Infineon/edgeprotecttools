@@ -1,0 +1,1023 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "OEM Provisioning Schema",
+    "type": "object",
+    "required": [
+        "policy",
+        "device_policy",
+        "raw_data_pc012"
+    ],
+    "properties": {
+        "policy": {
+            "type": "object",
+            "required": [
+                "platform",
+                "version",
+                "type"
+            ],
+            "properties": {
+                "platform": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "number",
+                    "minimum": 2.0,
+                    "maximum": 99.99
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "device_policy": {
+            "type": "object",
+            "required": [
+                "program_sflash_assets",
+                "program_hash",
+                "nv_counter_a1",
+                "nv_counter_a2",
+                "nv_counter_a3",
+                "nv_counter_a4",
+                "failed_signature_counter",
+                "iak_cfg",
+                "prov_oem_complete",
+                "debug",
+                "boot",
+                "dfu",
+                "reprovisioning",
+                "pc2_ctl_valid",
+                "pc3_ctl_valid",
+                "pc2_handler",
+                "pc3_handler",
+                "oem_device_cert_addr",
+                "oem_device_cert_blocks",
+                "boundary_scan",
+                "mpc"
+            ],
+            "properties": {
+                "program_sflash_assets": {
+                    "title": "Indicates whether to program the assets which are placed into SFLASH",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "program_hash": {
+                    "title": "Enables ASSET_HASH and FACTORY_HASH validation in NORMAL_PROVISIONED LCS",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "nv_counter_a1": {
+                    "title": "NV counter slot 1. 0, if no update",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 255
+                        }
+                    }
+                },
+                "nv_counter_a2": {
+                    "title": "NV counter slot 2. 0, if no update",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 255
+                        }
+                    }
+                },
+                "nv_counter_a3": {
+                    "title": "NV counter slot 3. 0, if no update",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 255
+                        }
+                    }
+                },
+                "nv_counter_a4": {
+                    "title": "NV counter slot 4. 0, if no update",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 255
+                        }
+                    }
+                },
+                "failed_signature_counter": {
+                    "title": "Failed signature counter",
+                    "type": "object",
+                    "required": [
+                        "ram_app",
+                        "boot_app_layout_0",
+                        "boot_app_layout_1",
+                        "boot_app_layout_2",
+                        "boot_app_layout_3"
+                    ],
+                    "properties": {
+                        "ram_app": {
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 65535
+                                }
+                            }
+                        },
+                        "boot_app_layout_0": {
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 65535
+                                }
+                            }
+                        },
+                        "boot_app_layout_1": {
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 65535
+                                }
+                            }
+                        },
+                        "boot_app_layout_2": {
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 65535
+                                }
+                            }
+                        },
+                        "boot_app_layout_3": {
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 65535
+                                }
+                            }
+                        }
+                    }
+                },
+                "iak_cfg": {
+                    "title": "IAK generation config",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "NONE",
+                                "AES256",
+                                "ECC256",
+                                "ECC384",
+                                "ECC521"
+                            ]
+                        }
+                    }
+                },
+                "prov_oem_complete": {
+                    "title": "Indicates whether OEM assets are finalized in SFLASH and no further update is allowed",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "debug": {
+                    "title": "Access restrictions",
+                    "type": "object",
+                    "default": {},
+                    "required": [
+                        "cpu",
+                        "system"
+                    ],
+                    "properties": {
+                        "cpu": {
+                            "title": "CPU configuration",
+                            "type": "object",
+                            "required": [
+                                "ap_cm33",
+                                "listen_window",
+                                "cm33_dbg",
+                                "cm33_nid",
+                                "cm33_spid",
+                                "cm33_spnid",
+                                "cm33_secure"
+                            ],
+                            "properties": {
+                                "ap_cm33": {
+                                    "title": "Configures the CM33 debug access port availability in the PRODUCTION and DEVELOPMENT LCS",
+                                    "type": "object",
+                                    "required": [
+                                        "value"
+                                    ],
+                                    "properties": {
+                                        "value": {
+                                            "type": "string",
+                                            "enum": [
+                                                "Enable",
+                                                "Disable",
+                                                "Permanently Disable"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "listen_window": {
+                                    "title": "Configures the listen window time to acquire the CM33 debug access port in the PRODUCTION LCS",
+                                    "type": "object",
+                                    "required": [
+                                        "value"
+                                    ],
+                                    "properties": {
+                                        "value": {
+                                            "type": "string",
+                                            "enum": [
+                                                "100 ms",
+                                                "20 ms",
+                                                "2 ms",
+                                                "0 ms"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "cm33_dbg": {
+                                    "title": "Configures the invasive debug of CM33 core",
+                                    "type": "object",
+                                    "required": [
+                                        "value"
+                                    ],
+                                    "properties": {
+                                        "value": {
+                                            "type": "string",
+                                            "enum": [
+                                                "Enable",
+                                                "Disable",
+                                                "Permanently Disable"
+                                            ]
+                                        }
+                                    },
+                                    "cm33_nid": {
+                                        "title": "Configures the non-invasive debug of CM33 core",
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "Enable",
+                                                    "Disable",
+                                                    "Permanently Disable"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "cm33_spid": {
+                                        "title": "Configures the secure privileged invasive debug of CM33 core",
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "Enable",
+                                                    "Disable",
+                                                    "Permanently Disable"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "cm33_spnid": {
+                                        "title": "Configures the secure privileged non-invasive debug of CM33 core",
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "Enable",
+                                                    "Disable",
+                                                    "Permanently Disable"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "cm33_secure": {
+                                        "title": "Enables the CM33 secure AP interface",
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "Enable",
+                                                    "Disable",
+                                                    "Permanently Disable"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "system": {
+                                "title": "System AP configuration",
+                                "type": "object",
+                                "required": [
+                                    "ap",
+                                    "secure",
+                                    "mmio_restrictions",
+                                    "debug_pins"
+                                ],
+                                "properties": {
+                                    "ap": {
+                                        "title": "Configures the System debug access port availability in the PRODUCTION and DEVELOPMENT LCS",
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "Enable",
+                                                    "Disable",
+                                                    "Permanently Disable"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "secure": {
+                                        "title": "Enables the system secure AP interface",
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "Enable",
+                                                    "Disable",
+                                                    "Permanently Disable"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "mmio_restrictions": {
+                                        "title": "MMIO restrictions for System AP",
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "No restrictions",
+                                                    "SRSS_GENERAL2 only",
+                                                    "No access"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "debug_pins": {
+                                        "title": "Configures debug pins and interface",
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "0000",
+                                                    "0011",
+                                                    "0101",
+                                                    "0110",
+                                                    "1001",
+                                                    "1010"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "boot": {
+                    "title": "Boot configuration",
+                    "type": "object",
+                    "required": [
+                        "boot_cfg_id",
+                        "boot_bank_ctr_offset",
+                        "boot_auth_images",
+                        "boot_auth_signature",
+                        "boot_app_layout",
+                        "boot_od_clk"
+                    ],
+                    "properties": {
+                        "boot_cfg_id": {
+                            "title": "A behavior for BOOT_APP_LAYOUT (BOOT_SIMPLE_APP applicable to DEVELOPMENT only)",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string",
+                                    "enum": [
+                                        "SIMPLE_APP",
+                                        "SECURE_APP",
+                                        "DUAL_BANK_SIMPLE_APP",
+                                        "DUAL_BANK_SECURE_APP",
+                                        "PROT_FW"
+                                    ]
+                                }
+                            }
+                        },
+                        "boot_bank_ctr_offset": {
+                            "title": "An offset from the start of each flash bank where a 32-bit counter for flash dual bank switching is placed",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": [
+                                        "integer",
+                                        "string"
+                                    ],
+                                    "minimum": 0,
+                                    "maximum": 4294967295
+                                }
+                            }
+                        },
+                        "boot_hash_locking": {
+                            "title": "Enable hash locking, fast authentication (compare a hash) instead of ECDSA",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
+                        "boot_bank_ctr_addr": {
+                            "title": "An offset from the start of each flash bank where a 32-bit counter for flash dual bank switching is placed",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": [
+                                        "integer",
+                                        "string"
+                                    ],
+                                    "minimum": 0,
+                                    "maximum": 4294967295
+                                }
+                            }
+                        },
+                        "boot_auth_images": {
+                            "title": "Configures the images authentication and moving from a SSS after DFU update",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string",
+                                    "enum": [
+                                        "NONE",
+                                        "ONE",
+                                        "ALL",
+                                        "ALL_MOVE"
+                                    ]
+                                }
+                            }
+                        },
+                        "boot_auth_signature": {
+                            "title": "Signature type for Boot Authentication",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string",
+                                    "enum": [
+                                        "ES256",
+                                        "ES384",
+                                        "ES512"
+                                    ]
+                                }
+                            }
+                        },
+                        "boot_app_layout": {
+                            "title": "The memory layout for the applications defined by BOOT_CFG_ID",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "minItems": 5,
+                                    "maxItems": 5,
+                                    "items": {
+                                        "type": "object",
+                                        "required": [
+                                            "address",
+                                            "size"
+                                        ],
+                                        "properties": {
+                                            "address": {
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ]
+                                            },
+                                            "size": {
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "boot_od_clk": {
+                            "title": "CM33 boot frequency",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string",
+                                    "enum": [
+                                        "48 MHz",
+                                        "100 MHz",
+                                        "180 MHz"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "dfu": {
+                    "title": "DFU configuration",
+                    "type": "object",
+                    "required": [
+                        "dfu_enable"
+                    ],
+                    "properties": {
+                        "dfu_enable": {
+                            "title": "Indicates whether Device Firmware Update is enabled",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "boolean"
+                                }
+                            }
+                        }
+                    }
+                },
+                "reprovisioning": {
+                    "title": "Reprovisioning",
+                    "type": "object",
+                    "required": [
+                        "revoke_ifx_rot_key_0",
+                        "revoke_ifx_rma_master_key_0",
+                        "revoke_oem_rot_key_0",
+                        "nonce",
+                        "ifx_revocation_signature"
+                    ],
+                    "properties": {
+                        "revoke_ifx_rot_key_0": {
+                            "title": "Indicates whether to revoke IFX_ROT_KEY_0",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
+                        "revoke_ifx_rma_master_key_0": {
+                            "title": "Indicates whether to revoke IFX_RMA_MASTER_KEY_0",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
+                        "revoke_oem_rot_key_0": {
+                            "title": "Indicates whether to revoke IFX_ROT_KEY_0",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
+                        "nonce": {
+                            "title": "Hex string or path to a binary file containing nonce for revocation of IFX_ROT_KEY_0 or IFX_RMA_MASTER_KEY_0",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "ifx_revocation_signature": {
+                            "title": "Hex string or binary file containing IFX_REVOCATION_SIGNATURE for revocation of IFX_ROT_KEY_0 or IFX_RMA_MASTER_KEY_0",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "pc2_ctl_valid": {
+                    "title": "True when 'pc2_handler' is valid",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "pc3_ctl_valid": {
+                    "title": "True when 'pc3_handler' is valid",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "pc2_handler": {
+                    "title": "Used to switch to PC2 when it is a 'Special' PC",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "minimum": 0,
+                            "maximum": 4294967295
+                        }
+                    }
+                },
+                "pc3_handler": {
+                    "title": "Used to switch to PC3 when it is a 'Special' PC",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "minimum": 0,
+                            "maximum": 4294967295
+                        }
+                    }
+                },
+                "oem_device_cert_addr": {
+                    "title": "OEM_DEVICE_CERT address",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "minimum": 0,
+                            "maximum": 4294967295
+                        }
+                    }
+                },
+                "oem_device_cert_blocks": {
+                    "title": "OEM_DEVICE_CERT size in blocks",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "minimum": 0,
+                            "maximum": 255
+                        }
+                    }
+                },
+                "boundary_scan": {
+                    "title": "Indicates whether Boundary Scan is enabled",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "disable_ramapp": {
+                    "title": "Indicates whether RAM application execution is disabled",
+                    "type": "object",
+                    "properties": {
+                        "value": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "mpc": {
+                    "title": "MPC configuration",
+                    "type": "object",
+                    "required": [
+                        "mpc_struct_flash"
+                    ],
+                    "properties": {
+                        "mpc_struct_flash": {
+                            "title": "Flash MPC structures",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "required": [
+                                            "offset",
+                                            "size",
+                                            "attr"
+                                        ],
+                                        "properties": {
+                                            "offset": {
+                                                "type": [
+                                                    "string"
+                                                ]
+                                            },
+                                            "size": {
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ]
+                                            },
+                                            "attr": {
+                                                "type": "object",
+                                                "required": [
+                                                    "value"
+                                                ],
+                                                "properties": {
+                                                    "value": {
+                                                        "type": "object",
+                                                        "required": [
+                                                            "pc0",
+                                                            "pc1",
+                                                            "pc2",
+                                                            "pc3",
+                                                            "pc4",
+                                                            "pc5",
+                                                            "pc6",
+                                                            "pc7"
+                                                        ],
+                                                        "properties": {
+                                                            "pc0": {
+                                                                "type": "string"
+                                                            },
+                                                            "pc1": {
+                                                                "type": "string"
+                                                            },
+                                                            "pc2": {
+                                                                "type": "string"
+                                                            },
+                                                            "pc3": {
+                                                                "type": "string"
+                                                            },
+                                                            "pc4": {
+                                                                "type": "string"
+                                                            },
+                                                            "pc5": {
+                                                                "type": "string"
+                                                            },
+                                                            "pc6": {
+                                                                "type": "string"
+                                                            },
+                                                            "pc7": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "pre_build": {
+            "type": "object",
+            "properties": {
+                "keys": {
+                    "type": "object",
+                    "properties": {
+                        "oem_rot_public_key_0": {
+                            "title": "Path to the OEM RoT public key 0",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "oem_rot_public_key_1": {
+                            "title": "Path to the OEM RoT public key 1",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "oem_debug_public_key": {
+                            "title": "Path to the OEM debug public key",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "oem_dev_public_key": {
+                            "title": "Path to the OEM RoT dev public key",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "oem_enc_key": {
+                            "title": "Path to the DFU OEM encryption key",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "raw_data_pc012": {
+            "title": "Path to a binary file containing custom data accessible in PC0, PC1, PC2, and PC3. Up to 84 bytes",
+            "type": "object",
+            "required": [
+                "value"
+            ],
+            "properties": {
+                "value": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

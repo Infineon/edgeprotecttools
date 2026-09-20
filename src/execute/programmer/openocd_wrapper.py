@@ -16,7 +16,6 @@ import os
 import random
 import re
 import sys
-import json
 import socket
 import signal
 import logging
@@ -24,9 +23,6 @@ import time
 
 from .openocd_server import OpenocdServer
 from .base import ProgrammerBase, ResetType, AP
-from ...core.target_director import TargetDirector
-
-TARGET_MAP = os.path.join(os.path.dirname(__file__), 'openocd_target_map.json')
 logger = logging.getLogger(__name__)
 
 RECEIVE_TIMEOUT = 10.0
@@ -72,50 +68,38 @@ class Openocd(ProgrammerBase):
         self.cm55_name = None
         self.sysap_name = None
 
-    def connect(self, target_name=None, interface=None, probe_id=None,
-                ap='sysap', acquire=None, power=None, voltage=None, rev=None):
+    def connect(self, target, probe_id=None,
+                ap='sysap', acquire=None, power=None, voltage=None):
         """
         Connects to target using default debug interface.
-        @param target_name: The target name.
-        @param interface: Debug interface.
+        @param target: The target object with name, rev, register_map, etc.
         @param probe_id: Probe serial number.
         @param ap: The access port to be used for flash operations
         @param acquire: Indicates whether to acquire device on connect
         @param power: Indicates whether to on/off the KitProg3 power
         @param voltage: The KitProg3 voltage level
-        @param rev: The target revision
         @return: True if connected successfully, otherwise False
         """
-        if interface:
-            raise NotImplementedError
+        target_name = target.name
 
         if target_name:
-            full_name = target_name + '_' + rev if rev else target_name
             ocd_target_name = ''
-            # Search for device in target map
-            with open(TARGET_MAP, encoding='utf-8') as f:
-                file_content = f.read()
-                json_data = json.loads(file_content)
-            for json_target in json_data:
-                if full_name.lower().strip() == json_target.lower().strip():
-                    # Get target info
-                    director = TargetDirector()
-                    try:
-                        from ...targets import get_target_builder
-                        get_target_builder(director, target_name, rev=rev)
-                    except KeyError as e:
-                        raise ValueError(
-                            f'Unknown target "{target_name}"') from e
-                    self.target = director.get_target(None, None)
-                    # Get target name which is relevant to OpenOCD
-                    ocd_target_name = json_data[json_target]['target']
-                    self.mcu = json_data[json_target].get('mcu')
-                    self.cm0_name = json_data[json_target].get('cm0')
-                    self.cm4_name = json_data[json_target].get('cm4')
-                    self.cm33_name = json_data[json_target].get('cm33')
-                    self.cm55_name = json_data[json_target].get('cm55')
-                    self.sysap_name = json_data[json_target].get('sysap')
-                    break
+            self.target = target
+
+            # Get OpenOCD hardware configuration from target's ocd_config
+            ocd_config = self.target.ocd_config
+            if ocd_config and 'openocd' in ocd_config:
+                ocd_hw_config = ocd_config['openocd']
+                ocd_target_name = ocd_hw_config.get('target', '')
+                self.mcu = ocd_hw_config.get('mcu')
+                self.cm0_name = ocd_hw_config.get('cm0')
+                self.cm4_name = ocd_hw_config.get('cm4')
+                self.cm33_name = ocd_hw_config.get('cm33')
+                self.cm55_name = ocd_hw_config.get('cm55')
+                self.sysap_name = ocd_hw_config.get('sysap')
+            else:
+                raise ValueError(
+                    f'Target "{target_name}" has no OpenOCD configuration')
         else:
             raise ValueError("Parameter 'target_name' is None")
 
@@ -141,7 +125,7 @@ class Openocd(ProgrammerBase):
 
         # Configure OpenOCD server
         self.ocd_server = OpenocdServer(
-            self.target, ocd_target_name, interface, probe_id,
+            self.target, ocd_target_name, None, probe_id,
             tool_path=self.tool_path, power=power, voltage=voltage,
             tcp_host_port=tcp_host_port)
         self.probe_id = self.ocd_server.probe_id

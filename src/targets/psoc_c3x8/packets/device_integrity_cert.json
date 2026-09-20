@@ -1,0 +1,638 @@
+{
+  "regions": [
+    {
+      "description": "SI_REVISION_ID",
+      "region": [
+        [
+          "0x13400001",
+          "1"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "SILICON_ID",
+      "region": [
+        [
+          "0x13400002",
+          "2"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "FAMILY_ID",
+      "region": [
+        [
+          "0x13400004",
+          "2"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "FULL_TRIMS",
+      "region": [
+        [
+          "0x13400200",
+          "512"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "FLASH_WRITE_TRIMS",
+      "region": [
+        [
+          "0x13400400",
+          "512"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "DIE_INFO",
+      "region": [
+        [
+          "0x13400600",
+          "12"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "TRIMS_3",
+      "region": [
+        [
+          "0x1340060C",
+          "500"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "TRIMS_4",
+      "region": [
+        [
+          "0x13400800",
+          "512"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "TRIMS_5",
+      "region": [
+        [
+          "0x13400A00",
+          "220"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "LDO_TRIMS",
+      "region": [
+        [
+          "0x13400AEC",
+          "20"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "BASIC_TRIMS",
+      "region": [
+        [
+          "0x13400B40",
+          "56"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "VBG_DATA",
+      "region": [
+        [
+          "0x13400B5C",
+          "164"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "SFLASH_ROW_COUNTER_IFX",
+      "region": [
+        [
+          "0x13400C00",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "SFLASH_BOOTROW_CRC",
+      "region": [
+        [
+          "0x13400C04",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "IFX_ROT_KEY_REVOCATION",
+      "region": [
+        [
+          "0x13400C08",
+          "1"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "IFX_RMA_MASTER_KEY_REVOCATION",
+      "region": [
+        [
+          "0x13400C09",
+          "1"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "PROT_FW_ROT_KEY_REVOCATION",
+      "region": [
+        [
+          "0x13400C0A",
+          "1"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "OEM_ROT_KEY_REVOCATION",
+      "region": [
+        [
+          "0x13400C0B",
+          "1"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "NV_COUNTER_RAMAPP",
+      "region": [
+        [
+          "0x13400C0C",
+          "1"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "NV_COUNTER_A1",
+      "region": [
+        [
+          "0x13400C0D",
+          "1"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "NV_COUNTER_A2",
+      "region": [
+        [
+          "0x13400C0E",
+          "1"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "NV_COUNTER_A3",
+      "region": [
+        [
+          "0x13400C0F",
+          "1"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "NV_COUNTER_A4",
+      "region": [
+        [
+          "0x13400C10",
+          "1"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "RMA_ATTEMPT_COUNTER",
+      "region": [
+        [
+          "0x13400C11",
+          "1"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "PROV_OEM_COMPLETE",
+      "region": [
+        [
+          "0x13400C14",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "HASH_SLOT_1",
+      "region": [
+        [
+          "0x13400C18",
+          "32"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "HASH_SLOT_2",
+      "region": [
+        [
+          "0x13400C38",
+          "32"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "HASH_SLOT_3",
+      "region": [
+        [
+          "0x13400C58",
+          "32"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "HASH_SLOT_4",
+      "region": [
+        [
+          "0x13400C78",
+          "32"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "SECURE_HASH",
+      "region": [
+        [
+          "0x13400D9C",
+          "32"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "PROT_FW_HASH",
+      "region": [
+        [
+          "0x13400C98",
+          "32"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "IFX_HASH",
+      "region": [
+        [
+          "0x13400C98",
+          "124"
+        ],
+        [
+          "0x13400D14",
+          "124"
+        ],
+        [
+          "0x1340139C",
+          "136"
+        ],
+        [
+          "0x13401424",
+          "136"
+        ],
+        [
+          "0x134014AC",
+          "136"
+        ],
+        [
+          "0x13401534",
+          "136"
+        ],
+        [
+          "0x134015BC",
+          "136"
+        ],
+        [
+          "0x13401644",
+          "64"
+        ],
+        [
+          "0x13401684",
+          "32"
+        ],
+        [
+          "0x134016A4",
+          "124"
+        ],
+        [
+          "0x13401720",
+          "180"
+        ]
+      ],
+      "operation": "hash",
+      "owner": "IFX",
+      "hash": "9EF497D05B2459EBC61F29366BB1460001C038DB522A383BD1EA4E465AF1BDF1C5C2A4F70FDDA01F857077850C84B35921D42DF02EBB3F07A3189DA631D74E50"
+    },
+    {
+      "description": "PROT_FW_POLICY",
+      "region": [
+        [
+          "0x13401058",
+          "300"
+        ],
+        [
+          "0x13401314",
+          "136"
+        ]
+      ],
+      "operation": "hash",
+      "owner": "OEM",
+      "hash": "3E3E478666D8B9D9257FE72204F7F6B6F8C7DB3DB065F9528978ECAC9972B23D8AC860EACFC019132E39344B3DAE78167DEDE61D47281B09DEE89FC3FA51DA59"
+    },
+    {
+      "description": "OEM_HASH",
+      "region": [
+        [
+          "0x13400E04",
+          "372"
+        ],
+        [
+          "0x13401004",
+          "84"
+        ],
+        [
+          "0x13401204",
+          "272"
+        ]
+      ],
+      "operation": "hash",
+      "owner": "OEM",
+      "hash": "57C4322D3229209E0F347ECD34CA7B98328D7FC88DA1838D6D3F9AB09DF11482E4FC4E40427C4ED5FF01C8CA8B8677C60CB7C204943A44705CF038B07CC9D33C"
+    },
+    {
+      "description": "OEM_RAW_DATA",
+      "region": [
+        [
+          "0x134076F0",
+          "84"
+        ]
+      ],
+      "operation": "hash",
+      "owner": "OEM",
+      "hash": "6B83E8FC9A2AD34694319EFF2972435D2FACFFB23F6E5D6B2EB7381BD9012A489912C56AB6DFCE07CA387B777496F612E63842AA294A208F5360077F37E87B1D"
+    },
+    {
+      "description": "BOOTROW",
+      "region": [
+        [
+          "0x52610800",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "NUM_ZEROS",
+      "region": [
+        [
+          "0x52610804",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "REPROV_POLICY",
+      "region": [
+        [
+          "0x52610808",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "BASIC_TRIM_0",
+      "region": [
+        [
+          "0x5261080C",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "BASIC_TRIM_1",
+      "region": [
+        [
+          "0x52610810",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "BASIC_TRIM_2",
+      "region": [
+        [
+          "0x52610814",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "BASIC_TRIM_3",
+      "region": [
+        [
+          "0x52610818",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "BASIC_TRIM_4",
+      "region": [
+        [
+          "0x5261081C",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "BASIC_TRIM_5",
+      "region": [
+        [
+          "0x52610820",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "WOUNDING",
+      "region": [
+        [
+          "0x52610824",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "WOUNDING2",
+      "region": [
+        [
+          "0x52610828",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "FLASH_TRIMS_0",
+      "region": [
+        [
+          "0x52610830",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "FLASH_TRIMS_1",
+      "region": [
+        [
+          "0x52610834",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "FLASH_TRIMS_2",
+      "region": [
+        [
+          "0x52610838",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "FLASH_TRIMS_3",
+      "region": [
+        [
+          "0x5261083C",
+          "4"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "FACTORY_HASH",
+      "region": [
+        [
+          "0x52610840",
+          "32"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "ASSET_HASH",
+      "region": [
+        [
+          "0x52610860",
+          "32"
+        ]
+      ],
+      "operation": "return"
+    },
+    {
+      "description": "FLASH_BOOT",
+      "region": [
+        [
+          "0x13402400",
+          "19968"
+        ]
+      ],
+      "operation": "hash",
+      "owner": "IFX",
+      "hash": [
+        {
+          "value": "1.0.0.13982",
+          "hash": "76D536AAB258BE330A497DFC6238AC88E7ADAB65795742446498F62F349F58DEBE5A6DBEE5051777C59145BA31A1F1CE267D963BFA43EEEC5D400078C1C7004F"
+        }
+      ]
+    },
+    {
+      "description": "RESERVED_AREA_SFLASH",
+      "region": [
+        [
+          "0x1340001C",
+          "100"
+        ],
+        [
+          "0x13400494",
+          "364"
+        ],
+        [
+          "0x13400B00",
+          "64"
+        ],
+        [
+          "0x13400DDC",
+          "36"
+        ],
+        [
+          "0x13400F78",
+          "136"
+        ],
+        [
+          "0x13401184",
+          "124"
+        ],
+        [
+          "0x134017D4",
+          "44"
+        ]
+      ],
+      "operation": "hash",
+      "owner": "IFX",
+      "hash": "B90086FEB24D98123A2CE4834A8FB5FDDF1FB0AFA5CC7D666D525054F3796BE35699EF9DDC59802C71F80F974605302525AAADB2B9C68CF6C5E341E13227003A"
+    }
+  ],
+  "certificate": "d28444a1013823a05909a7a11a130100019836a266726567696f6e81821a1340000101696f7065726174696f6e6672657475726ea266726567696f6e81821a1340000202696f7065726174696f6e6672657475726ea266726567696f6e81821a1340000402696f7065726174696f6e6672657475726ea266726567696f6e81821a13400200190200696f7065726174696f6e6672657475726ea266726567696f6e81821a13400400190200696f7065726174696f6e6672657475726ea266726567696f6e81821a134006000c696f7065726174696f6e6672657475726ea266726567696f6e81821a1340060c1901f4696f7065726174696f6e6672657475726ea266726567696f6e81821a13400800190200696f7065726174696f6e6672657475726ea266726567696f6e81821a13400a0018dc696f7065726174696f6e6672657475726ea266726567696f6e81821a13400aec14696f7065726174696f6e6672657475726ea266726567696f6e81821a13400b401838696f7065726174696f6e6672657475726ea266726567696f6e81821a13400b5c18a4696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c0004696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c0404696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c0801696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c0901696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c0a01696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c0b01696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c0c01696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c0d01696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c0e01696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c0f01696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c1001696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c1101696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c1404696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c181820696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c381820696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c581820696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c781820696f7065726174696f6e6672657475726ea266726567696f6e81821a13400d9c1820696f7065726174696f6e6672657475726ea266726567696f6e81821a13400c981820696f7065726174696f6e6672657475726ea466726567696f6e8b821a13400c98187c821a13400d14187c821a1340139c1888821a134014241888821a134014ac1888821a134015341888821a134015bc1888821a134016441840821a134016841820821a134016a4187c821a1340172018b4696f7065726174696f6e6468617368656f776e657263494658646861736858409ef497d05b2459ebc61f29366bb1460001c038db522a383bd1ea4e465af1bdf1c5c2a4f70fdda01f857077850c84b35921d42df02ebb3f07a3189da631d74e50a466726567696f6e82821a1340105819012c821a134013141888696f7065726174696f6e6468617368656f776e6572634f454d646861736858403e3e478666d8b9d9257fe72204f7f6b6f8c7db3db065f9528978ecac9972b23d8ac860eacfc019132e39344b3dae78167dede61d47281b09dee89fc3fa51da59a466726567696f6e83821a13400e04190174821a134010041854821a13401204190110696f7065726174696f6e6468617368656f776e6572634f454d6468617368584057c4322d3229209e0f347ecd34ca7b98328d7fc88da1838d6d3f9ab09df11482e4fc4e40427c4ed5ff01c8ca8b8677c60cb7c204943a44705cf038b07cc9d33ca466726567696f6e81821a134076f01854696f7065726174696f6e6468617368656f776e6572634f454d646861736858406b83e8fc9a2ad34694319eff2972435d2facffb23f6e5d6b2eb7381bd9012a489912c56ab6dfce07ca387b777496f612e63842aa294a208f5360077f37e87b1da266726567696f6e81821a5261080004696f7065726174696f6e6672657475726ea266726567696f6e81821a5261080404696f7065726174696f6e6672657475726ea266726567696f6e81821a5261080804696f7065726174696f6e6672657475726ea266726567696f6e81821a5261080c04696f7065726174696f6e6672657475726ea266726567696f6e81821a5261081004696f7065726174696f6e6672657475726ea266726567696f6e81821a5261081404696f7065726174696f6e6672657475726ea266726567696f6e81821a5261081804696f7065726174696f6e6672657475726ea266726567696f6e81821a5261081c04696f7065726174696f6e6672657475726ea266726567696f6e81821a5261082004696f7065726174696f6e6672657475726ea266726567696f6e81821a5261082404696f7065726174696f6e6672657475726ea266726567696f6e81821a5261082804696f7065726174696f6e6672657475726ea266726567696f6e81821a5261083004696f7065726174696f6e6672657475726ea266726567696f6e81821a5261083404696f7065726174696f6e6672657475726ea266726567696f6e81821a5261083804696f7065726174696f6e6672657475726ea266726567696f6e81821a5261083c04696f7065726174696f6e6672657475726ea266726567696f6e81821a526108401820696f7065726174696f6e6672657475726ea266726567696f6e81821a526108601820696f7065726174696f6e6672657475726ea466726567696f6e81821a13402400194e00696f7065726174696f6e6468617368656f776e657263494658646861736881a26576616c75656b312e302e302e31333938326468617368584076d536aab258be330a497dfc6238ac88e7adab65795742446498f62f349f58debe5a6dbee5051777c59145ba31a1f1ce267d963bfa43eeec5d400078c1c7004fa466726567696f6e87821a1340001c1864821a1340049419016c821a13400b001840821a13400ddc1824821a13400f781888821a13401184187c821a134017d4182c696f7065726174696f6e6468617368656f776e65726349465864686173685840b90086feb24d98123a2ce4834a8fb5fddf1fb0afa5cc7d666d525054f3796be35699ef9ddc59802c71f80f974605302525aaadb2b9c68cf6c5e341e13227003a5884003b4633662410e28c95d124b1bc11e9130ac0182d200142cdcad6823cffd27df3ee1091788396c6382663dfc9358371241ef3f1afc4bb72a1760b22d4c81bb699b801658a42ad577c5e85070f5494992c41d85a17e089872ab49a6415131b821a6d8c0c4528fdb5ecf2cc09bbc7cfa68917e2b9ba39ebd420ad541eacfc99258df7771a"
+}

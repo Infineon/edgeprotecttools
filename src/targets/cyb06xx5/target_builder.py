@@ -40,6 +40,11 @@ class CYB06xx5A1Builder(TargetBuilder):
     def get_ocd_config(self):
         return {
             'openocd': {
+                'target': 'infineon/cyxx64x5',
+                'mcu': 'psoc64.cpu',
+                'cm0': 'cm0',
+                'cm4': 'cm4',
+                'sysap': 'sysap',
                 'before_init': '',
                 'after_init': 'targets'
             }

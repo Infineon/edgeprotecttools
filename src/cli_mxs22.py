@@ -554,10 +554,9 @@ def cmd_fw_update(ctx, image, fw_type, key, probe_id, testapps, testapps_si,
             existing_packet=existing_packet)
 
     def validate():
-        if not ((image and key) or existing_packet):
-            sys.stderr.write("Error: Either both '--image' and '--key' options "
-                             "or '--existing-packet' option "
-                             "must be specified.\n")
+        if not image and not existing_packet:
+            sys.stderr.write("Error: Either '--image' or '--existing-packet' "
+                             "option must be specified.\n")
             sys.exit(2)
 
         if (image or key) and existing_packet:

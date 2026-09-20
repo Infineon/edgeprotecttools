@@ -1,0 +1,11 @@
+{
+  "policy": {
+    "platform": "psoc_c3p8",
+    "version": 1.0,
+    "type": "dfu"
+  },
+  "iv":{
+    "description": "IV for encryption",
+    "value": "000102030405060708090a0b0c0d0e0f"
+  }
+}

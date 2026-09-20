@@ -56,6 +56,7 @@ $ python -m pip install --upgrade --force-reinstall tools/edgeprotecttools/src
 | AIROC™ CYW559xx                 | [README_CYW559XX.md](docs/README_CYW559XX.md)                   |
 | PSOC™ Control C3                | [README_PSOCC3.md](docs/README_PSOCC3.md)                       |
 | PSOC™ Control C3 M6/P6          | [README_PSOCC3X6.md](docs/README_PSOCC3X6.md)                   |
+| PSOC™ Control C3 M7/P7, M8/P8   | [README_PSOCC3X8.md](docs/README_PSOCC3X8.md)                   |
 | PSOC™ Edge E81/E82/E83/E84      | [README_PSE8X.md](docs/README_PSE8X.md)                         |
 
 Use `device-list` command for output of the supported devices list.

@@ -97,6 +97,24 @@ class OcdSettings:
                 'programming_tool', {}).get('probe_speed_khz')
         return int(speed) if speed is not None else None
 
+    @property
+    def debug_interface(self):
+        """Gets the debug interface (swd/jtag)."""
+        iface = ProjectInitializerBase.get_debug_interface()
+        if not iface:
+            iface = self.json_data.get(
+                'programming_tool', {}).get('debug_interface', '')
+        if not iface:
+            return None
+        iface = iface.lower()
+        supported = ['swd', 'jtag']
+        if iface not in supported:
+            raise ValueError(
+                f"Unsupported debug interface '{iface}'. "
+                f"Expected one of: {', '.join(supported)}"
+            )
+        return iface
+
     @staticmethod
     def serial_config():
         """Gets serial interface configuration"""

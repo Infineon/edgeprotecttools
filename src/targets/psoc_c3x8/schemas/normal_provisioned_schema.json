@@ -1,0 +1,561 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Normal Provisioned Schema",
+    "type": "object",
+    "required": [
+        "policy",
+        "control_word",
+        "wounding",
+        "wounding_ppss"
+    ],
+    "properties": {
+        "policy": {
+            "type": "object",
+            "required": [
+                "platform",
+                "version",
+                "type"
+            ],
+            "properties": {
+                "platform": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "number",
+                    "minimum": 1.0,
+                    "maximum": 99.99
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "control_word": {
+            "type": "object",
+            "required": [
+                "value"
+            ],
+            "properties": {
+                "value": {
+                    "type": "string",
+                    "enum": [
+                        "EFUSE_DATA",
+                        "BOOTROW",
+                        "ALL"
+                    ]
+                }
+            }
+        },
+        "wounding": {
+            "type": "object",
+            "required": [
+                "can",
+                "flash",
+                "sram",
+                "speed",
+                "glitch_sensor",
+                "aes",
+                "sram_repaired"
+            ],
+            "properties": {
+                "can": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "flash": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "512K",
+                                "384K",
+                                "256K",
+                                "128K"
+                            ]
+                        }
+                    }
+                },
+                "sram": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "128K",
+                                "96K",
+                                "64K",
+                                "32K"
+                            ]
+                        }
+                    }
+                },
+                "speed": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "180 MHz",
+                                "100 MHz"
+                            ]
+                        }
+                    }
+                },
+                "glitch_sensor": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "aes": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "sram_repaired": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+
+            }
+        },
+        "wounding_ppss": {
+            "type": "object",
+            "required": [
+                "cpu_0",
+                "cpu_1",
+                "adc_group_0",
+                "adc_group_1",
+                "adc_group_2",
+                "adc_group_3",
+                "dcsg_group_0",
+                "dcsg_group_1",
+                "pwm_ss0",
+                "pwm_ss0_motif",
+                "pwm_ss0_hr",
+                "pwm_ss1",
+                "pwm_ss1_motif",
+                "pwm_ss1_hr",
+                "pwm_ss2",
+                "pwm_ss3",
+                "hwfilt_ss0",
+                "hwfilt_ss1",
+                "clb",
+                "cordic_0",
+                "cordic_1",
+                "code_mem",
+                "data_mem",
+                "m2_m3_m4_mem"
+            ],
+            "properties": {
+                "cpu_0": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "cpu_1": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "adc_group_0": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "adc_group_1": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "adc_group_2": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "adc_group_3": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "dcsg_group_0": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "dcsg_group_1": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "pwm_ss0": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "pwm_ss0_motif": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "pwm_ss0_hr": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "pwm_ss1": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "pwm_ss1_motif": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "pwm_ss1_hr": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "pwm_ss2": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "pwm_ss3": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "hwfilt_ss0": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "hwfilt_ss1": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "clb": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "cordic_0": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "cordic_1": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                },
+                "code_mem": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Full",
+                                "Half"
+                            ]
+                        }
+                    }
+                },
+                "data_mem": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Full",
+                                "Half"
+                            ]
+                        }
+                    }
+                },
+                "m2_m3_m4_mem": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string",
+                            "enum": [
+                                "Enabled",
+                                "Disabled"
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

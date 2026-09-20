@@ -552,7 +552,7 @@ class PolicyParserOemProvisioning(PolicyParserPrimitives):
         """Gets a value of the device_policy.dfu.dfu_enable property"""
         enable = self.field('device_policy', 'dfu', 'dfu_enable', 'value')
         if ret_value:
-            return SecBool.SEC_TRUE if enable else SecBool.SEC_FALSE
+            return SecBool.SEC_TRUE.value if enable else SecBool.SEC_FALSE.value
         return enable is True
 
     def dfu_if(self, ret_value=False) -> Union[DfuInterface, int]:

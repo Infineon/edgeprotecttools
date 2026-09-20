@@ -35,6 +35,12 @@ from ...core.enums import KeyAlgorithm
 class PSE8xS2Builder(TargetBuilder):
     """ PSoC Edge E8x B0 target builder """
 
+    ocd_config_list = {
+        'pse84': {
+            'openocd': {'mcu': 'pse84'}
+        }
+    }
+
     def get_default_policy(self):
         return None
 
@@ -43,11 +49,26 @@ class PSE8xS2Builder(TargetBuilder):
 
     def get_ocd_config(self):
         return {
-            'openocd': {
-                'variables': 'set ENABLE_CM33 0; set ENABLE_CM55 0',
-                'before_init': '',
-                'after_init': 'reset init; targets'
-            }
+            'openocd': self._get_openocd_config(),
+            'jlink': self._get_jlink_config()
+        }
+
+    def _get_openocd_config(self):
+        return {
+            'target': 'infineon/pse84xgxs2',
+            'mcu': 'pse84xgxs2',
+            'cm33': 'cm33',
+            'cm55': 'cm55',
+            'sysap': 'sys',
+            'variables': 'set ENABLE_CM33 0; set ENABLE_CM55 0',
+            'before_init': '',
+            'after_init': 'reset init; targets'
+        }
+
+    def _get_jlink_config(self):
+        return {
+            'device': 'PSE846GP_EPC2_M33',
+            'check_domain_security': True
         }
 
     def get_memory_map(self):

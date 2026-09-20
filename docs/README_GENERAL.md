@@ -30,6 +30,7 @@
 - [HSM](#hsm)
 - [AES encryption](#aes-encryption)
 - [ECIES encryption](#ecies-encryption)
+- [Set a path to the On-Chip debugger](#set-a-path-to-the-on-chip-debugger)
 
 This section describes a command line interface for general commands, which are not related to a specific target.
 

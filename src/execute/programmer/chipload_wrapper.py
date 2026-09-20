@@ -35,8 +35,8 @@ class ChipLoad(ProgrammerBase):
         self.runner = ChipLoadRunner(settings) if settings else None
         self.probe_id = self.runner.serial_port if self.runner else None
 
-    def connect(self, target_name=None, interface=None, probe_id=None, ap=None,
-                acquire=True, power=None, voltage=None, rev=None):
+    def connect(self, target, probe_id=None, ap=None,
+                acquire=True, power=None, voltage=None):
         """Checks whether the serial port name exists in the comm
         ports list and opens the port
         """

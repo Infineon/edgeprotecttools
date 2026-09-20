@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 2.3.0
+### Added
+- Support for PSOC™ Control C3 - PSC3P7xx, PSC3M7xx, PSC3P8xx, PSC3M8xx
+
+### Changed
+- PSOC™ Control C3 P6/M6: Aligned the default policy DFU configuration and listen-window value with the silicon defaults
+
 ## 2.2.0
 ### Added
 - Added native Apple Silicon (ARM) support for the macOS package

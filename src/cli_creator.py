@@ -56,7 +56,7 @@ class CliCreator:
                 module_name = 'cli_pse8x'
             elif target == 'psb3xxx':
                 module_name = 'cli_psb3xxx'
-            elif target in ('pse8x7s4', 'pse8x7s2'):
+            elif target in ('pse8x7s4', 'pse8x7s2', 'pse8x7ls2'):
                 module_name = 'cli_pse8x7'
             else:
                 module_name = 'cli_mxs22'

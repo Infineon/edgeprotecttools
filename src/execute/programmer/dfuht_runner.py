@@ -85,7 +85,9 @@ class DfuhtRunner:
         if add_data_length:
             data_length = self.serial_config.get('data_length')
             if data_length is not None:
-                command.extend(['--data-length', hex(data_length)])
+                data_length_arg = hex(data_length)
+                command.extend(['--data-length', data_length_arg])
+                logger.info('Data packet length (bytes) = %s', data_length_arg)
 
         logger.debug('Execute command: %s', command)
         with Popen(command, stdout=PIPE, stderr=PIPE) as self.proc:

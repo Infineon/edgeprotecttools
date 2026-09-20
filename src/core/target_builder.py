@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from abc import ABC, abstractmethod
+from copy import deepcopy
 
 
 class TargetBuilder(ABC):
@@ -20,6 +21,7 @@ class TargetBuilder(ABC):
     An abstract class necessary for implementation by
     concrete target builder classes
     """
+    ocd_config_list = {}
 
     def __init__(self, target_name, rev=None):
         self._target_name = target_name
@@ -45,13 +47,49 @@ class TargetBuilder(ABC):
     def target_dir(self, target_dir):
         self._target_dir = target_dir
 
+    def build_ocd_config(self):
+        """Gets the On-Chip Debuggers configuration for the current
+        target name.
+
+        A single builder class may serve several target names. A target
+        name needing a different configuration declares it in
+        'ocd_config_list'.
+        """
+        config = self.get_ocd_config()
+        overrides = self.ocd_config_list.get(self.target_name, {})
+        if not overrides:
+            return config
+        return self._override_dict(config, overrides)
+
+    @classmethod
+    def _override_dict(cls, value, override):
+        """Gets the value with the override applied.
+
+        Dictionaries are merged recursively so that only the declared
+        keys change, any other type is replaced.
+        """
+        if not isinstance(value, dict) or not isinstance(override, dict):
+            return deepcopy(override)
+        merged = deepcopy(value)
+        for key, item in override.items():
+            merged[key] = cls._override_dict(merged.get(key), item)
+        return merged
+
     @abstractmethod
     def get_ocds(self):
         """ Gets a list of supported On-Chip Debuggers """
 
     @abstractmethod
     def get_ocd_config(self):
-        """ Gets a dictionary of On-Chip Debuggers configuration """
+        """Gets a dictionary of On-Chip Debuggers configuration.
+
+        Returns a dictionary keyed by debugger name ('openocd', 'jlink', etc.)
+        with debugger-specific configuration values.
+
+        This is the base configuration shared by all target names
+        served by the builder. Per-target-name differences are
+        declared in 'ocd_config_list'.
+        """
 
     @abstractmethod
     def get_default_policy(self):
@@ -183,3 +221,4 @@ class TargetBuilder(ABC):
         """
         Gets the target silicon ID
         """
+

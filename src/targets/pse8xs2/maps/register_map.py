@@ -100,3 +100,5 @@ class RegisterMapPse8x:
     def boot_status(self):
         """BOOT_STATUS register address"""
         return 0x52400418
+
+

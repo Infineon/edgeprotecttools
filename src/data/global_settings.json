@@ -4,7 +4,8 @@
         "path": "",
         "config": "",
         "probe_type": "kitprog3",
-        "probe_speed_khz": 1000
+        "probe_speed_khz": 1000,
+        "debug_interface": "swd"
     },
     "serial_interface": {
         "protocol": "",

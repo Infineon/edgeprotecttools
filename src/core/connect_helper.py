@@ -68,8 +68,8 @@ class ConnectHelper:
                 logger.info("Programming tool path is '%s'", tool.tool_path)
 
             ConnectHelper.connected = tool.connect(
-                target.name, probe_id=probe_id, ap=ap, acquire=acquire,
-                power=power, voltage=voltage, rev=target.rev)
+                target, probe_id=probe_id, ap=ap, acquire=acquire,
+                power=power, voltage=voltage)
 
         if not ConnectHelper.connected:
             if tool.name == 'openocd':

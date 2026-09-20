@@ -26,7 +26,9 @@ from .enums import Protocol
 
 logger = logging.getLogger(__name__)
 
-OcdData = namedtuple('OcdData', 'name path config probe_type probe_speed_khz')
+OcdData = namedtuple(
+    'OcdData', 'name path config probe_type probe_speed_khz debug_interface'
+)
 
 
 class ProjectInitializerBase(ABC):
@@ -170,7 +172,7 @@ class ProjectInitializerBase(ABC):
         """Gets OCD configuration from the project metadata file.
 
         :return: A named tuple OcdData(name, path, config,
-                 probe_type, probe_speed_khz)
+                 probe_type, probe_speed_khz, debug_interface)
         """
         metadata_file = ProjectInitializerBase.get_medatada_file(cwd=cwd)
         with open(metadata_file, encoding='utf-8') as f:
@@ -181,11 +183,36 @@ class ProjectInitializerBase(ABC):
         ocd_config = settings.get('ocd_config')
         probe_type = settings.get('probe_type')
         probe_speed_khz = settings.get('probe_speed_khz')
+        debug_interface = settings.get('debug_interface')
 
         if ocd_path:
             ocd_path = os.path.abspath(ocd_path)
         speed = int(probe_speed_khz) if probe_speed_khz is not None else None
-        return OcdData(ocd_name, ocd_path, ocd_config, probe_type, speed)
+        return OcdData(ocd_name, ocd_path, ocd_config, probe_type, speed,
+                       debug_interface)
+
+    @staticmethod
+    def _get_programming_tool_setting(setting_name):
+        """Gets a programming tool setting from project or global
+        settings.
+        :param setting_name: Name of the OcdData field / global
+            settings key to retrieve (e.g. 'probe_type',
+            'probe_speed_khz', 'debug_interface').
+        :return: The setting value, or None if not available.
+        """
+        if ProjectInitializerBase.is_project():
+            ocd_data = ProjectInitializerBase.get_ocd_data()
+            return getattr(ocd_data, setting_name)
+
+        global_settings_file = (
+            ProjectInitializerBase.get_global_settings_file()
+        )
+        if global_settings_file:
+            with open(global_settings_file, encoding='utf-8') as settings_file:
+                data = json.load(settings_file)
+            return data.get('programming_tool', {}).get(setting_name)
+
+        return None
 
     @staticmethod
     def get_probe_type():
@@ -193,14 +220,9 @@ class ProjectInitializerBase(ABC):
 
         :return: str or None
         """
-        if ProjectInitializerBase.is_project():
-            return ProjectInitializerBase.get_ocd_data().probe_type
-        global_settings_file = ProjectInitializerBase.get_global_settings_file()
-        if global_settings_file:
-            with open(global_settings_file, encoding='utf-8') as f:
-                data = json.load(f)
-            return data.get('programming_tool', {}).get('probe_type')
-        return None
+        return ProjectInitializerBase._get_programming_tool_setting(
+            'probe_type'
+        )
 
     @staticmethod
     def get_probe_speed_khz():
@@ -208,19 +230,25 @@ class ProjectInitializerBase(ABC):
 
         :return: int or None
         """
-        if ProjectInitializerBase.is_project():
-            return ProjectInitializerBase.get_ocd_data().probe_speed_khz
-        global_settings_file = ProjectInitializerBase.get_global_settings_file()
-        if global_settings_file:
-            with open(global_settings_file, encoding='utf-8') as f:
-                data = json.load(f)
-            speed = data.get('programming_tool', {}).get('probe_speed_khz')
-            return int(speed) if speed is not None else None
-        return None
+        return ProjectInitializerBase._get_programming_tool_setting(
+            'probe_speed_khz'
+        )
+
+    @staticmethod
+    def get_debug_interface():
+        """Gets debug interface (swd/jtag) from project or global
+        settings.
+
+        :return: str or None
+        """
+        return ProjectInitializerBase._get_programming_tool_setting(
+            'debug_interface'
+        )
 
     @staticmethod
     def set_ocd_data(ocd_name, ocd_path, ocd_config=None,
-                     probe_type=None, probe_speed_khz=None, cwd=None):
+                     probe_type=None, probe_speed_khz=None,
+                     debug_interface=None, cwd=None):
         """Sets OCD data to the project metadata file.
 
         @param ocd_name: OCD tool name (e.g. ``'openocd'``, ``'jlink'``).
@@ -230,6 +258,8 @@ class ProjectInitializerBase(ABC):
             ``'jlink'``). When ``None`` the existing value is unchanged.
         @param probe_speed_khz: Probe communication speed in kHz. When
             ``None`` the existing value is unchanged.
+        @param debug_interface: Debug interface (``'swd'`` or ``'jtag'``).
+            When ``None`` the existing value is unchanged.
         @param cwd: Directory containing the metadata file.
         """
         metadata_file = ProjectInitializerBase.get_medatada_file(cwd=cwd)
@@ -243,6 +273,8 @@ class ProjectInitializerBase(ABC):
                     data['user_settings']['probe_type'] = probe_type
                 if probe_speed_khz is not None:
                     data['user_settings']['probe_speed_khz'] = probe_speed_khz
+                if debug_interface is not None:
+                    data['user_settings']['debug_interface'] = debug_interface
             except KeyError as e:
                 raise KeyError(
                     f'Invalid project configuration file structure '

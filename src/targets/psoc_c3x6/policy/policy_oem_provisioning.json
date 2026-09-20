@@ -58,8 +58,8 @@
           "value": "Enable"
         },
         "listen_window": {
-          "description": "Configures the listen window time to acquire the CM33 debug access port in the PRODUCTION LCS (in milliseconds). Valid range: 0-127",
-          "value": 2
+          "description": "Configures the listen window time to acquire the CM33 debug access port in the DEVELOPMENT and PRODUCTION LCS (in milliseconds). Valid range: 0-127",
+          "value": 20
         },
         "cm33_dbg": {
           "description": "Configures the invasive debug of CM33 core",
@@ -171,7 +171,7 @@
     "dfu": {
       "dfu_enable": {
         "description": "Indicates whether Device Firmware Update is enabled",
-        "value": false
+        "value": true
       },
       "dfu_if": {
         "description": "DFU interface",
@@ -182,7 +182,7 @@
         "description": "DFU pins control",
         "primary_port": {
           "description": "Primary DFU interface port number (0, 1, ..., 13)",
-          "value": 0
+          "value": 8
         },
         "alternate_port": {
           "description": "Alternate DFU interface port number (0, 1, ..., 13), 0 for single-port SCBs",
@@ -191,23 +191,23 @@
       },
       "dfu_en_pin": {
         "description": "DFU enable pin. Format: Px_y, where x is port number (0, 1, ..., 13) and y is pin number (0, 1, ..., 7)",
-        "value": "P0_0"
+        "value": "P2_3"
       },
       "dfu_config": {
         "description": "DFU interface configuration",
         "UART": {
           "scb": {
             "description": "SCB instance number (0-5)",
-            "value": 0
+            "value": 5
           },
           "rx": {
             "description": "RX pin. num is the pin number (0-7); alternate_port is false for the primary port or true for the alternate port",
-            "num": 0,
+            "num": 1,
             "alternate_port": false
           },
           "tx": {
             "description": "TX pin. num is the pin number (0-7); alternate_port is false for the primary port or true for the alternate port",
-            "num": 0,
+            "num": 3,
             "alternate_port": false
           }
         },

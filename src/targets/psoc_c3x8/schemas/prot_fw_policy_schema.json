@@ -1,0 +1,653 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Protected FW Policy Schema",
+    "type": "object",
+    "required": [
+        "policy",
+        "encrypt",
+        "device_policy",
+        "pre_build"
+    ],
+    "properties": {
+        "policy": {
+            "type": "object",
+            "required": [
+                "platform",
+                "version",
+                "type"
+            ],
+            "properties": {
+                "platform": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "number",
+                    "minimum": 1.0,
+                    "maximum": 99.99
+                },
+                "type": {
+                    "type": "string",
+                    "const": "prot_fw_policy"
+                }
+            }
+        },
+        "encrypt": {
+            "type": "object",
+            "required": [
+                "enable",
+                "key",
+                "iv"
+            ],
+            "properties": {
+                "enable": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties":{
+                        "value": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "key": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties":{
+                        "value": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "iv": {
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties":{
+                        "value": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "device_policy": {
+            "type": "object",
+            "required": [
+                "debug",
+                "boot",
+                "pc2_ctl_valid",
+                "pc2_handler",
+                "prot_fw_addr",
+                "prot_fw_size",
+                "prot_fw_rw_addr",
+                "prot_fw_rw_size",
+                "prot_fw_ram_addr",
+                "prot_fw_ram_size",
+                "prot_fw_complete",
+                "nv_counter_a1",
+                "failed_signature_counter",
+                "reprovisioning"
+            ],
+            "properties": {
+                "debug": {
+                    "title": "Access restrictions",
+                    "type": "object",
+                    "default": {},
+                    "required": [
+                        "cpu",
+                        "system"
+                    ],
+                    "properties": {
+                        "cpu": {
+                            "title": "CPU configuration",
+                            "type": "object",
+                            "required": [
+                                "ap_cm33",
+                                "cm33_dbg",
+                                "cm33_nid",
+                                "cm33_spid",
+                                "cm33_spnid",
+                                "cm33_secure"
+                            ],
+                            "properties": {
+                                "ap_cm33": {
+                                    "title": "Configures the CM33 debug access port availability in the SECURE and NORMAL_PROVISIONED LCS",
+                                    "type": "object",
+                                    "required": [
+                                        "value"
+                                    ],
+                                    "properties": {
+                                        "value": {
+                                            "type": "string",
+                                            "enum": [
+                                                "Enable",
+                                                "Disable",
+                                                "Permanently Disable"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "cm33_dbg": {
+                                    "title": "Configures the invasive debug of CM33 core",
+                                    "type": "object",
+                                    "required": [
+                                        "value"
+                                    ],
+                                    "properties": {
+                                        "value": {
+                                            "type": "string",
+                                            "enum": [
+                                                "Enable",
+                                                "Disable",
+                                                "Permanently Disable"
+                                            ]
+                                        }
+                                    },
+                                    "cm33_nid": {
+                                        "title": "Configures the non-invasive debug of CM33 core",
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "Enable",
+                                                    "Disable",
+                                                    "Permanently Disable"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "cm33_spid": {
+                                        "title": "Configures the secure privileged invasive debug of CM33 core",
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "Enable",
+                                                    "Disable",
+                                                    "Permanently Disable"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "cm33_spnid": {
+                                        "title": "Configures the secure privileged non-invasive debug of CM33 core",
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "Enable",
+                                                    "Disable",
+                                                    "Permanently Disable"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "cm33_secure": {
+                                        "title": "Enables the CM33 secure AP interface",
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "Enable",
+                                                    "Disable",
+                                                    "Permanently Disable"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "system": {
+                                "title": "System AP configuration",
+                                "type": "object",
+                                "required": [
+                                    "ap",
+                                    "secure",
+                                    "mmio_restrictions",
+                                    "debug_pins"
+                                ],
+                                "properties": {
+                                    "ap": {
+                                        "title": "Configures the System debug access port availability in the SECURE and NORMAL_PROVISIONED LCS",
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "Enable",
+                                                    "Disable",
+                                                    "Permanently Disable"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "secure": {
+                                        "title": "Enables the system secure AP interface",
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "Enable",
+                                                    "Disable",
+                                                    "Permanently Disable"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "mmio_restrictions": {
+                                        "title": "MMIO restrictions for System AP",
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "No restrictions",
+                                                    "SRSS_GENERAL2 only",
+                                                    "No access"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "debug_pins": {
+                                        "title": "Configures debug pins and interface",
+                                        "type": "object",
+                                        "required": [
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "value": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "0000",
+                                                    "0011",
+                                                    "0101",
+                                                    "0110",
+                                                    "1001",
+                                                    "1010"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "boot": {
+                    "title": "Boot configuration",
+                    "type": "object",
+                    "required": [
+                        "boot_cfg_id",
+                        "boot_hash_locking",
+                        "boot_auth_images",
+                        "boot_auth_signature",
+                        "boot_app_layout"
+                    ],
+                    "properties": {
+                        "boot_cfg_id": {
+                            "title": "A behavior for BOOT_APP_LAYOUT (BOOT_SIMPLE_APP applicable to NORMAL_PROVISIONED only)",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string",
+                                    "enum": [
+                                        "SIMPLE_APP",
+                                        "SECURE_APP",
+                                        "DUAL_BANK_SIMPLE_APP",
+                                        "DUAL_BANK_SECURE_APP",
+                                        "PROT_FW"
+                                    ]
+                                }
+                            }
+                        },
+                        "boot_hash_locking": {
+                            "title": "Enable hash locking, fast authentication (compare a hash) instead of ECDSA",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
+                        "boot_auth_images": {
+                            "title": "Configures the images authentication and moving from a SSS after DFU update",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string",
+                                    "enum": [
+                                        "NONE",
+                                        "ONE",
+                                        "ALL",
+                                        "ALL_MOVE"
+                                    ]
+                                }
+                            }
+                        },
+                        "boot_auth_signature": {
+                            "title": "Signature type for Boot Authentication",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string",
+                                    "enum": [
+                                        "ES256",
+                                        "ES384",
+                                        "ES512"
+                                    ]
+                                }
+                            }
+                        },
+                        "boot_app_layout": {
+                            "title": "The memory layout for the applications defined by BOOT_CFG_ID",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "array",
+                                    "minItems": 1,
+                                    "maxItems": 1,
+                                    "items": {
+                                        "type": "object",
+                                        "required": [
+                                            "address",
+                                            "size"
+                                        ],
+                                        "properties": {
+                                            "address": {
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ]
+                                            },
+                                            "size": {
+                                                "type": [
+                                                    "integer",
+                                                    "string"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "pc2_ctl_valid": {
+                    "title": "True when 'pc2_handler' is valid",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "pc2_handler": {
+                    "title": "Used to switch to PC2 when it is a 'Special' PC",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": [
+                                "integer",
+                                "string"
+                            ],
+                            "minimum": 0,
+                            "maximum": 4294967295
+                        }
+                    }
+                },
+                "prot_fw_addr":{
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "prot_fw_size":{
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "prot_fw_rw_addr":{
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "prot_fw_rw_size":{
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "prot_fw_ram_addr":{
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "prot_fw_ram_size":{
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "prot_fw_complete":{
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "nv_counter_a1": {
+                    "title": "NV counter slot 1. 0, if no update",
+                    "type": "object",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 255
+                        }
+                    }
+                },
+                "failed_signature_counter": {
+                    "title": "Failed signature counter",
+                    "type": "object",
+                    "required": [
+                        "boot_app_layout_0"
+                    ],
+                    "properties": {
+                        "boot_app_layout_0": {
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 65535
+                                }
+                            }
+                        }
+                    }
+                },
+                "reprovisioning": {
+                    "title": "Reprovisioning",
+                    "type": "object",
+                    "required": [
+                        "rev_prot_fw_rot_key_0"
+                    ],
+                    "properties": {
+                        "rev_prot_fw_rot_key_0": {
+                            "title": "Indicates whether to revoke PROT_FW_ROT_KEY_0",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "boolean"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "pre_build": {
+            "type": "object",
+            "required": [
+                "keys"
+            ],
+            "properties": {
+                "keys": {
+                    "type": "object",
+                    "required": [
+                        "prot_fw_rot_public_key_0",
+                        "prot_fw_rot_public_key_1",
+                        "prot_fw_debug_public_key",
+                        "prot_fw_enc_key"
+                    ],
+                    "properties": {
+                        "prot_fw_rot_public_key_0": {
+                            "title": "Path to the Protected FW RoT public key 0",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "prot_fw_rot_public_key_1": {
+                            "title": "Path to the Protected FW RoT public key 1",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "prot_fw_debug_public_key": {
+                            "title": "Path to the Protected FW debug public key",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "prot_fw_enc_key": {
+                            "title": "Path to the DFU Protected FW encryption key",
+                            "type": "object",
+                            "required": [
+                                "value"
+                            ],
+                            "properties": {
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

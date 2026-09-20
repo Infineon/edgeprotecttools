@@ -55,7 +55,7 @@ class TargetDirector:
         target.target_dir = self._builder.target_dir
 
         target.ocds = self._builder.get_ocds()
-        target.ocd_config = self._builder.get_ocd_config()
+        target.ocd_config = self._builder.build_ocd_config()
 
         # Memory map
         memory_map = self._builder.get_memory_map()
@@ -146,6 +146,7 @@ class TargetDirector:
         self._instantiate_types(target)
 
         return target
+
 
     @staticmethod
     def _instantiate_types(target):

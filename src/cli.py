@@ -437,8 +437,12 @@ def cmd_probe_list(_ctx):
               help='Debug probe adapter (default: derived from --name)')
 @click.option('--speed-khz', type=click.INT,
               help='Debug adapter communication speed in kHz')
+@click.option('--debug-interface',
+              type=click.Choice(['swd', 'jtag'], case_sensitive=False),
+              help='Debug interface (default: swd)')
 @click.pass_context
-def cmd_set_ocd(_ctx, name, path, config, probe_type, speed_khz):
+def cmd_set_ocd(_ctx, name, path, config, probe_type, speed_khz,
+                debug_interface):
     @process_handler()
     def process():
         ocd_config = config
@@ -481,7 +485,8 @@ def cmd_set_ocd(_ctx, name, path, config, probe_type, speed_khz):
             ProjectInitializerBase.set_ocd_data(
                 name, ocd_path, ocd_config,
                 probe_type=effective_probe_type,
-                probe_speed_khz=speed_khz
+                probe_speed_khz=speed_khz,
+                debug_interface=debug_interface
             )
             logger.info('Data in the project settings file changed')
         else:
@@ -493,6 +498,8 @@ def cmd_set_ocd(_ctx, name, path, config, probe_type, speed_khz):
             data['programming_tool']['probe_type'] = effective_probe_type
             if speed_khz is not None:
                 data['programming_tool']['probe_speed_khz'] = speed_khz
+            if debug_interface is not None:
+                data['programming_tool']['debug_interface'] = debug_interface
 
             if tool.require_path and (not (validate_mtb(name, ocd_path)
                     or validate_ptp(name, ocd_path))):

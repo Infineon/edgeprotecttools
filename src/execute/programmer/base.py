@@ -50,18 +50,16 @@ class ProgrammerBase(metaclass=ABCMeta):
         self.require_path = require_path
 
     @abstractmethod
-    def connect(self, target_name=None, interface=None, probe_id=None, ap=None,
-                acquire=True, power=None, voltage=None, rev=None):
+    def connect(self, target, probe_id=None, ap=None,
+                acquire=True, power=None, voltage=None):
         """
         Connects to target.
-        @param target_name: The target name.
-        @param interface: Debug interface.
+        @param target: The target object with name, rev, register_map, etc.
         @param probe_id: Probe serial number.
         @param ap: The access port used for communication.
         @param acquire: Indicates whether to acquire device on connect
         @param power: Target power
         @param voltage: Target power voltage
-        @param rev: The target revision.
         @return: True if connected successfully, otherwise False
         """
 
